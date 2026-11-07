@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Unit tests (pure functions)
+        run: node scripts/test.mjs
+
+      - name: Build web bundle
+        run: node scripts/build.mjs
+
+      - name: Verify web bundle
+        run: node scripts/verify.mjs
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # 注意：v3 默认 packages 里含 tools，而新版 SDK 已移除该包（会报 Failed to find package 'tools'）
+      # 所以这里显式只装需要的三个包，不再用默认值。
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Assemble debug APK
+        env:
+          SKIP_WEB_BUILD: '1'   # web 产物上面已构建并校验过，这里跳过重复构建
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

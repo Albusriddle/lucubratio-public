@@ -1,0 +1,203 @@
+/* ============================================================
+   图表（Mermaid / 手写结构化 HTML）
+   ============================================================ */
+.diagram {
+  margin: 1.2em 0;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.diagram figcaption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.mermaid {
+  margin: 10px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  text-align: center;
+}
+.mermaid[data-rendered="1"] { background: transparent; }
+/* 按原始尺寸渲染：不再为了塞进屏宽而缩小字号；超出部分横向滚动 + 常驻滚动条。
+   mermaid 会给 svg 写内联 width="100%" + max-width:Npx，必须 !important 顶掉，
+   否则 SVG 仍会被"缩放到容器宽"。 */
+.mermaid svg {
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+}
+.mermaid-error {
+  color: var(--accent);
+  font-size: 12.5px;
+  padding: 10px;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+/* 手写结构化图（表格/两栏卡片） */
+.dg-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 4px 0 10px;
+}
+.dg-cols { display: flex; gap: 10px; flex-wrap: wrap; }
+.dg-box {
+  flex: 1 1 44%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 150px;
+}
+.dg-name { font-weight: 600; font-size: 14px; }
+.dg-val { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.dg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.dg-table th,
+.dg-table td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+}
+.dg-table th { background: var(--soft); color: var(--muted); font-weight: 600; }
+
+/* ============================================================
+   自习 · 深色主题
+   由 boot.js 在 <html> 上加 .sa-dark 生效（首屏同步，避免闪白）。
+   色板同时覆盖两类页面：
+     · 内容页（content/os/*.html，自带 :root 变量 + 27 处硬编码浅色）
+     · 壳页（home / review / search / stats，各自内联样式）
+   ============================================================ */
+
+html.sa-dark {
+  color-scheme: dark;
+
+  /* 两类页面共用的变量名 */
+  --bg: #0f1115;
+  --fg: #e6edf6;
+  --muted: #8b98a9;
+  --line: #232b37;
+  --accent: #ff6b5e;
+  --accent2: #6fb6ff;
+  --sidebar: #141a22;
+  --code-bg: #1c232d;
+  --card: #171c24;
+  --soft: #1a2129;
+
+  /* 内容页独有 */
+  --warn: #2a2416;
+  --warn-line: #b8860b;
+  --tip: #16241a;
+  --tip-line: #4caf50;
+  --star: #e0b341;
+
+  background: var(--bg);
+}
+
+/* ---------- 内容页：侧栏（原样式硬编码 #fff / #e9edf1 / #eef2f6） ---------- */
+html.sa-dark #sidebar details[open] { background: #1a212b; box-shadow: none; }
+html.sa-dark #sidebar details.cur summary { background: #1f2833; }
+html.sa-dark #sidebar summary:hover { background: #1f2833; }
+html.sa-dark #sidebar .tag { background: #243040; color: #a8b6c8; }
+html.sa-dark #sidebar ul.toc a { color: #a8b6c8; }
+html.sa-dark #sidebar ul.toc a:hover { background: #1f2833; }
+html.sa-dark #sidebar ul.toc a.lv3 { color: #8794a5; }
+html.sa-dark #sidebar ul.toc a.active { background: #1f2833; color: var(--accent); }
+
+/* ---------- 内容页：正文硬编码色 ---------- */
+html.sa-dark h3 { color: #dbe3ee; }
+html.sa-dark h4 { color: #cfd8e3; }
+html.sa-dark h5,
+html.sa-dark h6 { color: #c3ccd8; }
+html.sa-dark strong { color: #f2f6fb; }
+html.sa-dark hr { border-top-color: #2b3442; }
+html.sa-dark blockquote { color: #d9c9a3; }
+html.sa-dark code { color: #ff9d94; }
+html.sa-dark .table-wrap { border-color: #232b37; }
+html.sa-dark th { background: #1c2430; }
+html.sa-dark tbody tr:nth-child(even) { background: #151b23; }
+html.sa-dark tbody tr:hover { background: #1b2533; }
+html.sa-dark pre { border-color: #2b3442; }
+
+/* ---------- 内容页顶栏（shell.css 里的浅色半透明） ---------- */
+html.sa-dark .sa-topbar {
+  --sa-bar-bg: rgba(15, 17, 21, 0.94);
+  background: var(--sa-bar-bg);
+  color: var(--fg);
+}
+html.sa-dark .sa-topbar .sa-icon:active { background: rgba(255, 255, 255, 0.08); }
+html.sa-dark .sa-qbar { background: #171c24; border-color: #2b3442; }
+html.sa-dark .sa-qbtn { background: #1d2530; color: #dbe3ee; }
+html.sa-dark .sa-qbtn[data-r="1"] { color: #ff8a80; border-color: #4a2a28; }
+html.sa-dark .sa-qbtn[data-r="2"] { color: #e0b341; border-color: #4a3d20; }
+html.sa-dark .sa-qbtn[data-r="3"] { color: #7ddc8a; border-color: #24422a; }
+html.sa-dark .sa-qbar.sa-rated { background: #16211a; }
+
+/* ---------- 壳页：首页 ---------- */
+html.sa-dark .quick a { background: var(--card); border-color: var(--line); color: var(--fg); }
+html.sa-dark .quick a:active { background: var(--soft); }
+html.sa-dark .due { background: #2a1a17; border-color: #4a2a26; }
+html.sa-dark .due .due-k,
+html.sa-dark .due .due-go { color: #ff8a80; }
+html.sa-dark .due .due-n b { color: #ff8a80; }
+html.sa-dark .orphan { background: #241f14; border-color: #4a3d20; }
+html.sa-dark .orphan .ok,
+html.sa-dark .orphan .on b { color: #e0b341; }
+html.sa-dark .orphan button { background: #1d2530; border-color: #4a3d20; color: #e0b341; }
+html.sa-dark .item:active { background: var(--soft); }
+html.sa-dark .item .no { background: var(--soft); color: var(--muted); }
+html.sa-dark .item.paper .no { background: #3a2220; color: #ff8a80; }
+html.sa-dark .item.memo .no { background: #1d2b40; color: #6fb6ff; }
+html.sa-dark .data-card { background: var(--card); border-color: var(--line); }
+html.sa-dark .row { border-top-color: rgba(255, 255, 255, 0.06); }
+html.sa-dark .actions button { background: var(--soft); border-color: var(--line); color: var(--fg); }
+
+/* 首页"外观"分段选择器 */
+.seg { display: flex; gap: 8px; margin: 10px 0 4px; }
+.seg button {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.seg button[aria-pressed="true"] {
+  background: var(--accent2);
+  border-color: var(--accent2);
+  color: #fff;
+}
+
+/* ---------- 壳页：复习页 ---------- */
+html.sa-dark .src { background: #1d2b40; color: #6fb6ff; }
+html.sa-dark .rates button { background: var(--soft); border-color: var(--line); color: var(--fg); }
+html.sa-dark .rates button span { color: var(--muted); }
+html.sa-dark .rates button[data-r="1"] { border-color: #4a2a28; }
+html.sa-dark .rates button[data-r="2"] { border-color: #4a3d20; }
+html.sa-dark .rates button[data-r="3"] { border-color: #24422a; }
+html.sa-dark .rates button[data-r="4"] { border-color: #24384f; }
+html.sa-dark .bar { background: var(--soft); }
+
+/* ---------- 壳页：搜索 ---------- */
+html.sa-dark .box input { background: var(--card); border-color: var(--line); color: var(--fg); }
+html.sa-dark .box .ico,
+html.sa-dark .box .clear { color: var(--muted); }
+html.sa-dark .r mark { background: #4a3d20; color: #ffe08a; }
+html.sa-dark .tag { background: var(--soft); color: var(--muted); }
+
+/* ---------- 壳页：统计 ---------- */
+html.sa-dark .heat i { background: #1e242c; }
+html.sa-dark .heat i[data-lv="1"] { background: #2f5a33; }
+html.sa-dark .heat i[data-lv="2"] { background: #3f7a43; }
+html.sa-dark .heat i[data-lv="3"] { background: #52a057; }
+html.sa-dark .heat i[data-lv="4"] { background: #6fc873; }
+html.sa-dark .heat i.future { background: transparent; }
+html.sa-dark .bar-row .track { background: var(--soft); }

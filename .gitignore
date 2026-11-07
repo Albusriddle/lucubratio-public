@@ -1,0 +1,33 @@
+# ---- 依赖 / 构建产物 ----
+node_modules/
+dist/
+out/
+*.log
+
+# ---- Android ----
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/web/
+android/captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ---- 签名与密钥：绝不入库 ----
+*.keystore
+*.jks
+keystore.properties
+release/
+
+# ---- 编辑器 ----
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ---- 内容大文件（PDF 等，按需排除）----
+content/**/*.pdf

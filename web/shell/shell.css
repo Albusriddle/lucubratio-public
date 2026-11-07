@@ -1,0 +1,573 @@
+/* ============================================================
+   自习 · 壳层样式（构建时注入每个内容页）
+   设计前提：只覆盖窄屏（<=880px），宽屏保持原有桌面排版不变
+   ============================================================ */
+
+:root {
+  --sa-bar-h: 52px;
+  --sa-bar-bg: rgba(251, 251, 253, 0.94);
+  --sa-shadow: 0 1px 0 rgba(0, 0, 0, 0.07), 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.sa-topbar { display: none; }
+.sa-scrim { display: none; }
+
+@media (max-width: 880px) {
+
+  html {
+    scroll-padding-top: calc(var(--sa-bar-h) + env(safe-area-inset-top) + 10px);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    padding-top: calc(var(--sa-bar-h) + env(safe-area-inset-top));
+    overflow-x: hidden;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .sa-topbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 950;
+    height: calc(var(--sa-bar-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 6px 0;
+    background: var(--sa-bar-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    box-shadow: var(--sa-shadow);
+    color: var(--fg);
+  }
+
+  .sa-topbar .sa-icon {
+    flex: 0 0 auto;
+    width: 44px; height: 44px;
+    border: 0; padding: 0;
+    background: transparent;
+    color: var(--fg);
+    font-size: 19px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sa-topbar .sa-icon:active { background: rgba(0, 0, 0, 0.07); }
+
+  .sa-topbar .sa-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 2px;
+  }
+  .sa-topbar .sa-t1 {
+    font-size: 13.5px; font-weight: 600; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sa-topbar .sa-t2 {
+    font-size: 11px; color: var(--muted); line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+
+  .sa-bar-progress {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 2px; background: transparent;
+  }
+  .sa-bar-progress > i {
+    display: block; height: 100%; width: 0%;
+    background: var(--accent);
+    transition: width .1s linear;
+  }
+
+  /* ---------- 侧栏 → 抽屉 ---------- */
+  #sidebar {
+    position: fixed !important;
+    /* 从顶栏下沿展开，避免抽屉顶部 52px 被顶栏挡住 */
+    top: calc(var(--sa-bar-h) + env(safe-area-inset-top));
+    left: 0; bottom: 0;
+    width: min(86vw, 350px);
+    height: auto !important;
+    margin: 0;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+    padding: 10px 8px calc(28px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(-103%);
+    transition: transform .22s cubic-bezier(.4, 0, .2, 1);
+    z-index: 900;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, .18);
+    background: var(--sidebar);
+  }
+  body.sa-nav-open #sidebar { transform: translateX(0); }
+  body.sa-nav-open { overflow: hidden; }
+
+  .sa-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 880;
+    background: rgba(16, 20, 26, .42);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+  }
+  body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
+
+  /* ---------- 正文 ---------- */
+  main {
+    margin-left: 0 !important;
+    padding: 10px 16px calc(96px + env(safe-area-inset-bottom)) !important;
+    max-width: none !important;
+  }
+
+  /* 字号一律走 --sa-fs（由 boot.js / theme.js 设置，默认 16px） */
+  h1 { font-size: calc(var(--sa-fs, 16px) * 1.42) !important; line-height: 1.36 !important; letter-spacing: -.2px; }
+  h2 { font-size: calc(var(--sa-fs, 16px) * 1.18) !important; line-height: 1.4 !important; }
+  h3 { font-size: calc(var(--sa-fs, 16px) * 1.03) !important; line-height: 1.45 !important; }
+  h4 { font-size: calc(var(--sa-fs, 16px) * 0.94) !important; }
+
+  p, li, blockquote { font-size: var(--sa-fs, 16px) !important; line-height: 1.82 !important; }
+
+  /* 表格：贴边横滑，避免被压缩 */
+  .table-wrap {
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  table { font-size: 13.5px !important; }
+
+  pre {
+    font-size: 12.5px !important;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 原页面的回到顶部按钮在移动端让位给顶栏 */
+  #totop { display: none !important; }
+
+  /* ---------- 宽内容块（ASCII 图 / 流程条）横滑提示 ----------
+     全库 56 处 pre 在 640px 视口下溢出，最宽超出 468px。
+     这里用内阴影做"还有内容"的暗示，滚到末端自动消失。 */
+  .sa-wide {
+    box-shadow: inset -14px 0 14px -14px rgba(15, 17, 21, .45);
+    transition: box-shadow .18s ease;
+  }
+  .sa-wide.sa-at-end {
+    box-shadow: inset -14px 0 14px -14px rgba(15, 17, 21, 0);
+  }
+  pre.sa-wide {
+    font-size: 12px !important;
+    line-height: 1.62 !important;
+    tab-size: 2;
+  }
+
+
+  /* 抽屉里的小节，行高收紧一点，容下更多条目 */
+  #sidebar ul.toc a { padding-top: 7px; padding-bottom: 7px; }
+  #sidebar summary { min-height: 40px; display: flex; align-items: center; }
+}
+
+/* ===== 自评条（P4）：所有宽度都生效，所以放在媒体查询外面 ===== */
+/* ---------- 自评条（P4） ---------- */
+.sa-qbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 22px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.sa-qbar .sa-qbar-label { flex: 0 0 auto; margin-right: 2px; }
+.sa-qbtn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f7f9fb;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.sa-qbtn[data-r="1"] { color: #c0392b; border-color: #f3c9c4; }
+.sa-qbtn[data-r="2"] { color: #a9761c; border-color: #f0ddb8; }
+.sa-qbtn[data-r="3"] { color: #2e7d32; border-color: #c9e6cf; }
+.sa-qbtn:active { background: #e8ecf1; }
+.sa-qbtn:disabled { opacity: .5; }
+.sa-qbar .sa-qbar-state {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: #2e7d32;
+  font-variant-numeric: tabular-nums;
+}
+.sa-qbar.sa-rated { border-style: solid; background: #fbfefc; }
+
+/* ===== 内联代码：去掉内容页自带的 1px 描边，改成低对比背景 =====
+   内容页的 code 有一条写死的 border:1px solid #e5e8ec，深色下像白边，
+   且跨行时会被切成两段。这里统一改成 Markdown 风格：无边框 + 淡背景，
+   跨行时按片段克隆（每段都是完整的小圆角块）。 */
+code {
+  border: 0 !important;
+  background: rgba(15, 23, 42, 0.055) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+html.sa-dark code {
+  background: rgba(255, 255, 255, 0.085) !important;
+  color: #ffb3ab !important;
+}
+pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* ===== ASCII 字符画 → 内联 SVG（见 scripts/lib/ascii-svg.mjs） =====
+   不再依赖字体对齐：线条与文字都按坐标画，深色/浅色靠 currentColor 继承。
+   宽图（最多 159 列 ≈ 1100px）默认按屏宽缩放，点一下全屏放大看细节。 */
+.art-wrap {
+  margin: 1.1em 0;
+  border-radius: 8px;
+  cursor: zoom-in;
+  position: relative;
+}
+pre.art {
+  margin: 0;
+  padding: 10px;
+  background: #1f2430;
+  color: #e6edf3;
+  overflow: visible;
+  box-shadow: none;
+  border: 1px solid #2b3442;
+}
+pre.art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+}
+
+/* 放大态：铺满屏幕、按原始尺寸显示，可双指缩放/拖动 */
+body.sa-art-zoom { overflow: hidden; }
+body.sa-art-zoom .art-wrap[data-zoom] {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  margin: 0;
+  border-radius: 0;
+  background: #0f1115;
+  overflow: auto;
+  padding: 12px;
+  cursor: zoom-out;
+  display: flex;
+  align-items: flex-start;
+  -webkit-overflow-scrolling: touch;
+}
+body.sa-art-zoom .art-wrap[data-zoom] pre.art {
+  margin: 0 auto;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+body.sa-art-zoom .art-wrap[data-zoom] svg {
+  width: auto;
+  max-width: none;
+  height: auto;
+}
+.art-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: rgba(20, 26, 34, .92);
+  color: #cbd6e3;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  z-index: 901;
+  pointer-events: none;
+}
+
+/* ============================================================
+   横向滚动容器：常驻滚动条
+   Android WebView 默认是覆盖式滚动条（滑动时闪一下就没），用户看不出
+   右边还有内容。自定义 ::-webkit-scrollbar 会退化成常驻式，且本身可拖拽。
+   ============================================================ */
+.table-wrap,
+.mermaid,
+.art-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(122, 142, 168, .65) rgba(127, 127, 127, .12);
+}
+.table-wrap::-webkit-scrollbar,
+.mermaid::-webkit-scrollbar,
+.art-wrap::-webkit-scrollbar {
+  height: 9px;
+  -webkit-appearance: none;
+}
+.table-wrap::-webkit-scrollbar-track,
+.mermaid::-webkit-scrollbar-track,
+.art-wrap::-webkit-scrollbar-track {
+  background: rgba(127, 127, 127, .12);
+  border-radius: 5px;
+}
+.table-wrap::-webkit-scrollbar-thumb,
+.mermaid::-webkit-scrollbar-thumb,
+.art-wrap::-webkit-scrollbar-thumb {
+  background: rgba(122, 142, 168, .65);
+  border-radius: 5px;
+  min-width: 40px;
+}
+html.sa-dark .table-wrap::-webkit-scrollbar-thumb,
+html.sa-dark .mermaid::-webkit-scrollbar-thumb,
+html.sa-dark .art-wrap::-webkit-scrollbar-thumb {
+  background: rgba(160, 180, 205, .55);
+}
+/* 右侧溢出提示：滚到最右时自动消失（local 背景会随内容滚走） */
+.sa-scroll-hint {
+  background-image: linear-gradient(to left, rgba(20, 26, 34, .22), rgba(20, 26, 34, 0));
+  background-repeat: no-repeat;
+  background-size: 22px 100%;
+  background-position: right center;
+}
+html.sa-dark .sa-scroll-hint {
+  background-image: linear-gradient(to left, rgba(0, 0, 0, .38), rgba(0, 0, 0, 0));
+}
+
+/* ============================================================
+   自查清单复选框（源文件是 disabled 的原生 input，点了没反应）
+   ============================================================ */
+.sa-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 6px 0 0;
+  padding: 0;
+  vertical-align: -9px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sa-check-box {
+  width: 19px;
+  height: 19px;
+  border: 1.6px solid var(--muted);
+  border-radius: 4px;
+  position: relative;
+  transition: background .12s, border-color .12s;
+}
+.sa-check[aria-checked="true"] .sa-check-box {
+  background: #2f6fed;
+  border-color: #2f6fed;
+}
+.sa-check[aria-checked="true"] .sa-check-box::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 6px;
+  height: 11px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(43deg);
+}
+html.sa-dark .sa-check[aria-checked="true"] .sa-check-box {
+  background: #4d8dff;
+  border-color: #4d8dff;
+}
+
+/* ============================================================
+   图表放大镜按钮
+   ============================================================ */
+.sa-zoomable { position: relative; }
+.sa-zoom {
+  position: absolute;
+  right: 6px;
+  bottom: 18px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(28, 36, 48, .72);
+  color: #e6edf6;
+  font-size: 18px;
+  line-height: 1;
+  z-index: 5;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .28);
+  -webkit-tap-highlight-color: transparent;
+}
+.sa-zoom:active { transform: scale(.94); }
+
+/* ============================================================
+   全屏图表查看器
+   ============================================================ */
+.sa-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  background: #0b0e13;
+}
+.sa-viewer[hidden] { display: none; }
+.sa-viewer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top)) 14px 8px;
+  color: #cfd9e6;
+  font-size: 13px;
+}
+.sa-viewer-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sa-viewer-close {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #e6edf6;
+  font-size: 18px;
+  cursor: pointer;
+}
+.sa-viewer-stage {
+  flex: 1;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  display: flex;
+  /* 自己用 transform 定位，别让 flex 再去居中（否则超高内容会被上下裁掉） */
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.sa-viewer-stage:active { cursor: grabbing; }
+.sa-viewer-content {
+  display: inline-block;
+  transform-origin: 0 0;
+  will-change: transform;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+}
+html.sa-dark .sa-viewer-content { background: #171c24; }
+.sa-viewer-content svg { display: block; width: auto !important; max-width: none !important; height: auto !important; }
+.sa-viewer-content table { font-size: 13px; }
+.sa-viewer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+}
+.sa-viewer-bar button {
+  min-width: 52px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .08);
+  color: #e6edf6;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sa-viewer-zoom {
+  min-width: 64px;
+  text-align: center;
+  color: #cfd9e6;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sa-viewer-tip {
+  padding: 24px;
+  color: #cfd9e6;
+  font-size: 14px;
+  line-height: 1.8;
+  text-align: center;
+}
+/* 表格也能放放大镜：容器需要定位上下文 */
+.table-wrap.sa-zoomable { position: relative; }
+.table-wrap .sa-zoom { bottom: 22px; }
+
+/* 倍率可点：原地变输入框 */
+.sa-viewer-zoom { cursor: pointer; text-decoration: underline dotted rgba(207,217,230,.45); }
+.sa-viewer-zoom-edit { display: inline-flex; align-items: center; gap: 4px; }
+.sa-viewer-zoom-input {
+  width: 68px;
+  height: 34px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .08);
+  color: #e6edf6;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.sa-viewer-pct { color: #cfd9e6; font-size: 13px; }
+.sa-viewer-reset {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  color: #cfd9e6;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* 公式：跟随正文颜色，不再有红色胶囊 */
+.sa-math { color: inherit; }
+.sa-math math { font-size: 1.02em; }
+
+/* 仅箭头的"文字流"：回归正文（可选中、跟随字号），不再是 SVG 图 */
+.plain-flow {
+  margin: 0.9em 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--line);
+  background: var(--soft);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.85;
+  font-size: inherit;
+}
+
+/* 纯公式块：每行一个 MathML，居左、行距放宽 */
+.formula-block {
+  margin: 0.9em 0;
+  padding: 10px 12px;
+  background: var(--soft);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-x: auto;
+}
+.formula-block .sa-math { white-space: nowrap; }
+
+/* 图表/宽表的定位包装层：放大镜挂这里，不随横向滚动移动 */
+.sa-zoom-wrap { position: relative; }
+.sa-zoom-wrap > .sa-zoom { right: 8px; bottom: 12px; }
+.sa-zoom-wrap > .table-wrap .sa-zoom { bottom: 22px; }

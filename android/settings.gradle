@@ -1,0 +1,24 @@
+pluginManagement {
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// 依赖仓库必须写进仓库，不能依赖开发机上的 ~/.gradle/init.gradle。
+// （本地曾靠全局 init 脚本注入 aliyun 镜像，结果 CI 里报 "no repositories are defined"）
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "Lucubratio"
+include ':app'

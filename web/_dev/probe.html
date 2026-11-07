@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>测试页 · 滚动与返回</title>
+<style>
+  :root { --bg:#0f1115; --fg:#e6edf6; --card:#171c24; --line:#232b37; --dim:#8b98a9; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--fg); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: calc(14px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom)) 14px;
+    line-height: 1.65; font-size: 15px;
+  }
+  h1 { font-size: 18px; margin: 0 0 10px; }
+  .p { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:8px 0; }
+  .p b { color:#7fb2ff; }
+  a.btn {
+    display:inline-block; margin-top:14px; padding:12px 18px; border-radius:10px;
+    background:#223047; color:var(--fg); text-decoration:none; font-weight:600; border:1px solid #2f4159;
+  }
+  .note { color:var(--dim); font-size:12.5px; margin-top:10px; }
+</style>
+</head>
+<body>
+<h1>滚动 / 返回键测试页</h1>
+<div class="note">这是第二个页面，用来验证「页面跳转 → 物理返回键回上一页」。</div>
+
+<div class="p"><b>1.</b> 往下滚，确认页面滚动顺滑、没有被状态栏遮挡。</div>
+<div class="p"><b>2.</b> 按一次手机物理返回键：应回到自检页，而不是直接退出 App。</div>
+<div class="p"><b>3.</b> 在自检页再按一次返回键：应提示「再按一次退出」。</div>
+<div class="p"><b>4.</b> 连续快速按两次返回键：应退出到桌面。</div>
+<div class="p"><b>5.</b> 长文档滚动测试：下面有 30 段占位内容。</div>
+
+<div id="filler"></div>
+
+<a class="btn" href="index.html">← 返回自检页</a>
+
+<script>
+  var box = document.getElementById('filler');
+  var html = '';
+  for (var i = 1; i <= 30; i++) {
+    html += '<div class="p"><b>段落 ' + i + '</b> 　这是一段用于测试长文档滚动的占位文字，'
+         + '用来确认 WebView 的滚动性能与触摸响应正常。' +
+         '如果这一段能顺畅滚动到底部，说明渲染层没有阻塞。</div>';
+  }
+  box.innerHTML = html;
+</script>
+</body>
+</html>

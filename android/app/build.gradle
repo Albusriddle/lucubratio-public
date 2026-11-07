@@ -1,0 +1,110 @@
+plugins {
+    id 'com.android.application'
+}
+
+// ---------- 版本号：唯一来源 = <repo>/package.json ----------
+def pkg = new groovy.json.JsonSlurper().parse(file("$rootDir/../package.json"))
+def vName = pkg.version as String
+def vParts = vName.tokenize('.')
+def vMajor = vParts[0] as int
+def vMinor = vParts.size() > 1 ? vParts[1] as int : 0
+def vPatch = vParts.size() > 2 ? vParts[2] as int : 0
+// versionCode = major*10000 + minor*100 + patch，因此 minor/patch 必须 < 100
+if (vMinor >= 100 || vPatch >= 100) {
+    throw new GradleException("版本号 ${vName} 不合法：minor 与 patch 都必须 < 100（否则 versionCode 会撞车）")
+}
+def vCode = vMajor * 10000 + vMinor * 100 + vPatch
+
+// ---------- 签名：有 keystore.properties 用正式签名，否则回退 debug ----------
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+def hasReleaseKey = keystorePropsFile.exists()
+if (hasReleaseKey) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+// 没有正式签名时，明确中止 release 构建（不再静默回退 debug 签名）
+tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach {
+    doFirst {
+        if (!hasReleaseKey) {
+            throw new GradleException(
+                '未找到 android/keystore.properties：正式包必须使用正式签名，已中止构建。\n' +
+                '  · 要出正式包：按 docs/DEVICE-CHECKLIST.md 配置 keystore.properties\n' +
+                '  · 只想本地调试：用 assembleDebug（后缀 -debug，不会污染正式签名）')
+        }
+    }
+}
+
+// 唯一内容源：<repo>/web（壳）+ <repo>/content（原文）
+// 由 scripts/build.mjs 注入后产出到 assets/web（产物不入库）
+def repoRoot = file("$rootDir/..")
+def webOutDir = file("$projectDir/src/main/assets/web")
+
+android {
+    namespace 'com.lucubratio.reader'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.lucubratio.reader"
+        minSdk 26
+        targetSdk 35
+        versionCode vCode
+        versionName vName
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseKey) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            versionNameSuffix "-debug"
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig hasReleaseKey ? signingConfigs.release : null
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError true
+        warningsAsErrors false
+    }
+}
+
+tasks.register('buildWeb', Exec) {
+    workingDir = repoRoot
+    commandLine 'node', 'scripts/build.mjs'
+    inputs.dir(file("$repoRoot/web"))
+    inputs.dir(file("$repoRoot/content"))
+    inputs.file(file("$repoRoot/scripts/build.mjs"))
+    inputs.file(file("$repoRoot/package.json"))
+    outputs.dir(webOutDir)
+}
+// 默认每次构建都刷新内容产物；CI 已单独跑过 build 时可用 SKIP_WEB_BUILD=1 跳过重复构建
+tasks.named('preBuild') {
+    if (System.getenv('SKIP_WEB_BUILD') != '1') dependsOn 'buildWeb'
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+    // 深色主题切换状态栏图标明暗需要 WindowInsetsControllerCompat
+    implementation 'androidx.core:core:1.13.1'
+}

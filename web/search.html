@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<script src="/shell/boot.js"></script>
+<title>搜索 · Lucubratio</title>
+<style>
+  :root{
+    --bg:#fbfbfd; --fg:#1f2328; --muted:#5b6570; --line:#e3e6ea;
+    --accent:#c0392b; --accent2:#1f6feb; --card:#fff; --soft:#f4f6f8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--fg)}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC",
+                -apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+    padding:calc(12px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+    max-width:720px;margin:0 auto;
+  }
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .top a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 2px}
+  .top .t{font-size:17px;font-weight:700}
+
+  .box{position:relative;margin-bottom:14px}
+  .box input{
+    width:100%;padding:13px 44px 13px 42px;border-radius:13px;
+    border:1px solid var(--line);background:var(--card);color:var(--fg);
+    font-size:15px;outline:none;
+  }
+  .box input:focus{border-color:#b9cdf5;box-shadow:0 0 0 3px rgba(31,111,235,.12)}
+  .box .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9aa4b1;font-size:15px}
+  .box .clear{
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    border:0;background:transparent;color:#9aa4b1;font-size:16px;padding:8px;display:none;
+  }
+  .box.has-value .clear{display:block}
+
+  .hint{color:var(--muted);font-size:12.5px;margin:6px 2px 14px}
+  .results{display:flex;flex-direction:column;gap:10px}
+  .r{
+    display:block;text-decoration:none;color:inherit;background:var(--card);
+    border:1px solid var(--line);border-radius:13px;padding:13px 15px;
+  }
+  .r:active{background:var(--soft)}
+  .r .rh{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:4px}
+  .r .rp{font-size:11px;color:var(--accent2);letter-spacing:.3px;margin-bottom:6px}
+  .r .rx{font-size:13px;color:var(--muted);line-height:1.6;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .r mark{background:#fff3bf;color:inherit;border-radius:3px;padding:0 1px}
+  .empty,.tips{color:var(--muted);font-size:13.5px;line-height:2;padding:18px 4px}
+  .tips b{color:var(--fg)}
+  .tag{display:inline-block;font-size:10.5px;background:var(--soft);color:var(--muted);
+    border-radius:6px;padding:2px 7px;margin-left:6px;vertical-align:2px}
+</style>
+<link rel="stylesheet" href="/shell/theme.css">
+</head>
+<body>
+
+<div class="top">
+  <a href="/">← 首页</a>
+  <span class="t">搜索</span>
+</div>
+
+<div class="box" id="box">
+  <span class="ico">🔍</span>
+  <input id="q" type="search" placeholder="搜考点、术语、题目…（如 fork / MLFQ / 僵尸）"
+         autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+  <button class="clear" id="clear" aria-label="清空">✕</button>
+</div>
+
+<div class="hint" id="hint"></div>
+<div class="results" id="results"></div>
+<div class="tips" id="tips" hidden>
+  <b>试试这些：</b><br>
+  <a href="?q=fork">fork</a> · <a href="?q=MLFQ">MLFQ</a> · <a href="?q=僵尸">僵尸</a> ·
+  <a href="?q=周转时间">周转时间</a> · <a href="?q=彩票">彩票</a>
+</div>
+
+<script type="module" src="/shell/search.js"></script>
+</body>
+</html>

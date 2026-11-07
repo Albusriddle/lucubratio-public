@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 13+ 主题化图标用的单色前景（系统会按壁纸着色） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,41.5 C48.9,37.9 41.9,36.3 34.5,36.3 L34.5,72.4 C41.9,72.4 48.9,74 54,77.6 C59.1,74 66.1,72.4 73.5,72.4 L73.5,36.3 C66.1,36.3 59.1,37.9 54,41.5 Z" />
+</vector>

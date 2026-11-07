@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>环境自检 · Lucubratio</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171c24;
+    --line: #232b37;
+    --fg: #e6edf6;
+    --dim: #8b98a9;
+    --ok: #3ddc97;
+    --bad: #ff5d6c;
+    --warn: #ffc24b;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    padding: calc(14px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom)) 14px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; letter-spacing: .3px; }
+  .sub { color: var(--dim); font-size: 12.5px; margin-bottom: 14px; }
+  .banner {
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+    background: var(--card); border: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .banner .big { font-size: 15px; font-weight: 600; }
+  .chip {
+    font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid currentColor; white-space: nowrap;
+  }
+  .ok  { color: var(--ok); }
+  .bad { color: var(--bad); }
+  .warn{ color: var(--warn); }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--dim); margin: 0 0 8px; font-weight: 600;
+  }
+  .row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 5px 0; border-top: 1px solid rgba(255,255,255,.04);
+    font-size: 13px;
+  }
+  .row:first-of-type { border-top: 0; }
+  .row .k { color: var(--dim); flex: 0 0 auto; }
+  .row .v {
+    font-family: var(--mono); font-size: 12px; text-align: right;
+    word-break: break-all; max-width: 62%;
+  }
+  .actions { display: flex; gap: 10px; margin: 14px 0 10px; }
+  button {
+    flex: 1; padding: 13px 10px; border-radius: 11px; font-size: 14px; font-weight: 600;
+    background: #223047; color: var(--fg); border: 1px solid #2f4159;
+  }
+  button:active { background: #2b3d59; }
+  button.primary { background: #2f6df6; border-color: #2f6df6; }
+  a { color: #7fb2ff; }
+  pre {
+    font-family: var(--mono); font-size: 11px; line-height: 1.55;
+    background: #0b0e13; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+    color: #b6c4d6; margin: 8px 0 0;
+  }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 6px; }
+  .foot { color: #5d6979; font-size: 11.5px; text-align: center; margin-top: 18px; }
+</style>
+</head>
+<body>
+
+<h1>环境自检</h1>
+<div class="sub">Lucubratio · WebView 环境诊断 · <span id="ver">加载中</span></div>
+
+<div class="banner" id="banner">
+  <span class="chip" id="bannerChip">检测中</span>
+  <span class="big" id="bannerText">正在读取运行环境…</span>
+</div>
+
+<div class="card">
+  <h2>运行环境</h2>
+  <div class="row"><span class="k">页面 Origin</span><span class="v" id="v-origin">-</span></div>
+  <div class="row"><span class="k">安全上下文</span><span class="v" id="v-secure">-</span></div>
+  <div class="row"><span class="k">WebView / Chrome</span><span class="v" id="v-ua">-</span></div>
+  <div class="row"><span class="k">屏幕</span><span class="v" id="v-screen">-</span></div>
+  <div class="row"><span class="k">安全区 top/bottom</span><span class="v" id="v-inset">-</span></div>
+</div>
+
+<div class="card">
+  <h2>存储能力（决定 FSRS 数据能否活下来）</h2>
+  <div class="row"><span class="k">localStorage</span><span class="v" id="v-ls">-</span></div>
+  <div class="row"><span class="k">IndexedDB</span><span class="v" id="v-idb">-</span></div>
+  <div class="row"><span class="k">持久化 storage.persist()</span><span class="v" id="v-persist">-</span></div>
+  <div class="row"><span class="k">配额 estimate()</span><span class="v" id="v-quota">-</span></div>
+  <div class="row"><span class="k">本次启动次数</span><span class="v" id="v-boot">-</span></div>
+  <div class="hint">关闭 App（或强行停止）后重新打开：<b>启动次数应 +1 且不归零</b>，这就是持久化通过。</div>
+</div>
+
+<div class="actions">
+  <button class="primary" id="btnReload">重新加载</button>
+  <button id="btnProbe">返回首页</button>
+</div>
+
+<div class="card">
+  <h2>带走这份报告</h2>
+  <pre id="report">生成中…</pre>
+  <div class="hint">长按可复制，或直接截图发我。</div>
+</div>
+
+<div class="foot">自用 · 不联网 · 无 INTERNET 权限</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var report = [];
+  var checks = [];
+
+  function $(id) { return document.getElementById(id); }
+  function set(id, text, cls) {
+    var el = $(id);
+    el.textContent = text;
+    if (cls) { el.className = 'v ' + cls; }
+  }
+  function check(name, ok, detail) {
+    checks.push({ name: name, ok: ok, detail: detail });
+    report.push((ok ? '[PASS] ' : '[FAIL] ') + name + ' :: ' + detail);
+  }
+
+  /* ---------- 环境 ---------- */
+  var origin = location.origin;
+  set('v-origin', origin);
+  check('origin = appassets', origin === 'https://appassets.androidplatform.net', origin);
+
+  set('v-secure', String(window.isSecureContext));
+  check('secure context', window.isSecureContext === true, String(window.isSecureContext));
+
+  var m = navigator.userAgent.match(/Chrome\/([\d.]+)/);
+  var wv = navigator.userAgent.match(/wv\)/);
+  var uaShort = (m ? 'Chrome ' + m[1] : 'unknown') + (wv ? ' · WebView' : '');
+  set('v-ua', uaShort);
+  report.push('[INFO] UA :: ' + navigator.userAgent);
+
+  set('v-screen', innerWidth + '×' + innerHeight + ' @' + devicePixelRatio + 'x');
+  report.push('[INFO] screen :: ' + screen.width + '×' + screen.height + ' dpr=' + devicePixelRatio +
+              ' viewport=' + innerWidth + '×' + innerHeight);
+
+  var probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;' +
+                        'padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);' +
+                        'padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);';
+  document.body.appendChild(probe);
+  var cs = getComputedStyle(probe);
+  var insets = {
+    top: parseFloat(cs.paddingTop) || 0,
+    bottom: parseFloat(cs.paddingBottom) || 0,
+    left: parseFloat(cs.paddingLeft) || 0,
+    right: parseFloat(cs.paddingRight) || 0
+  };
+  set('v-inset', insets.top + ' / ' + insets.bottom);
+  report.push('[INFO] safe-area :: top=' + insets.top + ' bottom=' + insets.bottom +
+              ' left=' + insets.left + ' right=' + insets.right);
+  document.body.removeChild(probe);
+
+  /* ---------- localStorage ---------- */
+  var lsOK = false;
+  try {
+    localStorage.setItem('__probe', 'ok');
+    lsOK = localStorage.getItem('__probe') === 'ok';
+    localStorage.removeItem('__probe');
+  } catch (e) { lsOK = false; }
+  set('v-ls', lsOK ? '可用' : '不可用', lsOK ? 'ok' : 'bad');
+  check('localStorage', lsOK, lsOK ? '可用' : '不可用');
+
+  /* ---------- IndexedDB ---------- */
+  var DB_NAME = 'lucubratio-probe';
+  var STORE = 'kv';
+
+  function openDB() {
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+      req.onblocked = function () { reject(new Error('blocked')); };
+    });
+  }
+  function tx(db, mode, fn) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(STORE, mode);
+      var store = t.objectStore(STORE);
+      var out = fn(store);
+      t.oncomplete = function () { resolve(out && out.result); };
+      t.onerror = function () { reject(t.error); };
+      t.onabort = function () { reject(t.error || new Error('abort')); };
+    });
+  }
+
+  var bootCount = 0;
+  var idbOK = false;
+
+  function runChecks() {
+    return openDB().then(function (db) {
+      idbOK = true;
+      set('v-idb', '可用 (v' + db.version + ')', 'ok');
+      check('IndexedDB', true, '可打开, version=' + db.version);
+
+      return tx(db, 'readwrite', function (store) {
+        return store.get('boot');
+      }).then(function (prev) {
+        bootCount = (prev || 0) + 1;
+        set('v-boot', String(bootCount), bootCount > 1 ? 'ok' : 'warn');
+        report.push('[INFO] bootCount = ' + bootCount + (bootCount > 1
+          ? ' (持久化正常，重启后仍在累加)' : ' (首次启动，请关闭 App 后再开一次)'));
+        return tx(db, 'readwrite', function (store) {
+          return store.put(bootCount, 'boot');
+        });
+      }).then(function () {
+        return tx(db, 'readonly', function (store) { return store.get('boot'); });
+      }).then(function (v) {
+        check('IndexedDB 读写往返', v === bootCount, '读到 ' + v);
+        db.close();
+      });
+    }).catch(function (err) {
+      idbOK = false;
+      set('v-idb', '不可用', 'bad');
+      check('IndexedDB', false, String(err && err.message || err));
+    });
+  }
+
+  /* ---------- 持久化 & 配额 ---------- */
+  function runStorage() {
+    if (navigator.storage && navigator.storage.persist) {
+      return navigator.storage.persisted().then(function (already) {
+        if (already) return true;
+        return navigator.storage.persist();
+      }).then(function (granted) {
+        set('v-persist', granted ? '已授予' : '未授予', granted ? 'ok' : 'warn');
+        report.push('[INFO] storage.persist = ' + granted);
+      }).catch(function (e) {
+        set('v-persist', '调用失败', 'warn');
+        report.push('[WARN] storage.persist 失败 :: ' + e);
+      });
+    }
+    set('v-persist', '不支持', 'warn');
+    return Promise.resolve();
+  }
+
+  function runQuota() {
+    if (navigator.storage && navigator.storage.estimate) {
+      return navigator.storage.estimate().then(function (est) {
+        var used = (est.usage / 1048576).toFixed(2);
+        var quota = (est.quota / 1073741824).toFixed(2);
+        set('v-quota', used + ' MB / ' + quota + ' GB');
+        report.push('[INFO] quota :: usage=' + used + 'MB quota=' + quota + 'GB');
+      }).catch(function () {});
+    }
+    return Promise.resolve();
+  }
+
+  /* ---------- 汇总 ---------- */
+  function finalize() {
+    var failed = checks.filter(function (c) { return !c.ok; });
+    var chip = $('bannerChip');
+    var text = $('bannerText');
+    if (failed.length === 0) {
+      chip.textContent = 'PASS';
+      chip.className = 'chip ok';
+      text.textContent = '核心能力全部通过，环境正常';
+    } else {
+      chip.textContent = failed.length + ' 项失败';
+      chip.className = 'chip bad';
+      text.textContent = '需先修复：' + failed.map(function (f) { return f.name; }).join('、');
+    }
+    report.push('');
+    report.push('=== 结论：' + (failed.length === 0 ? 'PASS' : 'FAIL') + ' ===');
+    $('report').textContent = report.join('\n');
+  }
+
+  $('btnReload').addEventListener('click', function () { location.reload(); });
+  $('btnProbe').addEventListener('click', function () { location.href = '/'; });
+  fetch('/manifest.json').then(function(r){return r.json();}).then(function(m){ var el=$('ver'); if(el) el.textContent='v'+m.appVersion; }).catch(function(){});
+
+  runChecks()
+    .then(runStorage)
+    .then(runQuota)
+    .then(finalize)
+    .catch(function (e) {
+      report.push('[FAIL] 未捕获异常 :: ' + e);
+      finalize();
+    });
+})();
+</script>
+</body>
+</html>

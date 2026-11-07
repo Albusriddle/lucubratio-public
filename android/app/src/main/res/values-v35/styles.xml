@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 15 (API 35) 默认强制 edge-to-edge；
+         WebView 110 不暴露 env(safe-area-inset-*)，会让内容压到状态栏下面。
+         显式退出 edge-to-edge，让系统正常给窗口留出状态栏/导航栏空间。
+         ⚠️ 这是临时口子：targetSdk 升到 36 后该属性失效，需改为处理 insets（见 docs/BACKLOG.md）。 -->
+    <style name="AppTheme" parent="BaseTheme">
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>

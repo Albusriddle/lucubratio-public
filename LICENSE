@@ -1,0 +1,149 @@
+Lucubratio Source-Available Non-Commercial License
+Lucubratio 源码可见非商业许可
+
+Version 1.0 · 2026-11-07（仓库：lucubratio-public）
+Copyright (C) 2026 Albusriddle
+Contact: GitHub @Albusriddle（如需改为邮箱，替换本行即可）
+
+中英文如有冲突，以中文为准。
+In case of any conflict between the Chinese and English text, the Chinese
+version prevails.
+
+This is NOT an open-source license as defined by the Open Source Initiative:
+it restricts commercial use and the public release of modifications. The
+source is published for transparency, study, and non-commercial personal use.
+本许可不是 OSI 定义的开源许可：它限制商业用途与修改版的公开发布。源码公开
+仅用于透明、学习与非商业的个人自用。
+
+===============================================================================
+1. Definitions / 定义
+===============================================================================
+- "Software" / "本软件": the source code, build scripts, shell/WebView UI, and
+  the study notes authored for this project in this repository, excluding the
+  Courseware Materials (defined below) and any third-party components.
+  本仓库中的源代码、构建脚本、外壳与 WebView 界面、以及为本项目撰写的学习
+  笔记，但不包括下文定义的「课件素材」及任何第三方组件。
+
+- "You" / "你": any individual or entity exercising rights under this License.
+  任何依本许可行使权利的个人或实体。
+
+- "Commercial Use" / "商业用途": any use primarily intended for or directed
+  toward commercial advantage or monetary compensation. This includes, without
+  limitation, selling or reselling the Software; offering paid distribution,
+  deployment, or hosting of the App; bundling it into a paid product or
+  service; or running it to provide a service for a fee.
+  包括但不限于：出售或转售本软件；对 App 提供付费分发、部署或托管；将其并入
+  付费产品或服务；或以收费方式运行本软件对外提供服务。
+
+- "Courseware Materials" / "课件素材": the lecture slides, screenshots, slide
+  images (including the WebP renderings under `web/img/`), and any other
+  teaching materials whose copyright belongs to their original authors (course
+  instructor, university, or publisher). These are NOT licensed under this
+  License — see Section 5.
+
+===============================================================================
+2. Grant / 授权
+===============================================================================
+Subject to the conditions and restrictions below, the copyright holder grants
+You a worldwide, royalty-free, non-exclusive, non-transferable, revocable
+license to:
+在下列条件与限制下，著作权人授予你一项全球、免费、非独占、不可转让、可撤销的
+许可，允许你：
+  (a) view and study the Software; 查看与学习本软件；
+  (b) use and run the Software for personal or other Non-Commercial purposes;
+      为个人或其他非商业目的使用与运行本软件；
+  (c) modify the Software for Your own Non-Commercial use; 为自己的非商业使用
+      修改本软件；
+  (d) redistribute the Software under the conditions in Section 3.
+      在第 3 条的条件下再分发本软件。
+
+===============================================================================
+3. Redistribution Conditions / 再分发条件
+===============================================================================
+You may redistribute the Software (modified or unmodified) ONLY if ALL of the
+following are met. 仅当同时满足以下全部条件时，你方可再分发本软件（无论是否修改）：
+  (a) it is Non-Commercial; 属非商业性质；
+  (b) the complete text of this License is included; 附带本许可的完整文本；
+  (c) all copyright, attribution, and notices are retained unaltered;
+      保留全部著作权、署名与声明，且不得改动；
+  (d) PUBLIC release of a modified or derivative version requires the prior
+      written permission of the copyright holder. Private, non-public
+      modifications for Your own Non-Commercial use are permitted.
+      公开发布修改版或衍生版，须事先获得著作权人书面许可；为你自己非商业使用
+      而作的、不公开的修改则被允许。
+
+===============================================================================
+4. Restrictions / 限制
+===============================================================================
+  (a) Commercial Use of the Software in any form is PROHIBITED without the
+      prior written authorization of the copyright holder.
+      未经著作权人事先书面授权，禁止以任何形式对本软件进行商业使用。
+  (b) You may not develop, publish, or distribute another project based on the
+      Software without the prior written authorization of the copyright holder.
+      未经著作权人事先书面授权，不得基于本软件开发、发布或分发另一个项目。
+  (c) You may not remove, obscure, or alter any copyright, attribution, license,
+      or notice. 不得移除、遮蔽或更改任何著作权、署名、许可或声明。
+
+===============================================================================
+5. Courseware Materials / 课件素材
+===============================================================================
+The Courseware Materials are NOT covered by this License. Their copyright
+belongs to the original authors (course instructor, university, or publisher);
+they are bundled here solely to support the copyright holder's personal study,
+as quotations with page-number citations for study notes. No right is granted
+to copy, redistribute, publish, sell, or create derivative works from the
+Courseware Materials, and anyone who extracts or reuses them must obtain
+permission from their own copyright holders.
+课件素材不在本许可范围内。其著作权属于原作者（授课教师、学校或出版方）；此处
+仅以「带页码引用的学习笔记」形式为著作权人个人学习而附带，不授予任何复制、
+再分发、公开、销售或改编课件素材的权利。任何人若抽取或再使用这些素材，须自行
+取得其著作权人的许可。
+
+===============================================================================
+6. Additional Permissions / 额外授权
+===============================================================================
+Any use not granted by this License — including Commercial Use and the public
+release of derivative works — requires prior written permission, which must be
+requested from and granted by the copyright holder (Contact above).
+本许可未授予的任何用途——包括商业使用及公开发布衍生作品——均须事先取得著作权人的
+书面许可（见上方联系方式）。
+
+===============================================================================
+7. Third-Party Components / 第三方组件
+===============================================================================
+Third-party code and components retain their own original licenses, which
+govern those parts. This project bundles or depends on, among others: Mermaid
+(MIT), KaTeX (MIT), ts-fsrs (MIT), and AndroidX / Android platform libraries
+(Apache-2.0).
+第三方代码与组件遵循其各自的原始许可，并以其许可为准。本项目附带或依赖的组件
+包括但不限于：Mermaid（MIT）、KaTeX（MIT）、ts-fsrs（MIT）、AndroidX 与
+Android 平台库（Apache-2.0）。
+
+===============================================================================
+8. Termination / 终止
+===============================================================================
+Any breach of this License automatically terminates the rights granted to You
+under it. 任何违反本许可的行为将自动终止你依本许可获得的权利。
+
+===============================================================================
+9. Disclaimer / 免责声明
+===============================================================================
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+本软件按“现状”提供，不附带任何明示或默示的担保，包括但不限于适销性、特定用途
+适用性及不侵权的担保。在任何情况下，作者或著作权人均不对因本软件或其使用所引起
+的任何索赔、损害或其他责任负责。
+
+学习笔记中的内容（含对课件观点的转述与讲解）仅供学习参考；不对应考结果、课程
+成绩作任何保证，亦不代表授课教师或学校的观点。
+
+===============================================================================
+10. Governing Law / 适用法律
+===============================================================================
+This License is governed by the laws of the mainland of the People's Republic
+of China, excluding its conflict-of-laws rules.
+本许可适用中华人民共和国大陆地区法律（不含其冲突法规则）。

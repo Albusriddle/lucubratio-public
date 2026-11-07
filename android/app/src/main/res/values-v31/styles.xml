@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ 系统级启动页：底色跟随 page_bg（夜间是深色），不要再闪白 -->
+    <style name="AppTheme" parent="BaseTheme">
+        <item name="android:windowSplashScreenBackground">@color/page_bg</item>
+    </style>
+</resources>

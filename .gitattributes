@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.jar binary
+*.apk binary
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.min.js -diff linguist-generated
+*.min.mjs -diff linguist-generated
