@@ -11,10 +11,20 @@
     "build:release": "node scripts/gradle.mjs assembleRelease",
     "clean": "node scripts/gradle.mjs clean",
     "test": "node scripts/test.mjs",
-    "pack": "node scripts/pack.mjs"
+    "pack": "node scripts/pack.mjs",
+    "test:package": "node scripts/test-package.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
+    "test:all": "node scripts/test.mjs && node scripts/test-package.mjs"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
-  "license": "SEE LICENSE IN LICENSE",
-  "verifyBaselines": { "mermaid": 1, "math": 0, "sections": 5, "totalMB": 30 }
+  "license": "Apache-2.0",
+  "verifyBaselines": {
+    "mermaid": 1,
+    "math": 0,
+    "sections": 5,
+    "totalMB": 30
+  }
 }

@@ -27,10 +27,15 @@ node scripts/build.mjs
 # 2) 校验产物（锚点/图片/公式基线/自评单元数）
 node scripts/verify.mjs
 
-# 3) 纯函数单测
+# 3) 纯函数单测 + 打包器自测
 npm test
+npm run test:package
 
-# 4) 出 APK（需要 JDK 17 + Android SDK 35）
+# 4) 打成课程包（.lcr，可校验后分发）
+npm run pack -- --id demo --title "示例课程" --version 0.1.0
+npm run verify:package -- dist/demo-0.1.0.lcr
+
+# 5) 出 APK（需要 JDK 17 + Android SDK 35）
 npm run build:debug
 ```
 
@@ -62,19 +67,17 @@ docs/                # 内容规范 / 作业规范 / 课程包格式 / 路线图
 
 > 未来会改成「课程包 `.lcr` + App 内导入」，见 [`docs/PACKAGE-FORMAT.md`](docs/PACKAGE-FORMAT.md) 与 [`docs/ROADMAP.md`](docs/ROADMAP.md)。
 
-## 许可（待定，重要）
+## 许可
 
-⚠️ 本仓库当前沿用 `LICENSE`（源码可见 · 非商业 · 禁止公开衍生）——这是从个人自用项目继承来的条款，**与"人人可定制、可分享课程"的生态目标冲突**。
+本仓库以 **Apache License 2.0** 发布，全文见 [LICENSE](LICENSE)。要点：
 
-建议在首次公开发布前调整为：
+- ✅ 可以自由使用、修改、分发（含商业使用）
+- ✅ 附带专利授权（贡献者不会因专利反诉你）
+- ✅ 改了什么不必开源，但需保留版权与许可声明、并在修改过的文件里注明
+- ⚠️ **课程内容不在本许可范围内**：`content/` 里你自己生成的课程，版权归你；若内容来自他人讲义/教材，公开分发前请自行取得授权
+- 商标与项目名（Lucubratio）不在授权范围内
 
-| 对象 | 建议许可 |
-|---|---|
-| 流水线 / 查看器（`web/`、`scripts/`、`android/`） | Apache-2.0（含专利授权，适合做平台） |
-| 规范文档（`docs/`） | CC BY 4.0 |
-| **课程内容** | 由内容作者自行决定（默认建议 CC BY-NC-SA 或"仅个人使用"） |
-
-在变更前，请把本仓库视为**私有项目**。
+> 若你 fork 后对外分发，建议保留 `NOTICE`（如有）与本 LICENSE 文件。
 
 ## 免责
 

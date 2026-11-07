@@ -28,6 +28,9 @@ jobs:
       - name: Verify web bundle
         run: node scripts/verify.mjs
 
+      - name: Package pipeline self-test (zip / .lcr / 安全校验)
+        run: node scripts/test-package.mjs
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

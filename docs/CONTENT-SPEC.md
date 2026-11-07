@@ -1,5 +1,7 @@
 # 内容生产规范（Content Spec）· Lucubratio App
 
+> 本规范以 Apache-2.0 发布（见仓库根 LICENSE）；按本规范生成的内容版权归内容作者。
+
 > 本文件是**写内容的人/智能体必须遵守的合同**。凡不符合的产物，构建会失败或观感崩坏。
 > 适用：`content/os/*.html`（内容源）与 `content/diagrams/*.html`（图表源）。
 

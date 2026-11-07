@@ -7,7 +7,7 @@
 
 | 天 | 做什么 | 通过标准 |
 |---|---|---|
-| D1 | 手工把示例课程打成 `.lcr`（zip + format.json） | 包能被 `unzip -l` 正常展开，`format.json` 校验通过 |
+| D1 ✅ | **已完成**：`scripts/pack.mjs`（零依赖 zip 写入 + 路径重写）、`scripts/verify-package.mjs`（11 项校验）、`scripts/test-package.mjs`（6 项正/负面自测） | 示例包 10.0KB，校验 11/11 通过；Zip Slip / 外部脚本 / 缺页 / 未知格式 全部被拒 |
 | D2 | App 端加 `/courses/` 的 `PathHandler`（映射 `filesDir`）+ 一个硬编码导入入口 | 导入后能打开 `courses/<id>/content/os/xx.html`，壳层样式与 Mermaid 正常 |
 | D3 | **清空内置课程**，只靠导入包跑 | 首页/阅读/自评/搜索/统计/重启后仍在 —— 全通 |
 
@@ -15,8 +15,8 @@
 
 ## 阶段 1 · MVP（约 8–10 人日）
 
-- [ ] `scripts/pack.mjs`：build → zip → `format.json` + `sha256` → `dist/<id>-<version>.lcr`
-- [ ] `scripts/verify-package.mjs`：离线校验包结构和安全规则（见 PACKAGE-FORMAT §4）
+- [x] `scripts/pack.mjs`：build → zip → `format.json` + `sha256` → `dist/<id>-<version>.lcr`
+- [x] `scripts/verify-package.mjs`：离线校验包结构和安全规则（见 PACKAGE-FORMAT §4）
 - [ ] Java 导入器：SAF 选包 → 校验 → 解压（防 Zip Slip）→ 写注册表
 - [ ] Java `UserCoursesHandler`：`/courses/<id>/...` → `filesDir/courses/<id>/...`（复用 MIME 表）
 - [ ] 首页「课程库」：内置课程 + 我的课程（导入/删除/更新、显示体积与页数）

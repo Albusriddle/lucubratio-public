@@ -1,149 +1,202 @@
-Lucubratio Source-Available Non-Commercial License
-Lucubratio 源码可见非商业许可
 
-Version 1.0 · 2026-11-07（仓库：lucubratio-public）
-Copyright (C) 2026 Albusriddle
-Contact: GitHub @Albusriddle（如需改为邮箱，替换本行即可）
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
 
-中英文如有冲突，以中文为准。
-In case of any conflict between the Chinese and English text, the Chinese
-version prevails.
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
-This is NOT an open-source license as defined by the Open Source Initiative:
-it restricts commercial use and the public release of modifications. The
-source is published for transparency, study, and non-commercial personal use.
-本许可不是 OSI 定义的开源许可：它限制商业用途与修改版的公开发布。源码公开
-仅用于透明、学习与非商业的个人自用。
+   1. Definitions.
 
-===============================================================================
-1. Definitions / 定义
-===============================================================================
-- "Software" / "本软件": the source code, build scripts, shell/WebView UI, and
-  the study notes authored for this project in this repository, excluding the
-  Courseware Materials (defined below) and any third-party components.
-  本仓库中的源代码、构建脚本、外壳与 WebView 界面、以及为本项目撰写的学习
-  笔记，但不包括下文定义的「课件素材」及任何第三方组件。
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
 
-- "You" / "你": any individual or entity exercising rights under this License.
-  任何依本许可行使权利的个人或实体。
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
 
-- "Commercial Use" / "商业用途": any use primarily intended for or directed
-  toward commercial advantage or monetary compensation. This includes, without
-  limitation, selling or reselling the Software; offering paid distribution,
-  deployment, or hosting of the App; bundling it into a paid product or
-  service; or running it to provide a service for a fee.
-  包括但不限于：出售或转售本软件；对 App 提供付费分发、部署或托管；将其并入
-  付费产品或服务；或以收费方式运行本软件对外提供服务。
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
 
-- "Courseware Materials" / "课件素材": the lecture slides, screenshots, slide
-  images (including the WebP renderings under `web/img/`), and any other
-  teaching materials whose copyright belongs to their original authors (course
-  instructor, university, or publisher). These are NOT licensed under this
-  License — see Section 5.
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
 
-===============================================================================
-2. Grant / 授权
-===============================================================================
-Subject to the conditions and restrictions below, the copyright holder grants
-You a worldwide, royalty-free, non-exclusive, non-transferable, revocable
-license to:
-在下列条件与限制下，著作权人授予你一项全球、免费、非独占、不可转让、可撤销的
-许可，允许你：
-  (a) view and study the Software; 查看与学习本软件；
-  (b) use and run the Software for personal or other Non-Commercial purposes;
-      为个人或其他非商业目的使用与运行本软件；
-  (c) modify the Software for Your own Non-Commercial use; 为自己的非商业使用
-      修改本软件；
-  (d) redistribute the Software under the conditions in Section 3.
-      在第 3 条的条件下再分发本软件。
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
 
-===============================================================================
-3. Redistribution Conditions / 再分发条件
-===============================================================================
-You may redistribute the Software (modified or unmodified) ONLY if ALL of the
-following are met. 仅当同时满足以下全部条件时，你方可再分发本软件（无论是否修改）：
-  (a) it is Non-Commercial; 属非商业性质；
-  (b) the complete text of this License is included; 附带本许可的完整文本；
-  (c) all copyright, attribution, and notices are retained unaltered;
-      保留全部著作权、署名与声明，且不得改动；
-  (d) PUBLIC release of a modified or derivative version requires the prior
-      written permission of the copyright holder. Private, non-public
-      modifications for Your own Non-Commercial use are permitted.
-      公开发布修改版或衍生版，须事先获得著作权人书面许可；为你自己非商业使用
-      而作的、不公开的修改则被允许。
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
 
-===============================================================================
-4. Restrictions / 限制
-===============================================================================
-  (a) Commercial Use of the Software in any form is PROHIBITED without the
-      prior written authorization of the copyright holder.
-      未经著作权人事先书面授权，禁止以任何形式对本软件进行商业使用。
-  (b) You may not develop, publish, or distribute another project based on the
-      Software without the prior written authorization of the copyright holder.
-      未经著作权人事先书面授权，不得基于本软件开发、发布或分发另一个项目。
-  (c) You may not remove, obscure, or alter any copyright, attribution, license,
-      or notice. 不得移除、遮蔽或更改任何著作权、署名、许可或声明。
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
 
-===============================================================================
-5. Courseware Materials / 课件素材
-===============================================================================
-The Courseware Materials are NOT covered by this License. Their copyright
-belongs to the original authors (course instructor, university, or publisher);
-they are bundled here solely to support the copyright holder's personal study,
-as quotations with page-number citations for study notes. No right is granted
-to copy, redistribute, publish, sell, or create derivative works from the
-Courseware Materials, and anyone who extracts or reuses them must obtain
-permission from their own copyright holders.
-课件素材不在本许可范围内。其著作权属于原作者（授课教师、学校或出版方）；此处
-仅以「带页码引用的学习笔记」形式为著作权人个人学习而附带，不授予任何复制、
-再分发、公开、销售或改编课件素材的权利。任何人若抽取或再使用这些素材，须自行
-取得其著作权人的许可。
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
 
-===============================================================================
-6. Additional Permissions / 额外授权
-===============================================================================
-Any use not granted by this License — including Commercial Use and the public
-release of derivative works — requires prior written permission, which must be
-requested from and granted by the copyright holder (Contact above).
-本许可未授予的任何用途——包括商业使用及公开发布衍生作品——均须事先取得著作权人的
-书面许可（见上方联系方式）。
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
 
-===============================================================================
-7. Third-Party Components / 第三方组件
-===============================================================================
-Third-party code and components retain their own original licenses, which
-govern those parts. This project bundles or depends on, among others: Mermaid
-(MIT), KaTeX (MIT), ts-fsrs (MIT), and AndroidX / Android platform libraries
-(Apache-2.0).
-第三方代码与组件遵循其各自的原始许可，并以其许可为准。本项目附带或依赖的组件
-包括但不限于：Mermaid（MIT）、KaTeX（MIT）、ts-fsrs（MIT）、AndroidX 与
-Android 平台库（Apache-2.0）。
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
 
-===============================================================================
-8. Termination / 终止
-===============================================================================
-Any breach of this License automatically terminates the rights granted to You
-under it. 任何违反本许可的行为将自动终止你依本许可获得的权利。
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
 
-===============================================================================
-9. Disclaimer / 免责声明
-===============================================================================
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
-OR OTHER DEALINGS IN THE SOFTWARE.
-本软件按“现状”提供，不附带任何明示或默示的担保，包括但不限于适销性、特定用途
-适用性及不侵权的担保。在任何情况下，作者或著作权人均不对因本软件或其使用所引起
-的任何索赔、损害或其他责任负责。
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
 
-学习笔记中的内容（含对课件观点的转述与讲解）仅供学习参考；不对应考结果、课程
-成绩作任何保证，亦不代表授课教师或学校的观点。
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
 
-===============================================================================
-10. Governing Law / 适用法律
-===============================================================================
-This License is governed by the laws of the mainland of the People's Republic
-of China, excluding its conflict-of-laws rules.
-本许可适用中华人民共和国大陆地区法律（不含其冲突法规则）。
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
