@@ -1,24 +1,28 @@
 pluginManagement {
     repositories {
+        if (System.getenv('CI') != null) {
+            google(); mavenCentral(); gradlePluginPortal()
+        }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        google()
-        mavenCentral()
-        gradlePluginPortal()
+        if (System.getenv('CI') == null) {
+            google(); mavenCentral(); gradlePluginPortal()
+        }
     }
 }
 
 // 依赖仓库必须写进仓库，不能依赖开发机上的 ~/.gradle/init.gradle。
-// （本地曾靠全局 init 脚本注入 aliyun 镜像，结果 CI 里报 "no repositories are defined"）
+// CI（CI=true）官方源优先：国内镜像偶发 502，不适合当唯一来源；
+// 本地镜像优先：国内直连 google/mavenCentral 慢。
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        if (System.getenv('CI') != null) { google(); mavenCentral() }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
-        google()
-        mavenCentral()
+        if (System.getenv('CI') == null) { google(); mavenCentral() }
     }
 }
 
-rootProject.name = "Lucubratio"
+rootProject.name = "LucubratioPipeline"
 include ':app'
