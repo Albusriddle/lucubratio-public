@@ -69,6 +69,8 @@ android {
     buildTypes {
         debug {
             versionNameSuffix "-debug"
+            // 开发版独立包名，避免覆盖用户真机上的正式版（com.lucubratio.reader）
+            applicationIdSuffix ".dev"
         }
         release {
             minifyEnabled true

@@ -10,7 +10,8 @@ import { execFileSync } from 'node:child_process';
 
 const ADB = process.env.ADB || 'adb';
 const SERIAL = process.env.SERIAL || '127.0.0.1:16384';
-const PKG = 'com.lucubratio.reader';
+// debug 构建带 .dev 后缀（见 android/app/build.gradle），与真机上的正式版共存
+const PKG = process.env.PKG || 'com.lucubratio.reader.dev';
 const PORT = Number(process.env.CDP_PORT || 9222);
 
 const fails = [];
