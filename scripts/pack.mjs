@@ -52,22 +52,35 @@ const PREFIX = `/courses/${id}`;
 const manifest = JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'));
 const search = JSON.parse(fs.readFileSync(path.join(OUT, 'search.json'), 'utf8'));
 
+// cid 命名空间：<包id>:<原cid>，让不同课程的同名页在同一个 IndexedDB 里互不干扰
+const NS = (cid) => `${id}:${cid}`;
+const hashByCid = new Map();          // 逐页内容指纹（用于 data-cver，避免与包 sha256 形成循环依赖）
 let rewrittenFiles = 0;
+
 for (const g of manifest.groups || []) {
   for (const it of g.items || []) {
+    if (it.hash) hashByCid.set(it.id, it.hash);
+    if (it.id) it.id = NS(it.id);
     if (it.file && it.file.startsWith('/content/')) {
       it.file = PREFIX + it.file;
       rewrittenFiles++;
     }
   }
 }
+
 let rewrittenPages = 0;
+const newPages = {};
 for (const cid of Object.keys(search.pages || {})) {
-  const p = search.pages[cid];
-  if (p && typeof p.f === 'string' && p.f.startsWith('/content/')) {
+  const p = search.pages[cid] || {};
+  if (typeof p.f === 'string' && p.f.startsWith('/content/')) {
     p.f = PREFIX + p.f;
     rewrittenPages++;
   }
+  newPages[NS(cid)] = p;
+}
+search.pages = newPages;
+for (const sec of search.sections || []) {
+  if (sec.p) sec.p = NS(sec.p);
 }
 
 /* ---------- 收集文件 ---------- */
@@ -103,13 +116,38 @@ const pageFiles = [];
 })(contentDir);
 
 let rewrittenImgs = 0;
+let rewrittenAttrs = 0;
 for (const { full, rel } of pageFiles) {
   let html = fs.readFileSync(full, 'utf8');
-  // 只重写站内图片；/shell/ 不动（壳层由 App 内置）
+
+  // 二次打包保护：属性里已经有命名空间前缀，说明这份产物已经是课程包
+  const cidRaw = (/data-cid="([^"]*)"/.exec(html) || [])[1] || '';
+  if (cidRaw.includes(':')) {
+    console.error(`✗ ${rel} 的 data-cid="${cidRaw}" 已含命名空间前缀，拒绝二次打包`);
+    process.exit(1);
+  }
+
+  // 1) 站内图片；/shell/ 不动（壳层由 App 内置）
   html = html.replace(/(src|href)="\/img\//g, (m, attr) => {
     rewrittenImgs++;
     return `${attr}="${PREFIX}/img/`;
   });
+
+  // 2) 5 个 data-* 属性：它们是运行时唯一真相，必须与 manifest 保持一致
+  html = html.replace(/data-cid="([^"]+)"/g, (m, v) => { rewrittenAttrs++; return `data-cid="${NS(v)}"`; });
+  html = html.replace(/data-file="([^"]+)"/g, (m, v) => {
+    if (!v.startsWith('/content/')) return m;
+    rewrittenAttrs++;
+    return `data-file="${PREFIX}${v}"`;
+  });
+  html = html.replace(/data-qid="([^"]+)"/g, (m, v) => { rewrittenAttrs++; return `data-qid="${NS(v)}"`; });
+  html = html.replace(/data-ck="([^"]+)"/g, (m, v) => { rewrittenAttrs++; return `data-ck="${NS(v)}"`; });
+  const pageHash = hashByCid.get(cidRaw) || '0';
+  html = html.replace(/data-cver="([^"]*)"/g, () => {
+    rewrittenAttrs++;
+    return `data-cver="${id}@${version}#${pageHash}"`;
+  });
+
   push(rel, html);
 }
 
@@ -140,6 +178,12 @@ for (const e of sorted) {
 const contentSha = digest.digest('hex');
 
 /* ---------- format.json ---------- */
+// bytes = 除 format.json 之外所有条目解压后的字节和（课程库显示体积、配额检查都用它）
+const realBytes = entries.reduce(
+  (sum, e) => sum + (Buffer.isBuffer(e.data) ? e.data.length : Buffer.byteLength(String(e.data), 'utf8')),
+  0
+);
+
 const format = {
   format: 'lcr/1',
   id,
@@ -149,7 +193,7 @@ const format = {
   builtAt: new Date().toISOString(),
   pages: pageCount,
   questions: manifest.questionCount || 0,
-  bytes: 0, // 打完包回填
+  bytes: realBytes,
   sha256: contentSha,
 };
 push('format.json', JSON.stringify(format, null, 2));
@@ -165,5 +209,6 @@ console.log('  文件    :', path.relative(ROOT, file));
 console.log('  大小    :', (zipBuf.length / 1024).toFixed(1), 'KB');
 console.log('  条目    :', entries.length, `（页面 ${pageCount}）`);
 console.log('  问答    :', format.questions, '个自评单元');
-console.log('  路径重写:', `manifest ${rewrittenFiles} 项 · search ${rewrittenPages} 页 · 页面内图片引用 ${rewrittenImgs} 处`);
+console.log('  体积    :', (realBytes / 1024).toFixed(1), 'KB（format.bytes）');
+console.log('  路径重写:', `manifest ${rewrittenFiles} 项 · search ${rewrittenPages} 页 · data-* ${rewrittenAttrs} 个 · 图片 ${rewrittenImgs} 处`);
 console.log('  content :', contentSha.slice(0, 16) + '…');

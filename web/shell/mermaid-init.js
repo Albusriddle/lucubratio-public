@@ -63,7 +63,10 @@
   function loadLib() {
     if (libPromise) return libPromise;
     libPromise = new Promise(function (resolve, reject) {
-      var src = window.__SA_MERMAID_SRC || '/vendor/mermaid.min.js';
+      // 库路径由注入的 <script src="/shell/mermaid-init.js" data-lib="…"> 提供；
+      // 兼容旧写法 window.__SA_MERMAID_SRC（老产物/旧包），最后回落到默认路径。
+      var cs = document.currentScript;
+      var src = (cs && cs.dataset && cs.dataset.lib) || window.__SA_MERMAID_SRC || '/vendor/mermaid.min.js';
       var s = document.createElement('script');
       s.src = src;
       s.async = true;

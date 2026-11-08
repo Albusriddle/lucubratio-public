@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { unzipSync } from './lib/zip.mjs';
+import { scanHtml } from './lib/htmlguard.mjs';
 
 const file = process.argv[2];
 if (!file) {
@@ -106,30 +107,60 @@ if (search === null) bad('缺少 search.json');
 else if (search === undefined) bad('search.json 不是合法 JSON');
 else ok(`search.json 合法：${(search.sections || []).length} 节`);
 
-/* ---------- 4) 页面内容安全 ---------- */
+/* ---------- 4) 页面内容安全（标签级扫描，不再用正则） ---------- */
 const pages = entries.filter((e) => e.name.endsWith('.html'));
-let scriptSrc = 0, inlineHandler = 0, external = 0, imgMissing = 0;
+let imgMissing = 0;
+const violationCount = new Map(); // rule → {count, sample}
 for (const p of pages) {
   const html = p.data.toString('utf8');
-  // 只允许 App 内置的壳层脚本（/shell/*.js）；包内不允许自带/外部 JS
-  for (const m of html.matchAll(/<script[^>]+\bsrc\s*=\s*"([^"]*)"/gi)) {
-    const src = m[1];
-    if (!src.startsWith('/shell/')) { scriptSrc++; break; }
+  for (const v of scanHtml(html)) {
+    const cur = violationCount.get(v.rule) || { count: 0, sample: '' };
+    cur.count++;
+    if (!cur.sample) cur.sample = `${p.name}: ${v.detail}`;
+    violationCount.set(v.rule, cur);
   }
-  // 只检测属性位置的 on*=（正文里提到不算）
-  if (/<[a-z][^>]*\son[a-z]+\s*=/i.test(html)) inlineHandler++;
-  if (/(?:src|href)\s*=\s*"(?:https?:)?\/\//i.test(html)) external++;
+  // 站内引用必须命中
   const prefix = `/courses/${format && format.id}/`;
-  for (const m of html.matchAll(/(?:src|href)="(\/courses\/[^"]+)"/g)) {
-    const rel = m[1].slice(prefix.length);
+  for (const m of html.matchAll(/(?:src|href)\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)) {
+    const url = m[1] || m[2] || m[3] || '';
+    if (!url.startsWith(prefix)) continue;
+    const rel = url.slice(prefix.length);
     if (!map.has(rel)) imgMissing++;
   }
 }
-if (scriptSrc) bad(`${scriptSrc} 个页面引用了非 /shell/ 的脚本（包内禁止自带或外部 JS）`);
-else ok('页面只引用内置壳层脚本（/shell/*.js）');
-if (inlineHandler) bad(`${inlineHandler} 个页面含内联事件处理属性（on*=）`); else ok('页面无内联事件处理属性');
-if (external) bad(`${external} 个页面引用外部资源（http/https）`); else ok('页面无外部资源引用');
+const RULE_LABEL = {
+  'forbidden-tag': '禁止的标签（iframe/object/embed/base…）',
+  'meta-refresh': 'meta refresh 跳转',
+  'inline-handler': '内联事件属性 on*=',
+  'external-url': '外部/可执行 URL',
+  'bad-link': 'link 指向非 /shell/',
+  'inline-script': '内联 <script>',
+  'bad-script-src': 'script 指向非 /shell/',
+  'style-import': '<style> 内 @import',
+  'style-url': '<style> 内外部 url()',
+};
+if (violationCount.size === 0) {
+  ok(`页面内容安全：${pages.length} 页无违规（标签级扫描）`);
+} else {
+  for (const [rule, info] of violationCount) {
+    bad(`${RULE_LABEL[rule] || rule}：${info.count} 处（例：${info.sample}）`);
+  }
+}
 if (imgMissing) bad(`${imgMissing} 处站内引用在包内找不到`); else ok('页面里的站内资源引用全部命中');
+
+/* ---------- 5) format.bytes 一致性 ---------- */
+if (format && typeof format.bytes === 'number') {
+  const realBytes = entries
+    .filter((e) => e.name !== 'format.json')
+    .reduce((sum, e) => sum + (Buffer.isBuffer(e.data) ? e.data.length : Buffer.byteLength(String(e.data))), 0);
+  if (format.bytes !== realBytes) {
+    bad(`format.bytes 与包内实际字节数不符：声明 ${format.bytes}，实际 ${realBytes}`);
+  } else {
+    ok(`format.bytes 与实际一致（${realBytes} 字节）`);
+  }
+} else {
+  bad('format.bytes 缺失或不是数字');
+}
 
 /* ---------- 汇总 ---------- */
 console.log('');

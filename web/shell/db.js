@@ -25,6 +25,13 @@ const SCHEMA = [
 
 export const STORES = SCHEMA.map((s) => s[0]);
 
+/**
+ * 备份涉及的表（显式白名单）。
+ * 为什么不用 STORES：将来新增的表（比如课程注册表缓存）不该自动混进备份，
+ * 否则升级后旧版本导入新备份会因未知表而失败。新增表时**手动**决定要不要进备份。
+ */
+export const BACKUP_STORES = ['meta', 'settings', 'progress', 'attempts', 'cards', 'reviews', 'bookmarks'];
+
 /** 各表主键字段，导入备份时用于行校验 */
 export const KEY_PATHS = {
   meta: 'key',

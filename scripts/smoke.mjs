@@ -143,9 +143,11 @@ else bad('进度往返不一致：' + JSON.stringify(roundtrip));
 const snap = JSON.parse(await evalJs(`(async()=>{
   const s = await import('/shell/store.js');
   const snap = await s.exportSnapshot();
-  return JSON.stringify({format: snap.format, schema: snap.schemaVersion, hasData: !!snap.data.progress, counts: snap.counts.progress});
+  const db = await import('/shell/db.js');
+  return JSON.stringify({format: snap.format, schema: snap.schemaVersion, dbVersion: db.DB_VERSION, hasData: !!snap.data.progress, counts: snap.counts.progress});
 })()`));
-if (snap.format === 'lucubratio-backup' && snap.schema === 1 && snap.hasData) ok(`导出快照结构正确（schema=${snap.schema}，progress=${snap.counts}）`);
+// 与页面内 DB_VERSION 比对（不再硬编码 1），将来升版不会误报
+if (snap.format === 'lucubratio-backup' && snap.schema === snap.dbVersion && snap.hasData) ok(`导出快照结构正确（schema=${snap.schema}，progress=${snap.counts}）`);
 else bad('导出快照结构异常：' + JSON.stringify(snap));
 
 const reject = await evalJs(`(async()=>{

@@ -412,7 +412,7 @@ export async function exportSnapshot() {
   const data = {};
   const counts = {};
   if (state.kind === KIND.idb) {
-    for (const s of db.STORES) {
+    for (const s of db.BACKUP_STORES) {
       const rows = await db.getAll(s);
       data[s] = rows;
       counts[s] = rows.length;
@@ -483,7 +483,7 @@ export async function importSnapshot(snap, opts) {
   const stats = {};
 
   // 先整体校验，任何一行不合法就整单拒绝（不做"导入一半"）
-  for (const s of db.STORES) {
+  for (const s of db.BACKUP_STORES) {
     let rows = Array.isArray(data[s]) ? data[s] : [];
     if (s === 'meta') {
       rows = rows.filter((r) => r && r.key && r.key !== 'installedAt' && r.key !== 'appVersion');
@@ -501,9 +501,9 @@ export async function importSnapshot(snap, opts) {
   }
 
   // 跨表单事务：clear + put 全在里面，失败自动回滚，不会留下半空数据库
-  await db.run(db.STORES, 'readwrite', function (tx) {
+  await db.run(db.BACKUP_STORES, 'readwrite', function (tx) {
     const jobs = [];
-    for (const s of db.STORES) {
+    for (const s of db.BACKUP_STORES) {
       const os = tx.objectStore(s);
       if (mode === 'replace') jobs.push(db.requestPromise(os.clear()));
       for (const r of rowsByStore[s]) jobs.push(db.requestPromise(os.put(r)));

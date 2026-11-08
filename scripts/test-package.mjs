@@ -44,16 +44,19 @@ function makePkg(overrides = {}) {
     groups: [{ id: 'g', title: 'G', items: [{ id: `${id}-1`, file: `${prefix}content/p.html`, title: 'P' }] }],
     questionCount: 0,
   };
-  const format = overrides.format || {
-    format: 'lcr/1', id, title: 'T', version: '0.1.0', appMin: '0.1.0', pages: 1, questions: 0, sha256: 'x',
-  };
-  const entries = [
-    { name: 'format.json', data: JSON.stringify(format) },
+  const body = [
     { name: 'manifest.json', data: JSON.stringify(manifest) },
     { name: 'search.json', data: JSON.stringify({ v: 1, pages: {}, sections: [] }) },
     { name: 'content/p.html', data: page },
     ...(overrides.extra || []),
   ];
+  // bytes = 除 format.json 外所有条目解压后字节和（与 pack.mjs 口径一致）
+  const bytes = body.reduce((n, e) => n + (Buffer.isBuffer(e.data) ? e.data.length : Buffer.byteLength(String(e.data), 'utf8')), 0);
+  const format = overrides.format || {
+    format: 'lcr/1', id, title: 'T', version: '0.1.0', appMin: '0.1.0',
+    pages: 1, questions: 0, bytes, sha256: 'x',
+  };
+  const entries = [{ name: 'format.json', data: JSON.stringify(format) }, ...body];
   const file = path.join(tmp, `${id}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}.lcr`);
   fs.writeFileSync(file, zipSync(entries));
   return file;
@@ -82,7 +85,7 @@ function makePkg(overrides = {}) {
 {
   const f = makePkg({ page: '<!doctype html><html><body><script src="https://evil.example/x.js"></script></body></html>' });
   const r = verify(f);
-  if (r.code !== 0 && /非 \/shell\/ 的脚本|外部资源/.test(r.out)) ok('外部脚本被拒'); else bad('外部脚本未被拒:\n' + r.out);
+  if (r.code !== 0 && /script 指向非|外部\/可执行 URL/.test(r.out)) ok('外部脚本被拒'); else bad('外部脚本未被拒:\n' + r.out);
 }
 
 /* 4) manifest 引用的页面缺失 */
@@ -92,6 +95,42 @@ function makePkg(overrides = {}) {
   const f = makePkg({ manifest, id });
   const r = verify(f);
   if (r.code !== 0 && /不在包内/.test(r.out)) ok('页面缺失被拒'); else bad('页面缺失未被拒:\n' + r.out);
+}
+
+/* 4b) P0-1 回归探针：各种"绕过写法"都必须被拒，合法写法必须放行 */
+{
+  const cases = [
+    ['无引号 script src',
+      '<!doctype html><html><body><script src=https://evil.example/x.js></script></body></html>', 'fail', /script 指向非|外部\/可执行/],
+    ['单引号 script src',
+      "<!doctype html><html><body><script src='https://evil.example/x.js'></script></body></html>", 'fail', /script 指向非|外部\/可执行/],
+    ['纯内联 script',
+      '<!doctype html><html><body><script>localStorage.setItem("pwn","1")</script></body></html>', 'fail', /内联 <script>/],
+    ['斜杠分隔的 onerror',
+      '<!doctype html><html><body><img/onerror=alert(1) src=x></body></html>', 'fail', /内联事件属性/],
+    ['实体编码 javascript:',
+      '<!doctype html><html><body><a href="&#106;avascript:alert(1)">x</a></body></html>', 'fail', /外部\/可执行 URL/],
+    ['iframe 注入',
+      '<!doctype html><html><body><iframe src="https://evil.example"></iframe></body></html>', 'fail', /禁止的标签|外部\/可执行/],
+    ['style 内 @import',
+      '<!doctype html><html><head><style>@import url(https://evil.example/a.css);</style></head><body></body></html>', 'fail', /@import|外部资源/],
+    ['✅ 合法：type=text/plain 放 Mermaid',
+      '<!doctype html><html><body><div class="mermaid"><script type="text/plain">flowchart TD\n  A["a"] --> B["b"]\n</script></div></body></html>', 'pass', null],
+    ['✅ 合法：/shell/ 脚本与样式',
+      '<!doctype html><html><head><link rel="stylesheet" href="/shell/shell.css"><script src="/shell/page.js"></script></head><body></body></html>', 'pass', null],
+  ];
+
+  for (const [name, page, expect, re] of cases) {
+    const f = makePkg({ page });
+    const r = verify(f);
+    if (expect === 'fail') {
+      if (r.code !== 0 && (!re || re.test(r.out))) ok(`探针被拒：${name}`);
+      else bad(`探针未被拒：${name}\n${r.out}`);
+    } else {
+      if (r.code === 0) ok(`合法写法放行：${name}`);
+      else bad(`合法写法被误杀：${name}\n${r.out}`);
+    }
+  }
 }
 
 /* 5) 未知 format */

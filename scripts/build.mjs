@@ -440,9 +440,11 @@ function inject(html, { cid, file, cver, appver }) {
     ? '<script src="/shell/ui-extras.js' + q + '"></script>\n' +
       '<script src="/shell/diagram-viewer.js' + q + '"></script>\n'
     : '';
+  // 注意：这里不能注入内联 <script>——课程包的安全规则（verify-package / HtmlGuard）
+  // 禁止内联脚本，而内联脚本也无法配合 CSP script-src 'self'。
+  // 库路径改由 data-lib 属性传给 mermaid-init.js（它用 document.currentScript 读取）。
   const tail = (needsMermaid
-    ? '<script>window.__SA_MERMAID_SRC="/vendor/mermaid.min.js' + q + '";</script>\n' +
-      '<script src="/shell/mermaid-init.js' + q + '"></script>\n'
+    ? '<script src="/shell/mermaid-init.js' + q + '" data-lib="/vendor/mermaid.min.js' + q + '"></script>\n'
     : '') + extras + '<script type="module" src="/shell/page.js' + q + '"></script>';
   s = s.replace(/<\/body>/i, `${tail}\n</body>`);
 

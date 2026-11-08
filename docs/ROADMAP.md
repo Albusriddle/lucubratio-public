@@ -3,6 +3,17 @@
 > 目标：从"内容编译进 APK"变成"流水线生成课程包 → App 导入学习"的生态形态。
 > 原则：先做 3 天验证再投两周；每一步都保持可运行、可回退。
 
+## 已完成的既有缺陷修复（P0/P1/P2）
+
+| 编号 | 问题 | 状态 |
+|---|---|---|
+| P0-1 | `verify-package` 正则可被无引号/单引号/内联 script 绕过 | ✅ 换成 `scripts/lib/htmlguard.mjs` 标签级扫描；9 个探针全被拒 |
+| P0-2 | `pack.mjs` 不重写页面 `data-*` | ✅ 改写 5 个属性 + manifest id + search 键/sections；并拒绝二次打包 |
+| P0-3 | `build.mjs` 注入内联 `<script>` | ✅ 改为 `data-lib` 属性，`mermaid-init.js` 用 `document.currentScript` 读取 |
+| P1-1 | `format.bytes` 恒 0 | ✅ 打包时回填，校验器交叉核对 |
+| P2-1 | 备份遍历全部 store | ✅ `db.BACKUP_STORES` 白名单，`store.js` 4 处改用 |
+| P2-2 | `smoke.mjs` 硬编码 schema===1 | ✅ 改为与 `DB_VERSION` 比对 |
+
 ## 阶段 0 · Spike（3 天）— 先证伪
 
 | 天 | 做什么 | 通过标准 |
@@ -17,10 +28,10 @@
 
 - [x] `scripts/pack.mjs`：build → zip → `format.json` + `sha256` → `dist/<id>-<version>.lcr`
 - [x] `scripts/verify-package.mjs`：离线校验包结构和安全规则（见 PACKAGE-FORMAT §4）
-- [ ] Java 导入器：SAF 选包 → 校验 → 解压（防 Zip Slip）→ 写注册表
+- [ ] Java 导入器：SAF 选包 → 校验 → 解压（防 Zip Slip）→ 写注册表（**Step 3–4**）
 - [ ] Java `UserCoursesHandler`：`/courses/<id>/...` → `filesDir/courses/<id>/...`（复用 MIME 表）
 - [ ] 首页「课程库」：内置课程 + 我的课程（导入/删除/更新、显示体积与页数）
-- [ ] 数据层：`courses` 表（schema v1→v2）+ 删课时清数据
+- [x] 数据层：**不升 DB 版本**（命名空间前缀即可精确删数据）；`BACKUP_STORES` 白名单已加
 - [ ] 搜索：多份 `search.json` 合并（首次搜索缓存到 IndexedDB）
 
 ## 阶段 2 · 生成侧体验（约 3–5 人日）
