@@ -31,7 +31,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -58,6 +57,8 @@ public class MainActivity extends Activity {
     private WebView webView;
     private long lastBackAt = 0L;
     private String pendingExportJson = null;
+    /** 已导入课程：注册表就是 filesDir/courses/ 目录本身 */
+    private CourseStore courseStore;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -97,7 +98,11 @@ public class MainActivity extends Activity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
+        courseStore = new CourseStore(this);
+        // 顺序很重要：WebViewAssetLoader 按注册顺序匹配（不是最长前缀），
+        // 所以 "/courses/"（用户导入课程）必须排在 "/"（内置 assets）之前。
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/courses/", new UserCoursesHandler(courseStore))
                 .addPathHandler("/", new RootAssetsHandler(this))
                 .build();
 
@@ -261,7 +266,7 @@ public class MainActivity extends Activity {
             String assetPath = "web/" + rel;
             try {
                 InputStream is = context.getAssets().open(assetPath);
-                String mime = guessMime(assetPath);
+                String mime = Mime.of(assetPath);
                 Map<String, String> headers = new HashMap<>();
                 headers.put("Cache-Control", "no-cache");
                 boolean textual = mime.startsWith("text/") || mime.contains("javascript") || mime.contains("json");
@@ -271,22 +276,6 @@ public class MainActivity extends Activity {
             }
         }
 
-        private static String guessMime(String p) {
-            String lower = p.toLowerCase(Locale.ROOT);
-            if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
-            if (lower.endsWith(".css")) return "text/css";
-            if (lower.endsWith(".js") || lower.endsWith(".mjs")) return "application/javascript";
-            if (lower.endsWith(".json")) return "application/json";
-            if (lower.endsWith(".svg")) return "image/svg+xml";
-            if (lower.endsWith(".png")) return "image/png";
-            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-            if (lower.endsWith(".webp")) return "image/webp";
-            if (lower.endsWith(".gif")) return "image/gif";
-            if (lower.endsWith(".woff2")) return "font/woff2";
-            if (lower.endsWith(".woff")) return "font/woff";
-            if (lower.endsWith(".ttf")) return "font/ttf";
-            return "application/octet-stream";
-        }
     }
 
     @Override
