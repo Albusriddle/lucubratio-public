@@ -186,6 +186,21 @@ if (manifest) {
     }
   }
 
+  // 3.9) 正文不得残留 Markdown 记号（作者常手滑把 **加粗** 写进 HTML）
+  {
+    const md = [];
+    for (const it of items) {
+      const p = path.join(OUT, decodeURIComponent(it.file));
+      if (!fs.existsSync(p)) continue;
+      let html = fs.readFileSync(p, 'utf8');
+      // 去掉 <code>/<pre>/<script> 里的内容再找星号（公式与代码里可能出现 *）
+      html = html.replace(/<(code|pre|script)[^>]*>[\s\S]*?<\/\1>/gi, '');
+      if (/\*\*[^*\n]{1,40}\*\*/.test(html)) md.push(it.id);
+    }
+    if (md.length) bad(`正文残留 Markdown 星号：${md.slice(0, 3).join(', ')}`);
+    else ok('正文无 Markdown 星号残留');
+  }
+
   // 4) 内容变换基线：绝不能有字符画残留；公式/纯文本块数量不能突然塌方
   {
     let artChars = 0;

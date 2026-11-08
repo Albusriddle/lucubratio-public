@@ -117,7 +117,13 @@ html.sa-dark h5,
 html.sa-dark h6 { color: #c3ccd8; }
 html.sa-dark strong { color: #f2f6fb; }
 html.sa-dark hr { border-top-color: #2b3442; }
-html.sa-dark blockquote { color: #d9c9a3; }
+/* 内容页自己的 blockquote 是浅色卡片（#fff8e1）：深色主题下若只改文字色会"浅底浅字"，
+   所以连背景一起改成深色卡片，保持高对比度。 */
+html.sa-dark blockquote {
+  color: #e8dcc0;
+  background: #2b2b23;
+  border-left-color: #e6b422;
+}
 html.sa-dark code { color: #ff9d94; }
 html.sa-dark .table-wrap { border-color: #232b37; }
 html.sa-dark th { background: #1c2430; }
