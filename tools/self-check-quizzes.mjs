@@ -108,7 +108,7 @@ for (const q of quizzes) {
   //   a) 显式「X 对」或「答案：X」 → 用它
   //   b) 恰好三个选项被写成「X 错」 → 第四个就是答案
   //   c) 都判不出 → 标"需人工判定答案"
-  const explicit = [...expl.matchAll(/([A-D])\s*对(?![错])/g)].map((m) => m[1]);
+  const explicit = [...expl.matchAll(/([A-D])\s*(?:对|正确)(?![错应象比于称])/g)].map((m) => m[1]);
   const fromAnswer = [...expl.matchAll(/答案\s*[：:]\s*([A-D])/g)].map((m) => m[1]);
   // 干扰项的写法并不统一：「B 错在…」「B 把两端搞反」「C 漏了界限检查」都有。
   // 统一按「小句句首的选项字母」认：分号/句号/逗号/空白之后紧跟 A-D 且后面不是数字。
@@ -122,7 +122,7 @@ for (const q of quizzes) {
   else if (wrong.length === 3) { ans = ['A', 'B', 'C', 'D'].find((x) => !wrong.includes(x)); ansHow = '排除三项'; }
   else if (explicit.length > 1) problems.push(`解析里有多个「X 对」：${[...new Set(explicit)].join(',')}（答案不唯一）`);
 
-  if (!ans) problems.push('无法判定答案（既无「X 对」，也不足三个「X 错」）——需人工确认');
+  if (!ans) structure.push('无法判定答案（解析措辞不在已知模式内）——需人工确认');
   else if (!uniqOpts.includes(ans)) problems.push(`判定出的答案 ${ans} 不在选项里`);
 
   // 2) 选项覆盖：**错误选项**必须被解析点名（正确答案由首句正向说明，不要求写「X 对」）
