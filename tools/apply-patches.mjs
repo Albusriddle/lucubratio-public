@@ -27,7 +27,13 @@ const C = {
 const args = process.argv.slice(2);
 const dry = args.includes('--dry');
 const allowMulti = args.includes('--去重');
-const [reviewPath, targetPath] = args.filter((a) => !a.startsWith('--'));
+// --as A|B：只应用「文件：」字段匹配的补丁。
+// 不加这个参数时是"盲应用"——把 B 的补丁喂给 A 的文件会整批失败，
+// 因此本工具在有「文件：」字段时会先核对，不匹配就报错退出。
+const asIdx = args.indexOf('--as');
+const asLabel = asIdx >= 0 ? String(args[asIdx + 1] || '').toUpperCase() : '';
+const positional = args.filter((a, i) => !a.startsWith('--') && !(asIdx >= 0 && i === asIdx + 1));
+const [reviewPath, targetPath] = positional;
 
 if (!reviewPath || !targetPath) {
   console.error('用法: node tools/apply-patches.mjs <review.md> <片段.html> [--dry] [--去重]');
@@ -63,7 +69,18 @@ function parsePatches(md) {
   return out;
 }
 
-const patches = parsePatches(fs.readFileSync(reviewPath, 'utf8'));
+let patches = parsePatches(fs.readFileSync(reviewPath, 'utf8'));
+// 按「文件：」过滤/核对
+if (asLabel) {
+  const before = patches.length;
+  patches = patches.filter((p) => String(p.file || '').toUpperCase().includes(asLabel));
+  if (patches.length !== before) console.log(`${C.dim(`按 --as ${asLabel} 过滤：${before} → ${patches.length} 条`)}`);
+  if (!patches.length) {
+    console.log(C.yellow(`复核报告里没有「文件：${asLabel}」的补丁——确认目标文件是否给错了`));
+    process.exit(0);
+  }
+}
+
 if (!patches.length) {
   console.log(C.yellow('复核报告里没有可解析的 PATCH（检查格式是否为「PATCH n / 文件 / 原文 / 改为 / 理由」）'));
   process.exit(0);
