@@ -194,8 +194,10 @@ if (manifest) {
       const p = path.join(OUT, decodeURIComponent(it.file));
       if (!fs.existsSync(p)) continue;
       const html = fs.readFileSync(p, 'utf8');
-      const heads = (html.match(/<h[23][^>]*id="检测\s*\d+"/g) || []).length;
-      const tagged = (html.match(/data-qid="[^"]*#检测/g) || []).length;
+      // 按「标题文字」数，不按 id：build 的契约是 QUESTION_RULES 匹配标题文字，
+      // id 只用来拼 data-qid，作者可以用任意唯一 id（曾误按 id 统计，会漏判/误判）。
+      const heads = (html.match(/<h[23][^>]*>\s*检测\s*\d+/g) || []).length;
+      const tagged = (html.match(/data-qid="[^"]*#/g) || []).length;
       if (heads !== tagged) mismatch.push(`${it.id}: 标题 ${heads} / 标记 ${tagged}`);
     }
     if (mismatch.length) bad(`自评标题与标记数不一致：${mismatch.join('；')}`);
