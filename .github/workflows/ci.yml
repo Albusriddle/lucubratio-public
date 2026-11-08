@@ -60,6 +60,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # GitHub 偶发 504（本机也遇到过）：缓存 Gradle 发行包与依赖，成功一次后不再重复下载
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false
+
       # 注意：v3 默认 packages 里含 tools，而新版 SDK 已移除该包（会报 Failed to find package 'tools'）
       # 所以这里显式只装需要的三个包，不再用默认值。
       - uses: android-actions/setup-android@v3
