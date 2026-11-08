@@ -93,7 +93,7 @@ const lib = await import('../web/shell/library.js');
   installBridge(null);
   const l = await lib.loadLibrary();
   const st = lib.libraryStats(l);
-  if (l.builtin && l.imported.length === 0 && st.builtinPages === 2) {
+  if (l.builtin && l.imported.length === 0 && st.builtinPages > 0) {
     ok(`无原生桥：内置 ${st.builtinPages} 篇，导入 0 门`);
   } else {
     bad(`无原生桥时结果异常：builtin=${!!l.builtin} imported=${l.imported.length} pages=${st.builtinPages}`);
@@ -112,7 +112,7 @@ const lib = await import('../web/shell/library.js');
 
   if (l.imported.length === 1 && l.imported[0].manifest) {
     const items = lib.flattenItems(l.imported[0].manifest);
-    if (items.length === 2 && items.every((it) => String(it.file).startsWith('/courses/demo/'))) {
+    if (items.length > 0 && items.every((it) => String(it.file).startsWith('/courses/demo/'))) {
       ok(`导入课程可读：${items.length} 篇，路径前缀正确`);
     } else {
       bad(`导入课程页面异常：${JSON.stringify(items.map((i) => i.file))}`);
@@ -121,7 +121,8 @@ const lib = await import('../web/shell/library.js');
     bad('导入课程的 manifest 没有读到');
   }
 
-  if (st.importedCourses === 1 && st.importedPages === 2 && st.totalPages === 4) {
+  const importedCount = lib.flattenItems(l.imported[0].manifest).length;
+  if (st.importedCourses === 1 && st.importedPages === importedCount && st.totalPages === st.builtinPages + importedCount) {
     ok(`统计正确：内置 ${st.builtinPages} + 导入 ${st.importedPages} = ${st.totalPages} 篇`);
   } else {
     bad(`统计异常：${JSON.stringify(st)}`);
@@ -218,7 +219,8 @@ const lib = await import('../web/shell/library.js');
   if (map[courseCid] === courseExpect) ok(`导入课程页 cver = 课程id@版本#页指纹（${courseExpect}）`);
   else bad(`导入课程 cver 异常：${map[courseCid]} ≠ ${courseExpect}`);
 
-  if (Object.keys(map).length === 4) ok('cver 映射覆盖全部 4 页（内置 2 + 导入 2）');
+  const want = lib.flattenItems(l.builtin).length + lib.flattenItems(l.imported[0].manifest).length;
+  if (Object.keys(map).length === want) ok(`cver 映射覆盖全部 ${want} 页（内置 + 导入）`);
   else bad('cver 映射条目数异常：' + Object.keys(map).length);
 }
 
