@@ -30,9 +30,12 @@ const allowMulti = args.includes('--去重');
 // --as A|B：只应用「文件：」字段匹配的补丁。
 // 不加这个参数时是"盲应用"——把 B 的补丁喂给 A 的文件会整批失败，
 // 因此本工具在有「文件：」字段时会先核对，不匹配就报错退出。
+const otherIdx = args.indexOf('--other');
+const otherPath = otherIdx >= 0 ? args[otherIdx + 1] : '';
 const asIdx = args.indexOf('--as');
 const asLabel = asIdx >= 0 ? String(args[asIdx + 1] || '').toUpperCase() : '';
-const positional = args.filter((a, i) => !a.startsWith('--') && !(asIdx >= 0 && i === asIdx + 1));
+const positional = args.filter((a, i) =>
+  !a.startsWith('--') && !(asIdx >= 0 && i === asIdx + 1) && !(otherIdx >= 0 && i === otherIdx + 1));
 const [reviewPath, targetPath] = positional;
 
 if (!reviewPath || !targetPath) {
@@ -81,8 +84,9 @@ if (asLabel) {
   }
 }
 
-if (!patches.length) {
-  console.log(C.yellow('复核报告里没有可解析的 PATCH（检查格式是否为「PATCH n / 文件 / 原文 / 改为 / 理由」）'));
+const importsPreview = parseImports(fs.readFileSync(reviewPath, 'utf8'));
+if (!patches.length && !importsPreview.length) {
+  console.log(C.yellow('复核报告里既没有 PATCH 也没有 IMPORT（检查格式「PATCH n / 文件 / 原文 / 改为 / 理由」）'));
   process.exit(0);
 }
 
@@ -104,6 +108,45 @@ for (let i = 0; i < patches.length; i++) {
   }
 }
 
+/** 从复核报告里抽出 IMPORT 列表（跨文件搬块） */
+function parseImports(md) {
+  const out = [];
+  const chunks = md.split(/(?:^|\n)\s*IMPORT\s+\d+[^\n]{0,24}\n/).slice(1);
+  for (const ch of chunks) {
+    const body = ch.split(/\n\s*##\s/)[0];
+    const grab = (label) => {
+      const m = body.match(new RegExp(`${label}\\s*[：:]\\s*([^\\n]+)`));
+      return m ? m[1].trim() : '';
+    };
+    const p = { file: grab('文件'), from: grab('取'), to: grab('到'), replace: grab('替换') };
+    if (p.from && p.replace) out.push(p);
+  }
+  return out;
+}
+
+/** 按标记取出源码里的一个块：[from, to) 或 [from, EOF) */
+function extractBlock(source, fromMark, toMark) {
+  const i = source.indexOf(fromMark);
+  if (i < 0) return null;
+  if (!toMark) return source.slice(i);
+  const j = source.indexOf(toMark, i + fromMark.length);
+  if (j < 0) return null;
+  return source.slice(i, j);
+}
+
+/** 用「起点标记 + 下一个同级 h 标签」替换目标块 */
+function replaceBlock(target, mark, newBlock) {
+  const i = target.indexOf(mark);
+  if (i < 0) return null;
+  const m = mark.match(/^<h([23])\b/);
+  const level = m ? m[1] : '3';
+  const re = new RegExp(`<h${level}\\b`, 'g');
+  re.lastIndex = i + mark.length;
+  const nxt = re.exec(target);
+  const end = nxt ? nxt.index : target.length;
+  return target.slice(0, i) + newBlock.trim() + '\n\n' + target.slice(end);
+}
+
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -112,11 +155,32 @@ console.log(`${C.dim('复核报告：')}${reviewPath}`);
 console.log(`${C.dim('目标片段：')}${targetPath}`);
 console.log(`${C.dim('PATCH 总数：')}${patches.length}\n`);
 
-for (const a of applied) console.log(`${C.green('✓')} PATCH ${a.i}${a.note ? '（' + a.note + '）' : ''}  ${a.why || ''}`);
+// ---- IMPORT：跨文件搬块 ----
+const imports = importsPreview;
+if (imports.length) {
+  if (!otherPath || !fs.existsSync(otherPath)) {
+    console.log(C.red(`✗ 报告里有 ${imports.length} 条 IMPORT，但没有指定 --other <源文件>`));
+    process.exit(1);
+  }
+  const source = fs.readFileSync(otherPath, 'utf8');
+  console.log(`${C.dim('IMPORT：源文件')}${otherPath}`);
+  for (let i = 0; i < imports.length; i++) {
+    const im = imports[i];
+    const block = extractBlock(source, im.from, im.to || '');
+    if (!block) { failed.push({ i: `I${i + 1}`, reason: '源文件里定位不到「取/到」标记', from: im.from }); continue; }
+    const replaced = replaceBlock(html, im.replace, block);
+    if (replaced === null) { failed.push({ i: `I${i + 1}`, reason: '目标文件里找不到「替换」标记', from: im.replace }); continue; }
+    html = replaced;
+    applied.push({ i: `I${i + 1}`, why: `搬入 ${block.length} 字符（${im.from} → ${im.replace}）` });
+  }
+}
+
+for (const a of applied) console.log(`${C.green('✓')} ${a.i.toString().startsWith('I') ? 'IMPORT' : 'PATCH'} ${a.i}${a.note ? '（' + a.note + '）' : ''}  ${a.why || ''}`);
 for (const f of failed) {
   console.log(`${C.red('✗')} PATCH ${f.i}  ${f.reason}  ${C.dim(f.from)}`);
   if (f.why) console.log(`   理由：${f.why}`);
 }
+
 
 if (failed.length) {
   console.log(`\n${C.red(`${failed.length} 条失败——未写入任何改动（避免半成品）`)}`);
