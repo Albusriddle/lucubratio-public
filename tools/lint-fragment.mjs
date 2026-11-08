@@ -68,7 +68,8 @@ function lint(file) {
   // 6) 自评单元 + 页码引用
   const quizzes = (src.match(/<h3\b[^>]*id\s*=\s*"检测\s*\d+"/gi) || []).length;
   if (quizzes === 0) warns.push('没有找到「检测 N」自评单元标题');
-  else if (quizzes < 3) warns.push(`自评单元只有 ${quizzes} 道（一段通常 4–8 道）`);
+  else if (quizzes < 3) warns.push(`自评单元只有 ${quizzes} 道（一段通常 3–5 道）`);
+  else if (quizzes > 8) warns.push(`自评单元 ${quizzes} 道偏多（单页建议 ≤8，按分段配额控制）`);
 
   // 页码引用：接受「课件 p12」「（p12）」「课件第 12 页」三种写法
   const cites = [...src.matchAll(/(?:课件\s*)?p\s*\d{1,3}\b|第\s*\d{1,3}\s*页/g)].length;
