@@ -40,13 +40,17 @@ if (!fs.existsSync(targetPath)) { console.error('目标片段不存在: ' + targ
 function parsePatches(md) {
   const out = [];
   // 按 "PATCH n" 切块
-  const chunks = md.split(/(?:^|\n)\s*PATCH\s+\d+\s*\n/).slice(1);
+  // 允许行首的 PATCH n 后面带注记，例如「PATCH 4（插入，不是替换）」
+  const chunks = md.split(/(?:^|\n)\s*PATCH\s+\d+[^\n]{0,24}\n/).slice(1);
   for (const ch of chunks) {
     const body = ch.split(/\n\s*##\s/)[0]; // 遇到下一个大标题就停
     const grab = (label) => {
-      const re = new RegExp(`${label}\\s*[：:]\\s*([\\s\\S]*?)(?=\\n(?:文件|原文|改为|理由)\\s*[：:]|$)`, 'm');
+      // 注意：不能用 $ 收尾——m 标志下 $ 匹配行尾，会把围栏代码块里的首行截断。
+      const re = new RegExp(`${label}\\s*[：:]\\s*([\\s\\S]*?)(?=\\n(?:文件|原文|改为|理由)\\s*[：:]|(?![\\s\\S]))`);
       const m = body.match(re);
-      return m ? m[1].trim() : '';
+      if (!m) return '';
+      // 复核常用 ``` 围栏包住长片段，剥掉围栏只留内容
+      return m[1].trim().replace(/^```[a-z]*\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
     };
     const p = {
       file: grab('文件'),
