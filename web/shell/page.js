@@ -74,7 +74,104 @@ import { fmtDue } from './time.js';
   t2.textContent = kicker ? kicker.textContent.trim() : '';
 
   /* ---------------- 抽屉 ---------------- */
+  /**
+   * 内容页自带 <aside id="sidebar">（v1.x 旧内容）时直接沿用；
+   * v2.0.0 之后的内容页只有正文，没有侧栏 → 这里按 h2/h3 现生成一个，
+   * 否则点 ☰ 只会让遮罩变深、抽屉永远出不来（真机 bug，2026-11 修复）。
+   */
+  function buildDrawer() {
+    // 按 h2 分章、h3 归到所属章下；没有 h2 时退化成一个大组
+    var heads = Array.prototype.slice.call(
+      document.querySelectorAll('main h2[id], main h3[id]')
+    );
+    if (!heads.length) {
+      heads = Array.prototype.slice.call(document.querySelectorAll('h2[id], h3[id]'));
+    }
+
+    var groups = [];
+    for (var i = 0; i < heads.length; i++) {
+      var h = heads[i];
+      var title = (h.textContent || '').replace(/\s+/g, ' ').trim();
+      if (h.tagName === 'H2') {
+        groups.push({ id: h.id, title: title, items: [] });
+      } else {
+        if (!groups.length) groups.push({ id: '', title: '本页', items: [] });
+        groups[groups.length - 1].items.push({ id: h.id, title: title });
+      }
+    }
+
+    var aside = document.createElement('aside');
+    aside.id = 'sidebar';
+
+    var head = document.createElement('div');
+    head.className = 'sa-drawer-head';
+    var label = document.createElement('span');
+    label.className = 'sa-drawer-title';
+    label.textContent = '目录 · ' + groups.length + ' 章 / ' + heads.length + ' 节';
+    var home = document.createElement('a');
+    home.className = 'sa-drawer-home';
+    home.href = '/';
+    home.textContent = '课程列表';
+    head.appendChild(label);
+    head.appendChild(home);
+    aside.appendChild(head);
+
+    function addLink(parent, href, text) {
+      var a = document.createElement('a');
+      a.href = '#' + href;
+      a.textContent = text;
+      parent.appendChild(a);
+    }
+
+    for (var g = 0; g < groups.length; g++) {
+      var grp = groups[g];
+      var det = document.createElement('details');
+      det.className = 'sa-toc-group';
+      if (grp.id) det.dataset.hid = grp.id;
+      var sum = document.createElement('summary');
+      sum.textContent = grp.title;
+      det.appendChild(sum);
+      if (grp.items.length) {
+        var ul = document.createElement('ul');
+        ul.className = 'toc';
+        for (var k = 0; k < grp.items.length; k++) {
+          var li = document.createElement('li');
+          li.className = 'lv3';
+          addLink(li, grp.items[k].id, grp.items[k].title);
+          ul.appendChild(li);
+        }
+        det.appendChild(ul);
+      }
+      aside.appendChild(det);
+    }
+
+    body.insertBefore(aside, body.firstChild);
+    return aside;
+  }
+
+  /** 打开抽屉时把"当前所在章"展开并滚到可见位置 */
+  function focusCurrentChapter(box) {
+    if (!box) return;
+    var hs = Array.prototype.slice.call(document.querySelectorAll('main h2[id], h2[id]'));
+    if (!hs.length) return;
+    var top = (window.pageYOffset || 0) + 80;
+    var curId = hs[0].id;
+    for (var i = 0; i < hs.length; i++) {
+      var el = hs[i];
+      var y = el.getBoundingClientRect().top + (window.pageYOffset || 0);
+      if (y <= top) curId = el.id;
+    }
+    var det = box.querySelector('details[data-hid="' + curId + '"]');
+    if (!det) return;
+    det.open = true;
+    det.classList.add('cur');
+    if (det.offsetTop > box.clientHeight * 0.6) {
+      box.scrollTop = Math.max(0, det.offsetTop - 60);
+    }
+  }
+
   var sidebar = document.getElementById('sidebar');
+  if (!sidebar) sidebar = buildDrawer();
   var navPushed = false;
 
   function openNav() {
@@ -83,12 +180,7 @@ import { fmtDue } from './time.js';
     if (!navPushed) {
       try { history.pushState({ saNav: 1 }, ''); navPushed = true; } catch (e) { /* ignore */ }
     }
-    if (sidebar) {
-      var cur = sidebar.querySelector('details.cur') || sidebar.querySelector('details[open]');
-      if (cur && cur.offsetTop) {
-        sidebar.scrollTop = Math.max(0, cur.offsetTop - 12);
-      }
-    }
+    focusCurrentChapter(sidebar);
   }
 
   function closeNav(viaHistory) {

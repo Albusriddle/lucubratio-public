@@ -12,6 +12,110 @@
 .sa-topbar { display: none; }
 .sa-scrim { display: none; }
 
+/* ---------- 抽屉（全宽度通用） ----------
+   内容页的目录抽屉统一由 /shell/page.js 在运行时创建并管理：
+   - 页面自带 <aside id="sidebar">（旧格式）→ 直接沿用
+   - 没有 → page.js 按 h2/h3 现生成一个
+   这里给出基础几何，窄屏的 @media 规则会在后面做进一步微调。 */
+#sidebar {
+  position: fixed;
+  top: calc(var(--sa-bar-h) + env(safe-area-inset-top));
+  left: 0;
+  right: auto;
+  bottom: 0;
+  width: min(86vw, 350px);
+  height: auto;
+  margin: 0;
+  padding: 10px 8px calc(28px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-right: 1px solid var(--line);
+  background: var(--sidebar, #fff);
+  transform: translateX(-103%);
+  transition: transform .22s cubic-bezier(.4, 0, .2, 1);
+  z-index: 900;
+  box-shadow: 12px 0 40px rgba(0, 0, 0, .18);
+}
+body.sa-nav-open #sidebar { transform: translateX(0); }
+body.sa-nav-open { overflow: hidden; }
+
+.sa-scrim {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 880;
+  background: rgba(16, 20, 26, .42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
+
+/* 抽屉内容（运行时生成的标题目录） */
+.sa-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 8px 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.sa-drawer-title {
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+.sa-drawer-home {
+  font-size: 12.5px;
+  color: var(--accent2);
+  text-decoration: none;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+/* 折叠分章 */
+#sidebar details.sa-toc-group { margin: 2px 0 4px; }
+#sidebar details.sa-toc-group > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.35;
+  position: relative;
+  padding-right: 26px;
+}
+#sidebar details.sa-toc-group > summary::-webkit-details-marker { display: none; }
+#sidebar details.sa-toc-group > summary::after {
+  content: '▸';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform .18s;
+}
+#sidebar details.sa-toc-group[open] > summary::after { transform: translateY(-50%) rotate(90deg); }
+#sidebar details.sa-toc-group[open] > summary { color: var(--accent2); }
+#sidebar details.sa-toc-group.cur > summary { background: var(--soft); }
+#sidebar ul.toc { list-style: none; margin: 0; padding: 0; }
+#sidebar ul.toc li.lv3 { padding-left: 14px; }
+#sidebar ul.toc a {
+  display: block;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.35;
+}
+#sidebar ul.toc a:active { background: var(--soft); }
+.sa-drawer-empty { padding: 14px 10px; font-size: 13px; color: var(--muted); }
+
 @media (max-width: 880px) {
 
   html {
