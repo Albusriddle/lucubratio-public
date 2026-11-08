@@ -20,6 +20,8 @@
 
 ## 快速开始
 
+> 三条路（只读课程 / 改界面 / 做成自己的 App）见 [`docs/QUICKSTART.md`](docs/QUICKSTART.md)。
+
 ```bash
 # 1) 编译（零依赖，只需 Node 20+）
 node scripts/build.mjs

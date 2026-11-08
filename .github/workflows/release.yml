@@ -1,0 +1,161 @@
+name: Release
+
+# 打 tag（v*）时构建 APK 并建 GitHub Release。
+#
+# 签名策略（自适应）：
+#   · 仓库配了 KEYSTORE_BASE64 等 Secrets → 出「正式签名」包（release）
+#   · 没配 → 退化为 debug 签名包，并在文件名与说明里明确标注（不会假装是正式包）
+#
+# 签名材料 Secrets：KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # 需要历史与 tag，用来生成"自上个版本以来"的变更
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Unit tests (pure functions)
+        run: node scripts/test.mjs
+
+      - name: Build web bundle
+        run: node scripts/build.mjs
+
+      - name: Verify web bundle
+        run: node scripts/verify.mjs
+
+      - name: Package pipeline self-test
+        run: node scripts/test-package.mjs
+
+      - name: Course library self-test
+        run: node scripts/test-library.mjs
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      # 有没有正式签名？没有就走 debug 包
+      - name: Detect signing secrets
+        id: sign
+        env:
+          KS: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; else echo "has=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Restore signing keystore
+        if: steps.sign.outputs.has == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          KEYSTORE_PATH="$GITHUB_WORKSPACE/android/release.keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          cat > "$GITHUB_WORKSPACE/android/keystore.properties" <<EOF
+          storeFile=$KEYSTORE_PATH
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Assemble signed release APK
+        if: steps.sign.outputs.has == 'true'
+        working-directory: android
+        env:
+          SKIP_WEB_BUILD: '1'
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Assemble debug APK (no signing secrets)
+        if: steps.sign.outputs.has != 'true'
+        working-directory: android
+        env:
+          SKIP_WEB_BUILD: '1'
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Collect artifacts
+        id: collect
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          if [ "${{ steps.sign.outputs.has }}" = "true" ]; then
+            SRC="android/app/build/outputs/apk/release/app-release.apk"
+            OUT="lucubratio-${TAG}-release.apk"
+          else
+            SRC="android/app/build/outputs/apk/debug/app-debug.apk"
+            OUT="lucubratio-${TAG}-debug.apk"
+          fi
+          cp "$SRC" "$OUT"
+          sha256sum "$OUT" > checksums.txt
+          echo "apk=$OUT" >> "$GITHUB_OUTPUT"
+          echo "--- checksums ---"; cat checksums.txt
+
+      - name: Build release notes
+        id: notes
+        env:
+          SIGNED: ${{ steps.sign.outputs.has }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VER="${TAG#v}"
+          PREV="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+          SECTION="$(awk -v hdr="## [${VER}]" '
+            index($0, hdr) == 1 { flag = 1; next }
+            /^## / { if (flag) exit }
+            flag { print }
+          ' CHANGELOG.md)"
+          {
+            echo "## 更新内容（自 ${PREV:-首个版本} 起）"
+            echo
+            if [ -n "$SECTION" ]; then printf '%s\n' "$SECTION"; else
+              echo "_CHANGELOG.md 中没有 ${VER} 的段落，请补上；以下为自动生成的变更说明。_"
+            fi
+            echo
+            echo "### 本版提交"
+            echo
+            if [ -n "$PREV" ]; then git log --no-merges --pretty='- %s (%h)' "${PREV}..HEAD"; else git log --no-merges -20 --pretty='- %s (%h)'; fi
+            echo
+            echo "---"
+            echo
+            if [ "$SIGNED" = "true" ]; then
+              echo "**签名**：正式 keystore（随 APK 一起提供，安装前请核对 \`checksums.txt\`）。"
+            else
+              echo "**签名**：⚠️ **debug 签名**（本仓库未配置签名 Secrets）。"
+              echo "仅适合自行测试；要出正式签名包，请在仓库 Secrets 里配置"
+              echo "\`KEYSTORE_BASE64\` / \`KEYSTORE_PASSWORD\` / \`KEY_ALIAS\` / \`KEY_PASSWORD\` 后重新打 tag。"
+            fi
+            echo
+            echo "**校验和**：见附件 \`checksums.txt\`。"
+          } > RELEASE_NOTES.md
+          echo "=== 预览 ==="; head -40 RELEASE_NOTES.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.collect.outputs.apk }}
+            checksums.txt
+          body_path: RELEASE_NOTES.md
+          fail_on_unmatched_files: true
