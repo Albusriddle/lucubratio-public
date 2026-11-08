@@ -2,6 +2,16 @@
 
 本仓库（`lucubratio-public`）是 Lucubratio 的**流水线 + 查看器**部分，不含任何课程素材。
 
+## [0.2.1] - 2026-11-08
+
+### 变更
+
+- **本仓库的 Release 改用独立签名钥匙**（与私有版 App 的 keystore 不同）：
+  - 证书 SHA-256 `3B:48:73:70:C2:28:3B:E7:67:5E:7B:07:D5:31:E2:B3:AC:F6:74:69:2C:BC:4B:91:2C:B5:47:AE:73:E5:4D:6E`
+  - 仓库 Secrets 已配置 `KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`
+  - Release 产物从 `lucubratio-<tag>-debug.apk` 变为 **`lucubratio-<tag>-release.apk`**（正式签名）
+- `release.yml`：签名自适应逻辑保持不变（无 Secrets 仍会出 debug 包并标注）
+
 ## [0.2.0] - 2026-11-08
 
 **课程包生态打通**：从「内容烤进 APK」变成「生成 `.lcr` → App 内导入 → 首页可见 → 可读可测可复习」。
