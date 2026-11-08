@@ -117,7 +117,8 @@ if (manifest) {
           .replace(/^<script type="text\/plain">/, '')
           .replace(/<\/script>$/, '');
         if (/<script/i.test(stripped) || /<\/script/i.test(stripped)) {
-          bad(`${it.id}: 图表源码里出现非法的 <script / </script>`);
+          bad(`${it.id}: 图表源码里出现非法的 <script / </script>（正确写法：`
+            + `<div class="mermaid"><script type="text/plain">flowchart TD 开头，同一行）`);
           break;
         }
       }

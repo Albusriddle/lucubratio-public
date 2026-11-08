@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""
+课件 PDF → 逐页 Markdown（供生成阶段阅读）+ 纯图页渲染成 WebP（供校对/插图）
+
+用法：
+    python tools/pdf-extract.py <课件.pdf> [--out DIR] [--render] [--dpi 150] [--max-pages N]
+
+输出目录结构：
+    <out>/pages/p001.md …     每页一段，"## p<页码>" 开头；无文字层会明确写出来
+    <out>/report.json         总页数 / 每页字符数 / 无文字页列表 / 建议分段
+    <out>/img/p001.webp …     仅 --render 时生成（纯图页，或全部页）
+
+设计取舍：
+- **不做 OCR**。扫描件 OCR 出来的字用来"生成课程"错误率太高，宁可让作者看图补写。
+- 逐页单独成文件，方便把某一页单独喂给子智能体，也方便按页定位错误。
+"""
+
+import argparse
+import json
+import os
+import sys
+
+# Windows 控制台默认 GBK，打印中文/符号会炸；统一切到 UTF-8（失败则忽略）
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+try:
+    import pymupdf  # PyMuPDF ≥1.24
+except ImportError:  # 老版本只有 fitz
+    try:
+        import fitz as pymupdf
+    except ImportError:
+        sys.exit("缺少 PyMuPDF：pip install pymupdf")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="课件 PDF → 逐页 Markdown")
+    ap.add_argument("pdf")
+    ap.add_argument("--out", default=None, help="输出目录（默认 <pdf 同名>_extract）")
+    ap.add_argument("--render", action="store_true", help="把纯图页渲染成 WebP")
+    ap.add_argument("--render-all", action="store_true", help="所有页都渲染（校对配图用）")
+    ap.add_argument("--dpi", type=int, default=150)
+    ap.add_argument("--max-pages", type=int, default=0, help="只处理前 N 页（0=全部）")
+    ap.add_argument("--segment", type=int, default=30, help="建议每段页数（写进 report）")
+    args = ap.parse_args()
+
+    if not os.path.isfile(args.pdf):
+        sys.exit(f"找不到文件：{args.pdf}")
+
+    out = args.out or (os.path.splitext(args.pdf)[0] + "_extract")
+    pages_dir = os.path.join(out, "pages")
+    img_dir = os.path.join(out, "img")
+    os.makedirs(pages_dir, exist_ok=True)
+
+    doc = pymupdf.open(args.pdf)
+    total = len(doc)
+    limit = min(total, args.max_pages) if args.max_pages else total
+
+    report = {
+        "pdf": os.path.abspath(args.pdf),
+        "pages": total,
+        "processed": limit,
+        "empty_pages": [],
+        "chars_by_page": {},
+        "suggested_segments": [],
+    }
+
+    seg = args.segment
+    report["suggested_segments"] = [
+        {"from": i + 1, "to": min(i + seg, limit)} for i in range(0, limit, seg)
+    ]
+
+    rendered = 0
+    for i in range(limit):
+        page = doc[i]
+        text = page.get_text("text").strip()
+        report["chars_by_page"][str(i + 1)] = len(text)
+
+        body = [f"## p{i + 1}\n"]
+        if text:
+            body.append(text + "\n")
+        else:
+            report["empty_pages"].append(i + 1)
+            body.append("（本页无文字层：纯图/截图。请查看 img/p%03d.webp 后据图补写，不要臆造。）\n" % (i + 1))
+
+        with open(os.path.join(pages_dir, f"p{i + 1:03d}.md"), "w", encoding="utf-8") as f:
+            f.write("".join(body))
+
+        want_img = args.render_all or (args.render and not text)
+        if want_img:
+            os.makedirs(img_dir, exist_ok=True)
+            pix = page.get_pixmap(dpi=args.dpi)
+            pix.save(os.path.join(img_dir, f"p{i + 1:03d}.png"))
+            rendered += 1
+
+    doc.close()
+
+    # PNG → WebP（有 Pillow 才转；没有就保留 PNG，构建器也吃 PNG）
+    if rendered:
+        try:
+            from PIL import Image
+
+            for name in os.listdir(img_dir):
+                if not name.endswith(".png"):
+                    continue
+                src = os.path.join(img_dir, name)
+                im = Image.open(src).convert("RGB")
+                im.save(os.path.join(img_dir, name[:-4] + ".webp"), "WEBP", quality=82, method=6)
+                os.remove(src)
+        except ImportError:
+            print("（未安装 Pillow，保留 PNG；如需 WebP 请 pip install pillow）")
+
+    with open(os.path.join(out, "report.json"), "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False, indent=1)
+
+    empty = report["empty_pages"]
+    print(f"✓ 已导出 {limit}/{total} 页 → {pages_dir}")
+    print(f"  无文字层 {len(empty)} 页" + (f"：{empty[:12]}{'…' if len(empty) > 12 else ''}" if empty else ""))
+    if rendered:
+        print(f"  渲染图片 {rendered} 张 → {img_dir}")
+    print(f"  建议分段：{len(report['suggested_segments'])} 段（每段 {seg} 页）→ {os.path.join(out, 'report.json')}")
+    if empty:
+        print("  ⚠️ 这些页必须看图补写，不要凭空生成。")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
