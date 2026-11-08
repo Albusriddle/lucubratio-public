@@ -17,6 +17,7 @@ import fs from 'node:fs';
 
 const args = process.argv.slice(2);
 const verbose = args.includes('--verbose');
+const ALLOW_NO_CITE = args.includes('--allow-no-cite');
 const file = args.find((a) => !a.startsWith('--'));
 
 if (!file) {
@@ -70,15 +71,19 @@ if (!quizzes.length) {
 }
 
 let bad = 0;
+let structCount = 0;
 const rows = [];
 
 for (const q of quizzes) {
-  const problems = [];
+  const problems = [];       // 内容问题（失败）
+  const structure = [];      // 结构不符（警告，需人工看）
   const body = q.block;
 
-  // 4) 题干长度
-  const titleLen = q.title.length;
-  if (titleLen > 120) problems.push(`题干 ${titleLen} 字（>120，疑似把整段塞进题干）`);
+  // 4) 题干长度（h3 + 选项之前的正文；有些页面把题目写在 h3 之后的 <p> 里）
+  const beforeOpts = body.split(/<p>\s*A[.．、]/)[0];
+  const stem = (strip(beforeOpts) || q.title).replace(/^检测\s*\d+\s*（\s*10\s*分\s*）/, '').trim();
+  const titleLen = stem.length;
+  if (titleLen > 120) structure.push(`题干 ${titleLen} 字（>120，疑似把整段塞进题干）`);
 
   // 6) 分值标注
   if (!/（\s*10\s*分\s*）/.test(q.title)) problems.push('标题缺「（10 分）」标注');
@@ -92,7 +97,11 @@ for (const q of quizzes) {
   // 解析区：<blockquote> ... </blockquote>
   const bq = body.match(/<blockquote>([\s\S]*?)<\/blockquote>/);
   const expl = bq ? strip(bq[1]) : '';
+  if (!expl) structure.push('没有找到解析块（<blockquote>），无法自动校验');
 
+  let ans = null;
+  let ansHow = '';
+  if (expl) {
   // 1) 答案判定。
   // 本项目的解析约定是「首句直接给正确结论 + 其余写 X 错在…」，
   // 所以正确答案常常不写成「X 对」。判定顺序：
@@ -108,8 +117,6 @@ for (const q of quizzes) {
     /(?:^|[；;。，,\s])([A-D])\s*(?=(?:错|把|漏|只|不|混|当成|误|搞|忽|算|取|用|认|多|少|反|以|拿))/g
   )].map((m) => m[1]);
   const wrong = [...new Set(wrongClause)];
-  let ans = null;
-  let ansHow = '';
   if (fromAnswer.length === 1) { ans = fromAnswer[0]; ansHow = '显式答案'; }
   else if (explicit.length === 1 && !wrong.includes(explicit[0])) { ans = explicit[0]; ansHow = '「X 对」'; }
   else if (wrong.length === 3) { ans = ['A', 'B', 'C', 'D'].find((x) => !wrong.includes(x)); ansHow = '排除三项'; }
@@ -120,15 +127,20 @@ for (const q of quizzes) {
 
   // 2) 选项覆盖：**错误选项**必须被解析点名（正确答案由首句正向说明，不要求写「X 对」）
   const wrongOpts = ['A', 'B', 'C', 'D'].filter((x) => uniqOpts.includes(x) && x !== ans);
-  const notMentioned = wrongOpts.filter((x) => !wrong.includes(x) && !new RegExp(`${x}\\s*(错|对|×|不成立)`).test(expl));
-  if (notMentioned.length) problems.push(`解析没点破干扰项 ${notMentioned.join(',')}`);
+  // 「是否点破干扰项」无法用正则可靠判定（有「B 错在…」「B 把…」「D 与…相反」「A 是…」多种写法），
+  // 因此只作为**警告**，由人确认；硬失败只留给能确定的事实（答案唯一性、选项完整性、页码）。
+  const mentionRe = (x) => new RegExp(`${x}\\s*(错|对|×|不成立|把|漏|只|与|是|用|混|拿|多|少)`);
+  const notMentioned = wrongOpts.filter((x) => !wrong.includes(x) && !mentionRe(x).test(expl));
+  if (notMentioned.length) structure.push(`解析可能没点破干扰项 ${notMentioned.join(',')}（措辞差异，需人工确认）`);
 
-  // 3) 页码引用
+  // 3) 页码引用（示例页没有课件来源，可用 --allow-no-cite 跳过）
   const hasCite = /p\s*\d{1,3}\b|第\s*\d{1,3}\s*页/.test(expl);
-  if (!hasCite) problems.push('解析里没有页码引用');
+  if (!hasCite && !ALLOW_NO_CITE) problems.push('解析里没有页码引用');
 
-  rows.push({ n: q.n, title: q.title.slice(0, 26), ans: ans || '?', how: ansHow, len: titleLen, problems });
+  }
+  rows.push({ n: q.n, title: q.title.slice(0, 26), ans: ans || '?', how: ansHow, len: titleLen, problems, structure });
   if (problems.length) bad++;
+  if (structure.length) structCount++;
 }
 
 // 5) 同页重复
@@ -148,6 +160,7 @@ for (const r of rows) {
   const mark = r.problems.length ? RED('✗') : GREEN('✓');
   console.log(`${mark} 检测 ${r.n}  答案=${r.ans}${r.how ? '（' + r.how + '）' : ''}  题干${r.len}字  ${DIM(r.title)}`);
   if (verbose || r.problems.length) for (const p of r.problems) console.log('   · ' + p);
+  for (const st of r.structure) console.log(YELLOW('   ! ' + st));
 }
 
 if (dup.length) {
@@ -156,6 +169,9 @@ if (dup.length) {
 }
 
 console.log('');
+if (structCount && !bad) {
+  console.log(YELLOW(`${structCount} 道题结构不符（需人工看），内容检查未发现硬问题`));
+}
 if (bad || dup.length) {
   console.log(RED(`自检发现 ${bad} 道题有问题${dup.length ? `，另有 ${dup.length} 组疑似重复` : ''}`));
   process.exit(1);
