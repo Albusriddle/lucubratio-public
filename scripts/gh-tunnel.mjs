@@ -72,20 +72,24 @@ const server = net.createServer((sock) => {
       sock.pipe(upstream);
       upstream.pipe(sock);
     });
-    upstream.on('error', (e) => {
+    upstream.on('error', async (e) => {
       console.error(`[tunnel] ${host}:${port} → ${targetIp(host)} 失败：${e.code}`);
-      // github.com 专用：换备用 IP 重试一次
-      if (REWRITE.has(host)) {
-        const alt = FALLBACK_IPS.find((ip) => ip !== targetIp(host));
-        console.error(`[tunnel] 改用备用 IP ${alt} 重试`);
-        const up2 = net.connect({ host: alt, port });
+      if (!REWRITE.has(host)) { sock.destroy(); return; }
+      // IP 在轮换：失败就重新探测，而不是固守启动时选的那个
+      try {
+        const fresh = await pickIp();
+        if (fresh !== GH_IP) {
+          GH_IP = fresh;
+          console.error(`[tunnel] 重新探测到可用 IP ${fresh}，重试`);
+        }
+        const up2 = net.connect({ host: GH_IP, port });
         up2.once('connect', () => {
           sock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
           sock.pipe(up2);
           up2.pipe(sock);
         });
         up2.on('error', () => sock.destroy());
-      } else {
+      } catch {
         sock.destroy();
       }
     });

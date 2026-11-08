@@ -17,6 +17,11 @@
 
 import fs from 'node:fs';
 
+// 示例页没有课件来源，可用 --allow-no-cite 跳过「页码引用」检查
+const ALLOW_NO_CITE = process.argv.includes('--allow-no-cite');
+// --page：目标是「完整内容页」而不是「待组装的片段」，跳过外壳检查（doctype/style）
+const IS_PAGE = process.argv.includes('--page');
+
 const BOX_CHARS = /[\u2500-\u257F\u2580-\u259F]/; // 盒线字符 + 方块元素（都是字符画的特征）
 
 function lint(file) {
@@ -25,11 +30,13 @@ function lint(file) {
   if (!fs.existsSync(file)) return { file, problems: ['文件不存在'], warns, stats: null };
   let src = fs.readFileSync(file, 'utf8');
 
-  // 1) 完整文档
-  if (/<!DOCTYPE|<html\b|<head\b|<body\b/i.test(src)) {
-    problems.push('片段里出现了 <!DOCTYPE>/<html>/<head>/<body>（应只写正文）');
+  // 1) 完整文档（--page 模式下这是合法的）
+  if (!IS_PAGE) {
+    if (/<!DOCTYPE|<html\b|<head\b|<body\b/i.test(src)) {
+      problems.push('片段里出现了 <!DOCTYPE>/<html>/<head>/<body>（应只写正文）');
+    }
+    if (/<style\b/i.test(src)) problems.push('片段里出现了 <style>（样式由 assemble 统一套）');
   }
-  if (/<style\b/i.test(src)) problems.push('片段里出现了 <style>（样式由 assemble 统一套）');
 
   // 2) h2/h3 缺 id
   const heads = src.match(/<h[23]\b[^>]*>/gi) || [];
@@ -73,7 +80,7 @@ function lint(file) {
 
   // 页码引用：接受「课件 p12」「（p12）」「课件第 12 页」三种写法
   const cites = [...src.matchAll(/(?:课件\s*)?p\s*\d{1,3}\b|第\s*\d{1,3}\s*页/g)].length;
-  if (cites === 0) problems.push('整段没有页码引用（每条事实/解析都要能指到课件页码）');
+  if (cites === 0 && !ALLOW_NO_CITE) problems.push('整段没有页码引用（每条事实/解析都要能指到课件页码）');
   else if (cites < quizzes) warns.push(`页码引用 ${cites} 处，少于检测题数 ${quizzes}（解析里每题都应有页码）`);
 
   // 7) 图片与字符画
@@ -90,7 +97,7 @@ function lint(file) {
   };
 }
 
-const files = process.argv.slice(2);
+const files = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 if (!files.length) {
   console.error('用法: node tools/lint-fragment.mjs <片段.html> [更多片段…]');
   process.exit(1);
