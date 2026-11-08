@@ -140,8 +140,8 @@ html.sa-dark .sa-qbtn[data-r="3"] { color: #7ddc8a; border-color: #24422a; }
 html.sa-dark .sa-qbar.sa-rated { background: #16211a; }
 
 /* ---------- 壳页：首页 ---------- */
-html.sa-dark .quick a { background: var(--card); border-color: var(--line); color: var(--fg); }
-html.sa-dark .quick a:active { background: var(--soft); }
+html.sa-dark .quick a, html.sa-dark .quick button { background: var(--card); border-color: var(--line); color: var(--fg); }
+html.sa-dark .quick a:active, html.sa-dark .quick button:active { background: var(--soft); }
 html.sa-dark .due { background: #2a1a17; border-color: #4a2a26; }
 html.sa-dark .due .due-k,
 html.sa-dark .due .due-go { color: #ff8a80; }

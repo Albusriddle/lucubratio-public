@@ -23,6 +23,7 @@ import androidx.webkit.WebViewClientCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -52,6 +53,8 @@ public class MainActivity extends Activity {
 
     private static final int REQ_EXPORT = 1001;
     private static final int REQ_IMPORT = 1002;
+    private static final int REQ_IMPORT_COURSE = 1003;
+    private static final long MAX_COURSE_PKG_BYTES = 200L * 1024 * 1024;
     private static final int MAX_BACKUP_BYTES = 16 * 1024 * 1024;
 
     private WebView webView;
@@ -59,6 +62,7 @@ public class MainActivity extends Activity {
     private String pendingExportJson = null;
     /** 已导入课程：注册表就是 filesDir/courses/ 目录本身 */
     private CourseStore courseStore;
+    private CourseImporter courseImporter;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -99,6 +103,7 @@ public class MainActivity extends Activity {
         }
 
         courseStore = new CourseStore(this);
+        courseImporter = new CourseImporter(this, courseStore);
         // 顺序很重要：WebViewAssetLoader 按注册顺序匹配（不是最长前缀），
         // 所以 "/courses/"（用户导入课程）必须排在 "/"（内置 assets）之前。
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
@@ -143,6 +148,18 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> Toast.makeText(MainActivity.this, String.valueOf(msg), Toast.LENGTH_SHORT).show());
         }
 
+        /** 已导入课程清单（JSON 字符串，注册表即目录） */
+        @JavascriptInterface
+        public String listCourses() {
+            return courseStore.indexJson();
+        }
+
+        /** 打开系统文件选择器导入课程包（.lcr）；结果通过 window.__saOnCourseImport 回调 */
+        @JavascriptInterface
+        public void importCourse() {
+            runOnUiThread(MainActivity.this::startCourseImport);
+        }
+
         /** 网页切换深浅色时同步状态栏 / 导航栏（否则深色页面配亮色状态栏很割裂） */
         @JavascriptInterface
         public void setTheme(final String mode) {
@@ -179,6 +196,60 @@ public class MainActivity extends Activity {
         }
     }
 
+    /* ================= 课程包导入（.lcr） ================= */
+
+    private void startCourseImport() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                "application/zip", "application/octet-stream", "application/x-zip-compressed"
+        });
+        try {
+            startActivityForResult(i, REQ_IMPORT_COURSE);
+        } catch (Exception e) {
+            Toast.makeText(this, "打不开文件选择器：" + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void importCourseFrom(Uri uri) {
+        new Thread(() -> {
+            String json;
+            try (InputStream is = getContentResolver().openInputStream(uri)) {
+                if (is == null) throw new IOException("openInputStream 返回 null");
+                // 大小上限：先看文件描述符的尺寸（不可知时由解压器的总量上限兜底）
+                long size = MAX_COURSE_PKG_BYTES + 1;
+                try (android.content.res.AssetFileDescriptor afd = getContentResolver().openAssetFileDescriptor(uri, "r")) {
+                    if (afd != null && afd.getLength() >= 0) size = afd.getLength();
+                } catch (Exception ignored) { }
+                if (size > MAX_COURSE_PKG_BYTES) throw new IOException("课程包超过 200MB");
+
+                CourseImporter.Result r = courseImporter.importZip(is, BuildConfig.VERSION_NAME);
+                json = "{\"ok\":" + r.ok + ",\"id\":" + JSONObject.quote(r.id == null ? "" : r.id)
+                        + ",\"code\":" + JSONObject.quote(r.code)
+                        + ",\"message\":" + JSONObject.quote(r.message)
+                        + ",\"pages\":" + r.pages + "}";
+            } catch (Exception e) {
+                json = "{\"ok\":false,\"id\":\"\",\"code\":\"E_IO\",\"message\":" + JSONObject.quote(String.valueOf(e.getMessage())) + ",\"pages\":0}";
+            }
+            final String payload = json;
+            runOnUiThread(() -> {
+                if (webView != null) {
+                    webView.evaluateJavascript(
+                            "window.__saOnCourseImport && window.__saOnCourseImport(" + payload + ");", null);
+                }
+                try {
+                    JSONObject o = new JSONObject(payload);
+                    boolean ok = o.optBoolean("ok");
+                    Toast.makeText(this,
+                            ok ? ("已导入《" + o.optString("id") + "》" + o.optInt("pages") + " 页")
+                               : ("导入失败：" + o.optString("message")),
+                            Toast.LENGTH_LONG).show();
+                } catch (JSONException ignored) { }
+            });
+        }, "course-import").start();
+    }
+
     private void startImport() {
         try {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -196,7 +267,7 @@ public class MainActivity extends Activity {
 
         if (resultCode != RESULT_OK || data == null || data.getData() == null) {
             pendingExportJson = null;
-            if (requestCode == REQ_EXPORT || requestCode == REQ_IMPORT) {
+            if (requestCode == REQ_EXPORT || requestCode == REQ_IMPORT || requestCode == REQ_IMPORT_COURSE) {
                 Toast.makeText(this, "已取消", Toast.LENGTH_SHORT).show();
             }
             return;
@@ -205,6 +276,7 @@ public class MainActivity extends Activity {
         Uri uri = data.getData();
         if (requestCode == REQ_EXPORT) writeBackup(uri);
         else if (requestCode == REQ_IMPORT) readBackup(uri);
+        else if (requestCode == REQ_IMPORT_COURSE) importCourseFrom(uri);
     }
 
     private void writeBackup(Uri uri) {

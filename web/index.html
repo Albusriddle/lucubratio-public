@@ -33,13 +33,14 @@
   }
 
   .quick{display:flex;gap:10px;margin:0 0 14px}
-  .quick a{
+  .quick a, .quick button{
     flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
     text-decoration:none;color:var(--fg);background:var(--card);
     border:1px solid var(--line);border-radius:13px;padding:12px 8px;
     font-size:13.5px;font-weight:600;
   }
-  .quick a:active{background:var(--soft)}
+  .quick a:active, .quick button:active{background:var(--soft)}
+  .quick button{font:inherit;cursor:pointer}
 
   .due{
     display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;
@@ -202,6 +203,7 @@
 <div class="quick">
   <a href="search.html">🔍 搜索全文</a>
   <a href="stats.html">📊 学习统计</a>
+  <button type="button" id="importCourse" hidden>＋ 导入课程包</button>
 </div>
 
 <div class="orphan" id="orphan" hidden>

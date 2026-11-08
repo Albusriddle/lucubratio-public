@@ -251,3 +251,40 @@ import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABE
     $('list').innerHTML = '<div class="empty">启动失败：' + escapeHtml(e && e.message) + '</div>';
   });
 })();
+
+/* ---------------- 课程包导入（Step 4 接入原生桥） ---------------- */
+
+/** 原生导入完成后的回调（MainActivity.importCourseFrom 注入） */
+window.__saOnCourseImport = function (res) {
+  try {
+    if (res && res.ok) {
+      var msg = '已导入《' + res.id + '》' + (res.pages || 0) + ' 页';
+      if (window.saToast) window.saToast(msg);
+      else console.log(msg);
+      // 课程库渲染在 Step 5 完成；这里先刷新页面让新课程生效
+      setTimeout(function () { location.reload(); }, 600);
+    } else {
+      var bad = '导入失败：' + ((res && res.message) || '未知错误');
+      if (window.saToast) window.saToast(bad);
+      else console.log(bad);
+    }
+  } catch (e) { console.error('[import] 回调出错', e); }
+};
+
+/** 有原生桥才显示导入按钮（浏览器调试时不显示） */
+function wireCourseImport() {
+  var btn = document.getElementById('importCourse');
+  if (!btn) return;
+  if (!window.AndroidSA || typeof window.AndroidSA.importCourse !== 'function') return;
+  btn.hidden = false;
+  btn.addEventListener('click', function () {
+    try { window.AndroidSA.importCourse(); }
+    catch (e) { console.error('[import] 调起失败', e); }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', wireCourseImport);
+} else {
+  wireCourseImport();
+}
