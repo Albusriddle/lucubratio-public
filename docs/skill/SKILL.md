@@ -76,11 +76,15 @@ producer B ──┘
 
 - **A、B 各自独立写**，不要互相看，也不要给同一份参考笔记
 - 每份产出：`<段>.a.html` / `<段>.b.html`，只写正文片段（`h2/h3/p/table/mermaid`），不写 `<html>` 头
+- **给 reviewer 的任何线索都必须自己先核实**：数字、页码、图内信息——只要是从 producer 自述里拿来的，
+  一律先回原文/原图核对；核对不了就不给，或明确标注「来自 producer 自述，未验证」。
+  > 真实教训：某次我把 producer 自述的「15KB→3 页框」当锚点转给 reviewer，课件里根本没有这个对应
+  > （p41 的 15KB 只给「→27 KiB、偏移 3 KiB」）。复核人自己重算才发现，锚点是错的。
 - reviewer 产出 `review-<段>.md`：逐条「A 对/B 对/都不对 + 依据页码」，并且**必须给出 PATCH 清单**
   （文件 + 定位原文 + 改为），合稿的人照着改即可——避免"结论对但改起来靠猜"
 
 
-详细判定标准见 [quality-gate.md](quality-gate.md)。
+详细判定标准见 [quality-gate.md](quality-gate.md)；合稿分工与决策模板见 [merge-playbook.md](merge-playbook.md)。
 
 ## 2.5 合稿阶段的题量上限（单段达标不代表全页达标）
 
