@@ -31,11 +31,15 @@ node scripts/verify.mjs
 npm test
 npm run test:package
 
-# 4) 打成课程包（.lcr，可校验后分发）
+# 4)（可选）出一个"没有内置内容"的包：课程全靠导入
+npm run build:empty
+SKIP_WEB_BUILD=1 npm run build:debug   # 必须跳过 preBuild，否则会被常规构建覆盖
+
+# 5) 打成课程包（.lcr，可校验后分发）
 npm run pack -- --id demo --title "示例课程" --version 0.1.0
 npm run verify:package -- dist/demo-0.1.0.lcr
 
-# 5) 出 APK（需要 JDK 17 + Android SDK 35）
+# 6) 出常规 APK（需要 JDK 17 + Android SDK 35）
 npm run build:debug
 ```
 

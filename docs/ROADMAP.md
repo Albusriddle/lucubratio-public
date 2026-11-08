@@ -34,6 +34,14 @@
 - [x] 数据层：**不升 DB 版本**（命名空间前缀即可精确删数据）；`BACKUP_STORES` 白名单已加
 - [x] 搜索：`loadSearchIndex()` 合并内置 + 各课程的 `search.json`（cids 已命名空间化，键不冲突）
 
+### Step 7 已完成项（D3 空内置）
+
+- [x] `node scripts/build.mjs --empty`：产出 `empty:true` / `groups:[]` / 无 `content/` 的包
+- [x] `verify.mjs` 自动放行空构建（页面数量基线跳过，壳资源/体积等仍校验）
+- [x] 首页空态：完全没有课程时显示「还没有课程。点上方「＋ 导入课程包」…」
+- [x] 出空内容 APK 的正确姿势：`npm run build:empty` 后再 `SKIP_WEB_BUILD=1` 打包
+- [x] CI 增加"空构建冒烟"步骤，防止这条路径腐化
+
 ### Step 8/9 已完成项
 
 - [x] 删除课程：Java `CourseStore.delete()` + `Bridge.deleteCourse()`；网页两段式确认（本壳 `window.confirm` 无效）+ `deleteCourseData()` 按 `<课程id>:` 前缀清进度/卡片/日志

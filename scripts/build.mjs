@@ -461,12 +461,16 @@ if (!fs.existsSync(WEB) || !fs.existsSync(path.join(WEB, 'index.html'))) {
 
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
+// --empty：产出"没有内置内容"的包（D3 验收用）。此时课程全靠用户导入。
+const EMPTY = process.argv.includes('--empty');
+
 // ===== 第一遍：收集 + 去重 + 内容指纹 =====
 const collected = [];
 for (const g of GROUPS) {
+  if (EMPTY) break;                       // 空构建：不收集任何内容页
   const srcDir = path.join(CONTENT, g.dir);
   if (!fs.existsSync(srcDir)) {
-    errors.push(`缺少内容目录: content/${g.dir}`);
+    if (!EMPTY) errors.push(`缺少内容目录: content/${g.dir}`);
     continue;
   }
   const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.html'));
@@ -526,6 +530,7 @@ const manifest = {
   generatedAt: new Date().toISOString(),
   appVersion: pkg.version,
   contentHash,
+  empty: EMPTY,        // true = 这个包没有内置内容，首页只显示"我的课程"
   groups: [],
 };
 
@@ -550,6 +555,7 @@ const searchSections = [];
 const searchPages = {};
 
 for (const g of GROUPS) {
+  if (EMPTY) break;            // 空构建：不产出任何分组
   const items = [];
   for (const c of collected.filter((x) => x.group.id === g.id)) {
     const rule = QUESTION_RULES[c.cid];
@@ -627,7 +633,7 @@ for (const key of Object.keys(DIAGRAM_OVERRIDES)) {
   }
 }
 
-if (collected.length === 0) errors.push('没有任何内容页被处理');
+if (collected.length === 0 && !EMPTY) errors.push('没有任何内容页被处理');
 if (errors.length) {
   log('');
   for (const e of errors) log(`${KJ.red}✗ ${e}${KJ.reset}`);
@@ -643,7 +649,7 @@ const searchJson = JSON.stringify({ v: 1, pages: searchPages, sections: searchSe
 fs.writeFileSync(path.join(OUT, 'search.json'), searchJson, 'utf8');
 
 log('');
-log(`${KJ.green}✓${KJ.reset} 构建完成：${collected.length} 页 / ${totalQuestions} 个自评单元，内容 ${(totalBytes / 1048576).toFixed(2)} MB`);
+log(`${KJ.green}✓${KJ.reset} 构建完成：${collected.length} 页 / ${totalQuestions} 个自评单元，内容 ${(totalBytes / 1048576).toFixed(2)} MB${EMPTY ? '（--empty：无内置内容）' : ''}`);
 log(`${KJ.dim}  检索索引 ${searchSections.length} 节 / ${(fs.statSync(path.join(OUT, 'search.json')).size / 1024).toFixed(0)} KB`);
 log(`${KJ.dim}  图表：mermaid 替换 ${totalArtMermaid} 块 / SVG 兜底 ${totalArtBlocks - totalArtMermaid} 块（最宽 ${totalArtMaxCols} 列，修复 ${totalArtRepaired} 行错位）`);
 log(`${KJ.dim}  选项分行 ${totalOptParagraphs} 段 · 复选框 ${totalCheckboxes} 个 · 并排公式拆分 ${totalFormulaSplits} 处 · LaTeX ${totalLatex} 处 · 公式代码 ${totalTableMath} 条（跳过 ${totalTableMathSkipped}） · 纯文本块 ${totalPlainBlocks} 个 · 公式块 ${totalFormulaBlocks} 个`);

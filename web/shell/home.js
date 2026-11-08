@@ -54,10 +54,12 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './li
     var st = libraryStats(lib);
     var html = '';
 
-    // 内置课程
-    html += '<div class="course-head"><span class="course-t">内置课程</span>' +
-              '<span class="course-m">' + st.builtinPages + ' 篇</span></div>';
-    html += renderItems(flattenItems(lib.builtin));
+    // 内置课程（空构建时整段不出现）
+    if (st.builtinPages > 0) {
+      html += '<div class="course-head"><span class="course-t">内置课程</span>' +
+                '<span class="course-m">' + st.builtinPages + ' 篇</span></div>';
+      html += renderItems(flattenItems(lib.builtin));
+    }
 
     // 我的课程（只有原生桥存在时才显示这一段，浏览器预览不干扰）
     var hasBridge = !!(window.AndroidSA && typeof window.AndroidSA.listCourses === 'function');
@@ -88,8 +90,13 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './li
       }
     }
 
+    // 完全没有课程时给一句引导（空构建 + 未导入 = 这个状态）
+    if (!html.trim()) {
+      html = '<div class="empty">还没有课程。点上方「＋ 导入课程包」选择 .lcr 文件开始。</div>';
+    }
+
     var list = $('list');
-    list.innerHTML = html || '<div class="empty">没有内容</div>';
+    list.innerHTML = html;
     wireCourseDelete(list);
     $('sub').innerHTML = '离线学习 · <b>' + st.totalPages + '</b> 篇';
     var secCount = $('sec-count');

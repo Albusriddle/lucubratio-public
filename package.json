@@ -16,7 +16,8 @@
     "verify:package": "node scripts/verify-package.mjs",
     "test:all": "node scripts/test.mjs && node scripts/test-library.mjs && node scripts/test-package.mjs",
     "verify:device": "node scripts/verify-device.mjs",
-    "test:library": "node scripts/test-library.mjs"
+    "test:library": "node scripts/test-library.mjs",
+    "build:empty": "node scripts/build.mjs --empty"
   },
   "engines": {
     "node": ">=20"

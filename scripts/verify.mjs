@@ -37,6 +37,9 @@ try {
   bad('manifest.json 不是合法 JSON：' + e.message);
 }
 
+// empty=true：这个包没有内置内容（D3）。页面相关的数量基线全部跳过，其余检查照旧。
+const EMPTY = !!(manifest && manifest.empty === true);
+
 if (manifest) {
   if (manifest.appVersion !== pkg.version) {
     bad(`manifest.appVersion=${manifest.appVersion} 与 package.json=${pkg.version} 不一致`);
@@ -47,7 +50,7 @@ if (manifest) {
   } else ok('内容指纹：' + manifest.contentHash);
 
   const items = (manifest.groups || []).flatMap((g) => g.items || []);
-  if (items.length === 0) bad('manifest 里没有任何内容页');
+  if (items.length === 0 && !EMPTY) bad('manifest 里没有任何内容页');
 
   const ids = new Set();
   let bytes = 0;
@@ -165,7 +168,8 @@ if (manifest) {
     }
     const MERMAID_BASELINE = BASELINE.mermaid;
     if (actualMermaid < MERMAID_BASELINE) {
-      bad(`内联 mermaid 块少得可疑：只有 ${actualMermaid} 个（基线 ${MERMAID_BASELINE}）`);
+      if (!EMPTY) bad(`内联 mermaid 块少得可疑：只有 ${actualMermaid} 个（基线 ${MERMAID_BASELINE}）`);
+      else ok(`内联 mermaid ${actualMermaid} 块（空构建，跳过基线）`);
     } else {
       ok(`内联 mermaid ${actualMermaid} 块`);
     }
@@ -198,7 +202,7 @@ if (manifest) {
     if (artChars > 0) bad(`仍有 ${artChars} 个字符画字符（│┌┐└┘…）残留，应全部转成 mermaid/正文`);
     else ok('无字符画残留（盒线字符 0）');
 
-    if (mathCount < BASELINE.math) bad(`公式少得可疑：只有 ${mathCount} 个（新课件体系基线约 190）`);
+    if (mathCount < BASELINE.math && !EMPTY) bad(`公式少得可疑：只有 ${mathCount} 个（新课件体系基线约 190）`);
     else ok(`公式 ${mathCount} 个（MathML）`);
 
     // 新课件体系里没有"仅箭头块"，纯文本块为 0 是正常的；只在旧内容回归时才需要 >0
@@ -207,7 +211,8 @@ if (manifest) {
   }
 
   if (!manifest.questionCount || manifest.questionCount < 1) {
-    bad('manifest.questionCount 缺失或为 0（自评单元没被识别，检查 QUESTION_RULES）');
+    if (!EMPTY) bad('manifest.questionCount 缺失或为 0（自评单元没被识别，检查 QUESTION_RULES）');
+    else ok('自评单元 0 个（空构建）');
   } else {
     const sum = items.reduce((n, i) => n + (i.questions || 0), 0);
     if (sum !== manifest.questionCount) bad(`questionCount 汇总不一致：${sum} ≠ ${manifest.questionCount}`);
@@ -264,7 +269,7 @@ if (!fs.existsSync(searchPath)) {
   if (sj) {
     if (sj.v !== 1) bad('search.json 版本号不是 1');
     const secs = sj.sections || [];
-    if (secs.length < BASELINE.sections) bad('检索小节过少：' + secs.length);
+    if (secs.length < BASELINE.sections && !EMPTY) bad('检索小节过少：' + secs.length);
     else ok(`检索索引 ${secs.length} 节 / ${(fs.statSync(searchPath).size / 1024).toFixed(0)} KB`);
 
     const pageIds = new Set(Object.keys(sj.pages || {}));
