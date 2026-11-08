@@ -27,27 +27,70 @@ try:
 except Exception:
     pass
 
-try:
-    import pymupdf  # PyMuPDF ≥1.24
-except ImportError:  # 老版本只有 fitz
+MIN_PYMUPDF = (1, 24)
+
+_deps_reported = False
+
+def require_deps(check_only: bool = False) -> None:
+    """前置依赖检查：缺什么就明确说、给出安装命令、以退出码 2 结束。"""
+    global pymupdf, _deps_reported
     try:
-        import fitz as pymupdf
+        import pymupdf  # PyMuPDF ≥1.24 的包名
     except ImportError:
-        sys.exit("缺少 PyMuPDF：pip install pymupdf")
+        try:
+            import fitz as pymupdf  # 老版本只有 fitz
+        except ImportError:
+            print("✗ 缺少 PyMuPDF（PDF 解析与图页渲染都需要它）", file=sys.stderr)
+            print("  安装：pip install -U pymupdf pillow", file=sys.stderr)
+            sys.exit(2)
+
+    ver = tuple(int(x) for x in pymupdf.__version__.split(".")[:2]) if hasattr(pymupdf, "__version__") else (0, 0)
+    if ver < MIN_PYMUPDF:
+        print(f"✗ PyMuPDF 版本过低：{'.'.join(map(str, ver))}（需要 ≥ {'.'.join(map(str, MIN_PYMUPDF))}）", file=sys.stderr)
+        print("  升级：pip install -U pymupdf", file=sys.stderr)
+        sys.exit(2)
+
+    has_pil = True
+    try:
+        import PIL  # noqa: F401
+    except ImportError:
+        has_pil = False
+
+    if _deps_reported:
+        if check_only:
+            sys.exit(0)
+        return
+    _deps_reported = True
+    print(f"✓ PyMuPDF {pymupdf.__version__}")
+    if has_pil:
+        print("✓ Pillow（图页可转 WebP）")
+    else:
+        print("· 未安装 Pillow：图页会保留 PNG（构建器也吃 PNG，不影响正确性）")
+        print("  需要 WebP 时：pip install pillow")
+    if check_only:
+        sys.exit(0)
+
+
+require_deps()
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="课件 PDF → 逐页 Markdown")
-    ap.add_argument("pdf")
+    ap.add_argument("pdf", nargs="?", help="课件 PDF 路径（--check-deps 时可省）")
     ap.add_argument("--out", default=None, help="输出目录（默认 <pdf 同名>_extract）")
     ap.add_argument("--render", action="store_true", help="把纯图页渲染成 WebP")
     ap.add_argument("--render-all", action="store_true", help="所有页都渲染（校对配图用）")
     ap.add_argument("--dpi", type=int, default=150)
     ap.add_argument("--max-pages", type=int, default=0, help="只处理前 N 页（0=全部）")
     ap.add_argument("--segment", type=int, default=30, help="建议每段页数（写进 report）")
+    ap.add_argument("--check-deps", action="store_true", help="只检查依赖环境后退出")
     ap.add_argument("--low-text", type=int, default=24,
                     help="文字少于该值且页面含内嵌图片时，也当作'要看的图页'（默认 24）")
     args = ap.parse_args()
+    if args.check_deps:
+        require_deps(check_only=True)
+    if not args.pdf:
+        ap.error("缺少 PDF 路径（或加 --check-deps 只检查环境）")
 
     if not os.path.isfile(args.pdf):
         sys.exit(f"找不到文件：{args.pdf}")
