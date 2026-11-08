@@ -44,13 +44,18 @@ public final class CourseImporter {
         public final String code;
         public final String message;
         public final int pages;
+        /** true = 覆盖了同 id 的旧版本（不是首次安装） */
+        public final boolean replaced;
 
-        private Result(boolean ok, String id, String code, String message, int pages) {
-            this.ok = ok; this.id = id; this.code = code; this.message = message; this.pages = pages;
+        private Result(boolean ok, String id, String code, String message, int pages, boolean replaced) {
+            this.ok = ok; this.id = id; this.code = code; this.message = message;
+            this.pages = pages; this.replaced = replaced;
         }
 
-        static Result ok(String id, int pages) { return new Result(true, id, "OK", "导入成功", pages); }
-        static Result fail(String code, String message) { return new Result(false, null, code, message, 0); }
+        static Result ok(String id, int pages, boolean replaced) {
+            return new Result(true, id, "OK", replaced ? "已更新" : "导入成功", pages, replaced);
+        }
+        static Result fail(String code, String message) { return new Result(false, null, code, message, 0, false); }
     }
 
     private static final int MAX_ENTRIES = 5000;
@@ -145,7 +150,7 @@ public final class CourseImporter {
             return Result.fail("E_ZIP", "不是有效的课程包：" + e.getMessage());
         }
         if (entries == 0) return Result.fail("E_ZIP", "包是空的");
-        return Result.ok(null, 0);
+        return Result.ok(null, 0, false);
     }
 
     /** 校验并归一化 zip 内路径；不安全返回 null */
@@ -307,7 +312,7 @@ public final class CourseImporter {
         if (hadOld) deleteRecursively(trash);
 
         store.invalidate();
-        return Result.ok(id, pages);
+        return Result.ok(id, pages, hadOld);
     }
 
     private static boolean move(File from, File to) {

@@ -242,9 +242,10 @@ public class MainActivity extends Activity {
                 json = "{\"ok\":" + r.ok + ",\"id\":" + JSONObject.quote(r.id == null ? "" : r.id)
                         + ",\"code\":" + JSONObject.quote(r.code)
                         + ",\"message\":" + JSONObject.quote(r.message)
-                        + ",\"pages\":" + r.pages + "}";
+                        + ",\"pages\":" + r.pages
+                        + ",\"replaced\":" + r.replaced + "}";
             } catch (Exception e) {
-                json = "{\"ok\":false,\"id\":\"\",\"code\":\"E_IO\",\"message\":" + JSONObject.quote(String.valueOf(e.getMessage())) + ",\"pages\":0}";
+                json = "{\"ok\":false,\"id\":\"\",\"code\":\"E_IO\",\"message\":" + JSONObject.quote(String.valueOf(e.getMessage())) + ",\"pages\":0,\"replaced\":false}";
             }
             final String payload = json;
             runOnUiThread(() -> {
@@ -255,8 +256,9 @@ public class MainActivity extends Activity {
                 try {
                     JSONObject o = new JSONObject(payload);
                     boolean ok = o.optBoolean("ok");
+                    String verb = o.optBoolean("replaced") ? "已更新" : "已导入";
                     Toast.makeText(this,
-                            ok ? ("已导入《" + o.optString("id") + "》" + o.optInt("pages") + " 页")
+                            ok ? (verb + "《" + o.optString("id") + "》" + o.optInt("pages") + " 页")
                                : ("导入失败：" + o.optString("message")),
                             Toast.LENGTH_LONG).show();
                 } catch (JSONException ignored) { }

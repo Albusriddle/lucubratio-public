@@ -4,10 +4,10 @@
    ============================================================ */
 import {
   init, getLastRead, stats, dueCount, exportSnapshot, importSnapshot, info,
-  reconcileContent, orphanCount, rearmOrphans, deleteCourseData,
+  reconcileContent, reconcileByCid, orphanCount, rearmOrphans, deleteCourseData,
 } from './store.js';
 import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABEL } from './theme.js';
-import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './library.js';
+import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMap } from './library.js';
 
 (function () {
   'use strict';
@@ -322,7 +322,8 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './li
 
     // 讲义更新后对账：把指向已变标题的旧卡片标为"待复核"，不直接丢弃
     try {
-      if (lib && lib.builtin && lib.builtin.contentHash) await reconcileContent(lib.builtin.contentHash);
+      // 逐页对账：内置用全局哈希，导入课程用「课程id@版本#页指纹」
+      if (lib) await reconcileByCid(buildCverMap(lib));
     } catch (e) {
       console.warn('[home] 内容版本对账失败', e);
     }
@@ -352,7 +353,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './li
 window.__saOnCourseImport = function (res) {
   try {
     if (res && res.ok) {
-      var msg = '已导入《' + res.id + '》' + (res.pages || 0) + ' 页';
+      var msg = (res.replaced ? '已更新《' : '已导入《') + res.id + '》' + (res.pages || 0) + ' 页';
       if (window.saToast) window.saToast(msg);
       else console.log(msg);
       // 课程库渲染在 Step 5 完成；这里先刷新页面让新课程生效

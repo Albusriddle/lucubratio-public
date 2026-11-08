@@ -200,6 +200,28 @@ const lib = await import('../web/shell/library.js');
   }
 }
 
+/* ---------- 8) 逐页 cver 映射（孤儿卡对账用） ---------- */
+{
+  installBridge([{ id: 'demo', title: '示例课程', version: '0.1.0', pages: 2, bytes: 1, installedAt: Date.now() }]);
+  const l = await lib.loadLibrary();
+  const map = lib.buildCverMap(l);
+
+  const builtinCid = lib.flattenItems(l.builtin)[0].id;
+  const courseCid = lib.flattenItems(l.imported[0].manifest)[0].id;
+  const builtinExpect = l.builtin.contentHash;
+  const courseItem = lib.flattenItems(l.imported[0].manifest)[0];
+  const courseExpect = 'demo@0.1.0#' + courseItem.hash;
+
+  if (map[builtinCid] === builtinExpect) ok(`内置页 cver = 全局 contentHash（${builtinExpect}）`);
+  else bad(`内置页 cver 异常：${map[builtinCid]} ≠ ${builtinExpect}`);
+
+  if (map[courseCid] === courseExpect) ok(`导入课程页 cver = 课程id@版本#页指纹（${courseExpect}）`);
+  else bad(`导入课程 cver 异常：${map[courseCid]} ≠ ${courseExpect}`);
+
+  if (Object.keys(map).length === 4) ok('cver 映射覆盖全部 4 页（内置 2 + 导入 2）');
+  else bad('cver 映射条目数异常：' + Object.keys(map).length);
+}
+
 console.log('');
 if (fail) {
   console.log(`\x1b[31m课程库自测失败：${fail} 项（通过 ${pass} 项）\x1b[0m`);

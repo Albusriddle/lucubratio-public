@@ -141,3 +141,23 @@ export async function loadSearchIndex() {
   }
   return merged;
 }
+
+/**
+ * 构造 "cid → 期望 cver" 映射，供孤儿卡对账使用。
+ * · 内置页：cver = manifest.contentHash（构建期写进每页 data-cver 的同一个值）
+ * · 导入课程：cver = "<课程id>@<版本>#<该页指纹>"（打包器写的，manifest.items[].hash 就是它）
+ */
+export function buildCverMap(lib) {
+  var map = {};
+  if (lib && lib.builtin && lib.builtin.contentHash) {
+    flattenItems(lib.builtin).forEach(function (it) { map[it.id] = lib.builtin.contentHash; });
+  }
+  (lib && lib.imported ? lib.imported : []).forEach(function (c) {
+    var m = c.meta || {};
+    var items = c.manifest ? flattenItems(c.manifest) : [];
+    items.forEach(function (it) {
+      map[it.id] = (m.id || '') + '@' + (m.version || '0') + '#' + (it.hash || '0');
+    });
+  });
+  return map;
+}

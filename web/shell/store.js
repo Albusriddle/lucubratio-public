@@ -247,6 +247,42 @@ export async function reconcileContent(cver) {
   return { orphaned: orphaned, adopted: adopted, total: cards.length };
 }
 
+/**
+ * 按"每一页的内容版本"对账（多课程 + 逐页精度）。
+ * 内置页的 cver = 全局 contentHash；导入课程的 cver = "<课程id>@<版本>#<页指纹>"，
+ * 由打包器写进页面的 data-cver，卡片创建时记录同一个值。
+ *
+ * @param {Object<string,string>} cverByCid  cid → 期望的 cver
+ * @returns {Promise<{orphaned:number, adopted:number, total:number}>}
+ */
+export async function reconcileByCid(cverByCid) {
+  if (state.kind !== KIND.idb || !cverByCid) return { orphaned: 0, adopted: 0, total: 0 };
+  const cards = await db.getAll('cards');
+  const changed = [];
+  let orphaned = 0;
+  let adopted = 0;
+
+  for (const c of cards) {
+    const qid = String(c.qid || '');
+    const hash = qid.lastIndexOf('#');
+    const cid = hash > 0 ? qid.slice(0, hash) : (c.cid || '');
+    const expect = cverByCid[cid];
+    if (!expect) continue;                 // 找不到对应页（可能课程已删除）→ 交给删除流程处理
+    if (!c.cver) {
+      c.cver = expect;
+      adopted++;
+      changed.push(c);
+    } else if (c.cver !== expect && !c.orphan) {
+      c.orphan = true;
+      c.orphanedAt = Date.now();
+      orphaned++;
+      changed.push(c);
+    }
+  }
+  if (changed.length) await db.putMany('cards', changed);
+  return { orphaned: orphaned, adopted: adopted, total: cards.length };
+}
+
 export async function orphanCards() {
   if (state.kind !== KIND.idb) return [];
   const all = await db.getAll('cards');

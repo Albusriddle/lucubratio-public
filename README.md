@@ -69,7 +69,9 @@ docs/                # 内容规范 / 作业规范 / 课程包格式 / 路线图
 3. 跑 `node scripts/build.mjs && node scripts/verify.mjs`；
 4. 出 APK 自己装。
 
-> 未来会改成「课程包 `.lcr` + App 内导入」，见 [`docs/PACKAGE-FORMAT.md`](docs/PACKAGE-FORMAT.md) 与 [`docs/ROADMAP.md`](docs/ROADMAP.md)。
+> **已经支持「课程包 `.lcr` + App 内导入」**：教程见 [`docs/IMPORT.md`](docs/IMPORT.md)，
+> 格式见 [`docs/PACKAGE-FORMAT.md`](docs/PACKAGE-FORMAT.md)，进度见 [`docs/ROADMAP.md`](docs/ROADMAP.md)；
+> 版本变更见 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 许可
 
