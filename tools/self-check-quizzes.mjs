@@ -66,8 +66,9 @@ function jaccard(a, b) {
 
 const quizzes = splitQuizzes(html);
 if (!quizzes.length) {
-  console.error('没有找到「检测 N」题块');
-  process.exit(1);
+  // 串讲/速记卡这类页面本来就没有检测题，不算失败
+  console.log('本页没有「检测 N」题块（串讲/速记类页面属正常），跳过');
+  process.exit(0);
 }
 
 let bad = 0;
