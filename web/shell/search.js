@@ -5,6 +5,7 @@
    为什么不用 Pagefind：正文只有 400KB，引 wasm 不值当，也避开 wasm MIME 的坑
    ============================================================ */
 import { initTheme } from './theme.js';
+import { loadSearchIndex } from './library.js';
 
 (function () {
   'use strict';
@@ -20,8 +21,8 @@ import { initTheme } from './theme.js';
   function loadIndex() {
     if (index) return Promise.resolve(index);
     if (loading) return loading;
-    loading = fetch('/search.json')
-      .then(function (r) { return r.json(); })
+    // 内置 + 已导入课程合并（Step 9）
+    loading = loadSearchIndex()
       .then(function (j) {
         index = j;
         return j;

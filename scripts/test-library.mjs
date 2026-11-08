@@ -159,6 +159,47 @@ const lib = await import('../web/shell/library.js');
   else bad('日期格式化异常：' + d);
 }
 
+/* ---------- 6) 检索索引合并（内置 + 已导入课程） ---------- */
+{
+  installBridge([{ id: 'demo', title: '示例课程', version: '0.1.0', pages: 2, bytes: 1, installedAt: Date.now() }]);
+  const idx = await lib.loadSearchIndex();
+  const cids = Object.keys(idx.pages || {});
+  const hasBuiltin = cids.some((c) => !c.includes(':'));
+  const hasCourse = cids.some((c) => String(c).startsWith('demo:'));
+  if (hasBuiltin && hasCourse) {
+    ok(`检索索引合并：${cids.length} 页 / ${idx.sections.length} 节（含内置与 demo: 前缀）`);
+  } else {
+    bad(`检索索引合并异常：pages=${JSON.stringify(cids)}`);
+  }
+  const badSection = (idx.sections || []).find((x) => !x.p);
+  if (!badSection) ok('合并后的每个小节都带所属页面 id');
+  else bad('存在没有 p 字段的小节');
+}
+
+/* ---------- 7) 课程归属判定（删除课程时靠它清数据） ---------- */
+{
+  const cases = [
+    ['demo:os-01', 'demo', true],
+    ['demo:os-01#检测 1', 'demo', true],
+    ['os-01', 'demo', false],
+    ['other:os-01', 'demo', false],
+    ['', 'demo', false],
+  ];
+  let allOk = true;
+  for (const [input, course, expect] of cases) {
+    if (lib.belongsToCourse(input, course) !== expect) {
+      allOk = false;
+      bad(`归属判定错误：${JSON.stringify(input)} vs ${course} 期望 ${expect}`);
+    }
+  }
+  if (allOk) ok(`归属判定：${cases.length} 个用例全对（内置 cid 不含 ":"）`);
+  if (lib.courseIdOf('demo:os-01') === 'demo' && lib.courseIdOf('os-01') === null) {
+    ok('courseIdOf：导入课程解析出 demo，内置返回 null');
+  } else {
+    bad('courseIdOf 结果异常');
+  }
+}
+
 console.log('');
 if (fail) {
   console.log(`\x1b[31m课程库自测失败：${fail} 项（通过 ${pass} 项）\x1b[0m`);

@@ -142,6 +142,34 @@ public final class CourseStore {
         return rootObj.toString();
     }
 
+    /** 删除一门课：目录先改名到 .trash-*，再递归删除；失败返回 false */
+    public boolean delete(String id) {
+        if (!isValidId(id)) return false;
+        File dir = new File(root, id);
+        if (!dir.isDirectory()) return false;
+        File trash = new File(root, ".trash-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+        if (!dir.renameTo(trash)) return false;
+        CourseImporter.deleteRecursively(trash);
+        invalidate();
+        return true;
+    }
+
+    /**
+     * 清理上次异常退出留下的临时目录（.tmp-* 与 .trash-*）。
+     * 在启动时调用一次；正常导入/删除后这些目录本来就不存在。
+     */
+    public void cleanupTemp() {
+        File[] fs = root.listFiles();
+        if (fs == null) return;
+        for (File f : fs) {
+            String n = f.getName();
+            if (f.isDirectory() && (n.startsWith(".tmp-") || n.startsWith(".trash-"))) {
+                CourseImporter.deleteRecursively(f);
+            }
+        }
+        invalidate();
+    }
+
     /**
      * 把 /courses/ 之后的相对路径解析成真实文件。
      * 任何越界（.. / 绝对路径 / 反斜杠 / NUL）都返回 null。

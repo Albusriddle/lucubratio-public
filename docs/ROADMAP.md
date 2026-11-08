@@ -32,7 +32,14 @@
 - [x] Java `UserCoursesHandler`：`/courses/` → `filesDir/courses/`（含 `/courses/index.json` 动态注册表；`Mime` 共用；缺文件返 404 不回落网络）
 - [x] 首页「课程库」：内置课程 + 我的课程（`web/shell/library.js` 合并两份清单；显示页数/体积/导入时间；无桥时自动隐藏该段）
 - [x] 数据层：**不升 DB 版本**（命名空间前缀即可精确删数据）；`BACKUP_STORES` 白名单已加
-- [ ] 搜索：多份 `search.json` 合并（首次搜索缓存到 IndexedDB）
+- [x] 搜索：`loadSearchIndex()` 合并内置 + 各课程的 `search.json`（cids 已命名空间化，键不冲突）
+
+### Step 8/9 已完成项
+
+- [x] 删除课程：Java `CourseStore.delete()` + `Bridge.deleteCourse()`；网页两段式确认（本壳 `window.confirm` 无效）+ `deleteCourseData()` 按 `<课程id>:` 前缀清进度/卡片/日志
+- [x] 多课程搜索：`library.loadSearchIndex()` 合并多份索引；搜索页改用该入口
+- [x] 多课程复习：`review.js` 标题表来自课程库（导入课程的卡片不再显示裸 cid）
+- [x] 启动清理：`CourseStore.cleanupTemp()` 清 `.tmp-*` / `.trash-*` 残留
 
 ## 阶段 2 · 生成侧体验（约 3–5 人日）
 

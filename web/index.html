@@ -39,7 +39,10 @@
   .course-sub{display:flex;align-items:baseline;justify-content:space-between;
     gap:10px;margin:10px 0 6px;padding:8px 10px;border-radius:8px;background:var(--soft)}
   .course-sub .course-name{font-size:14px;font-weight:600}
-  .course-sub .course-meta{font-size:12px;color:var(--muted);text-align:right}
+  .course-sub .course-meta{font-size:12px;color:var(--muted);text-align:right;flex:1}
+  .course-del{flex:none;font:inherit;font-size:12.5px;padding:5px 10px;border-radius:999px;
+    border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .course-del.danger{border-color:#c0392b;color:#c0392b}
   .quick{display:flex;gap:10px;margin:0 0 14px}
   .quick a, .quick button{
     flex:1;display:flex;align-items:center;justify-content:center;gap:6px;

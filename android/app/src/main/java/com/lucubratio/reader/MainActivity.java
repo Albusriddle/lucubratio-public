@@ -104,6 +104,8 @@ public class MainActivity extends Activity {
 
         courseStore = new CourseStore(this);
         courseImporter = new CourseImporter(this, courseStore);
+        // 清理上次异常退出留下的 .tmp-* / .trash-*（不阻塞 UI，几毫秒的事）
+        courseStore.cleanupTemp();
         // 顺序很重要：WebViewAssetLoader 按注册顺序匹配（不是最长前缀），
         // 所以 "/courses/"（用户导入课程）必须排在 "/"（内置 assets）之前。
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
@@ -152,6 +154,18 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String listCourses() {
             return courseStore.indexJson();
+        }
+
+        /**
+         * 删除一门已导入课程（只删磁盘文件；网页侧负责清该课程的进度/卡片）。
+         * 返回 {"ok":bool,"id":"…","message":"…"}
+         */
+        @JavascriptInterface
+        public String deleteCourse(final String id) {
+            boolean ok = courseStore.delete(id);
+            String msg = ok ? "已删除" : "删除失败（课程不存在或无法写入）";
+            return "{\"ok\":" + ok + ",\"id\":" + JSONObject.quote(id == null ? "" : id)
+                    + ",\"message\":" + JSONObject.quote(msg) + "}";
         }
 
         /** 打开系统文件选择器导入课程包（.lcr）；结果通过 window.__saOnCourseImport 回调 */

@@ -287,6 +287,46 @@ function sameLocalDay(a, b) {
  * @param {{qid:string,cid:string,file:string,anchor:string,text:string,rating:number,source?:'page'|'review'}} p
  * @returns {Promise<object|null>} 更新后的卡片记录
  */
+/* ---------------- 课程删除 ---------------- */
+
+/**
+ * 删除一门导入课程在本地的全部数据。
+ * 该课程的 cid/qid 都带 "<课程id>:" 前缀（打包期命名空间化），所以按前缀判定即可，
+ * 不需要维护"课程 → 数据"的映射表。
+ *
+ * @returns {Promise<number>} 删掉的行数
+ */
+export async function deleteCourseData(courseId) {
+  var prefix = String(courseId) + ':';
+  if (state.kind !== KIND.idb) return 0;
+  var stores = db.BACKUP_STORES.filter(function (s) { return s !== 'meta' && s !== 'settings'; });
+  var removed = 0;
+  await db.run(stores, 'readwrite', function (tx) {
+    var jobs = [];
+    stores.forEach(function (s) {
+      var os = tx.objectStore(s);
+      jobs.push(new Promise(function (resolve) {
+        var req = os.openCursor();
+        req.onsuccess = function () {
+          var cur = req.result;
+          if (!cur) { resolve(); return; }
+          var row = cur.value || {};
+          // reviews 用 qid 判归属，其余表都有 cid
+          var key = (s === 'reviews') ? row.qid : row.cid;
+          if (typeof key === 'string' && key.indexOf(prefix) === 0) {
+            cur.delete();
+            removed++;
+          }
+          cur.continue();
+        };
+        req.onerror = function () { resolve(); };
+      }));
+    });
+    return Promise.all(jobs);
+  });
+  return removed;
+}
+
 export async function assess(p) {
   if (state.kind !== KIND.idb) return null;
 

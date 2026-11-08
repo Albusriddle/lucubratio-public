@@ -95,3 +95,49 @@ export function fmtBytes(n) {
   if (v < 1024 * 1024) return Math.round(v / 1024) + ' KB';
   return (v / 1048576).toFixed(1) + ' MB';
 }
+
+/**
+ * 从 cid / qid 里解析出课程 id。
+ * 内置内容的 cid 不含 ":"（硬约定），导入课程的是 "<课程id>:<原cid>"。
+ * @returns {string|null} 课程 id；内置内容返回 null
+ */
+export function courseIdOf(cidOrQid) {
+  var s = String(cidOrQid == null ? '' : cidOrQid);
+  var i = s.indexOf(':');
+  if (i <= 0) return null;
+  return s.slice(0, i);
+}
+
+/** 某个 cid/qid 是否属于指定课程 */
+export function belongsToCourse(cidOrQid, courseId) {
+  return courseIdOf(cidOrQid) === String(courseId);
+}
+
+/**
+ * 合并检索索引：内置 /search.json + 每门已导入课程的 /courses/<id>/search.json。
+ * 因为 cid 在打包期已命名空间化为 "<课程id>:<原cid>"，各门课的键天然不冲突。
+ * @returns {Promise<{v:number, pages:object, sections:object[]}>}
+ */
+export async function loadSearchIndex() {
+  var merged = { v: 1, pages: {}, sections: [] };
+  try {
+    var b = await fetchJson('/search.json');
+    Object.assign(merged.pages, b.pages || {});
+    if (Array.isArray(b.sections)) merged.sections = merged.sections.concat(b.sections);
+  } catch (e) {
+    console.warn('[library] 内置检索索引读取失败', e);
+  }
+  var metas = listImportedMetas();
+  for (var i = 0; i < metas.length; i++) {
+    var id = metas[i] && metas[i].id;
+    if (!id) continue;
+    try {
+      var s = await fetchJson('/courses/' + encodeURIComponent(id) + '/search.json');
+      Object.assign(merged.pages, s.pages || {});
+      if (Array.isArray(s.sections)) merged.sections = merged.sections.concat(s.sections);
+    } catch (e) {
+      console.warn('[library] 课程 ' + id + ' 的检索索引读取失败', e);
+    }
+  }
+  return merged;
+}

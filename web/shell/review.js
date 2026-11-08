@@ -4,6 +4,7 @@
    打分：assess() → FSRS 推进 → 下一张
    ============================================================ */
 import { init, dueCards, assess } from './store.js';
+import { loadLibrary, flattenItems } from './library.js';
 import { preview } from './fsrs.js';
 import { fmtDueShort } from './time.js';
 import { initTheme } from './theme.js';
@@ -97,9 +98,11 @@ import { initTheme } from './theme.js';
     await init({});
 
     try {
-      var m = await (await fetch('/manifest.json')).json();
-      m.groups.forEach(function (g) {
-        g.items.forEach(function (i) { titles[i.id] = i.title; });
+      // 内置 + 已导入课程都要有标题（否则导入课程的卡片只显示 cid）
+      var lib = await loadLibrary();
+      flattenItems(lib.builtin).forEach(function (i) { titles[i.id] = i.title; });
+      lib.imported.forEach(function (c) {
+        if (c.manifest) flattenItems(c.manifest).forEach(function (i) { titles[i.id] = i.title; });
       });
     } catch (e) { /* 没有标题也能复习 */ }
 

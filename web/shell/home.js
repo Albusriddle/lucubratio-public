@@ -4,7 +4,7 @@
    ============================================================ */
 import {
   init, getLastRead, stats, dueCount, exportSnapshot, importSnapshot, info,
-  reconcileContent, orphanCount, rearmOrphans,
+  reconcileContent, orphanCount, rearmOrphans, deleteCourseData,
 } from './store.js';
 import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABEL } from './theme.js';
 import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './library.js';
@@ -79,6 +79,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './li
                       (items.length || m.pages || 0) + ' 篇 · ' + fmtBytes(m.bytes) +
                       (m.installedAt ? ' · ' + fmtDate(m.installedAt) : '') +
                     '</span>' +
+                    '<button class="course-del" type="button" data-id="' + escapeHtml(m.id || '') + '">删除</button>' +
                   '</div>';
           html += items.length
             ? renderItems(items)
@@ -89,9 +90,58 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './li
 
     var list = $('list');
     list.innerHTML = html || '<div class="empty">没有内容</div>';
+    wireCourseDelete(list);
     $('sub').innerHTML = '离线学习 · <b>' + st.totalPages + '</b> 篇';
     var secCount = $('sec-count');
     if (secCount) secCount.textContent = st.totalPages + ' 篇';
+  }
+
+  /* ---------------- 删除课程（两段式确认） ---------------- */
+  function wireCourseDelete(root) {
+    var btns = root.querySelectorAll('.course-del');
+    for (var i = 0; i < btns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          if (btn.dataset.armed === '1') { doDeleteCourse(btn); return; }
+          // 第一次点击：变成"确认删除？"，3 秒不点自动还原
+          btn.dataset.armed = '1';
+          btn.textContent = '确认删除？';
+          btn.classList.add('danger');
+          setTimeout(function () {
+            if (btn.isConnected && btn.dataset.armed === '1') {
+              btn.dataset.armed = '0';
+              btn.textContent = '删除';
+              btn.classList.remove('danger');
+            }
+          }, 3000);
+        });
+      })(btns[i]);
+    }
+  }
+
+  async function doDeleteCourse(btn) {
+    var id = btn.dataset.id;
+    if (!id) return;
+    btn.disabled = true;
+    btn.textContent = '删除中…';
+    try {
+      var native = window.AndroidSA && window.AndroidSA.deleteCourse;
+      if (native) {
+        var res = JSON.parse(window.AndroidSA.deleteCourse(id) || '{}');
+        if (!res.ok) {
+          toast(res.message || '删除失败');
+          btn.disabled = false; btn.textContent = '删除'; btn.dataset.armed = '0';
+          return;
+        }
+      }
+      var n = await deleteCourseData(id);
+      toast('已删除课程，清掉 ' + n + ' 条本地记录');
+      setTimeout(function () { location.reload(); }, 500);
+    } catch (e) {
+      console.error('[delete] 失败', e);
+      toast('删除出错：' + (e && e.message));
+      btn.disabled = false; btn.textContent = '删除'; btn.dataset.armed = '0';
+    }
   }
 
   /* ---------------- 继续学习 ---------------- */
