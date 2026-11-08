@@ -5,7 +5,7 @@
 
 | 脚本 | 作用 | 依赖 |
 |---|---|---|
-| `pdf-extract.py` | 课件 PDF → 逐页 Markdown + 无文字页截图 + `report.json`（页数/无文字页/建议分段） | Python 3.9+、`pymupdf`（可选 `pillow` 转 WebP） |
+| `pdf-extract.py` | 课件 PDF → 逐页 Markdown + 图页截图 + `report.json`（无文字页 / **低文字有图页** / 建议分段） | Python 3.9+、`pymupdf`（可选 `pillow` 转 WebP） |
 | `assemble.mjs` | 若干 HTML 片段 → 一个完整内容页（套标准头，检查 `id`，提示 `QUESTION_RULES`） | Node 20+，零依赖 |
 | `course-new.mjs` | 新建内容页骨架（四块结构 + Mermaid 示例 + 检测题占位） | Node 20+，零依赖 |
 
@@ -33,6 +33,8 @@ node scripts/verify-package.mjs dist/vm4-1.0.0.lcr
 ## 约定与坑
 
 - 抽取**不做 OCR**：扫描件 OCR 出来的字用于生成课程错误率太高，宁可让作者看图补写
+- `--low-text 24`：文字少于 24 字**且页面含内嵌图**的页也会被渲染。这类页最阴险——例如只有「运行结果」四个字，
+  而答案全在截图里。实测一份 52 页课件，无文字页 10 个、低文字有图页另有 13 个
 - `report.json.empty_pages` 里的页，生成阶段必须看 `img/` 后据图写
 - `assemble.mjs` 只做"套头 + 拼装"，**不做** `data-cid`/`data-file` 注入——那些由 `scripts/build.mjs` 统一完成
 - Mermaid 块必须写成 `<div class="mermaid"><script type="text/plain">flowchart TD`（同一行开头），否则 `verify` 会报错

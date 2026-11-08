@@ -45,6 +45,8 @@ def main() -> int:
     ap.add_argument("--dpi", type=int, default=150)
     ap.add_argument("--max-pages", type=int, default=0, help="只处理前 N 页（0=全部）")
     ap.add_argument("--segment", type=int, default=30, help="建议每段页数（写进 report）")
+    ap.add_argument("--low-text", type=int, default=24,
+                    help="文字少于该值且页面含内嵌图片时，也当作'要看的图页'（默认 24）")
     args = ap.parse_args()
 
     if not os.path.isfile(args.pdf):
@@ -64,6 +66,7 @@ def main() -> int:
         "pages": total,
         "processed": limit,
         "empty_pages": [],
+        "low_text_pages": [],   # 有少量文字但关键信息在图里（如"运行结果"+ 终端截图）
         "chars_by_page": {},
         "suggested_segments": [],
     }
@@ -79,9 +82,17 @@ def main() -> int:
         text = page.get_text("text").strip()
         report["chars_by_page"][str(i + 1)] = len(text)
 
+        has_img = len(page.get_images(full=True)) > 0
+        low_text = bool(text) and len(text) < args.low_text and has_img
+        if low_text:
+            report["low_text_pages"].append(i + 1)
+
         body = [f"## p{i + 1}\n"]
-        if text:
+        if text and not low_text:
             body.append(text + "\n")
+        elif low_text:
+            body.append(text + "\n")
+            body.append("（本页文字很少，关键信息在内嵌图片里：请看 img/p%03d.webp 并据图补写，不要臆造。）\n" % (i + 1))
         else:
             report["empty_pages"].append(i + 1)
             body.append("（本页无文字层：纯图/截图。请查看 img/p%03d.webp 后据图补写，不要臆造。）\n" % (i + 1))
@@ -89,7 +100,7 @@ def main() -> int:
         with open(os.path.join(pages_dir, f"p{i + 1:03d}.md"), "w", encoding="utf-8") as f:
             f.write("".join(body))
 
-        want_img = args.render_all or (args.render and not text)
+        want_img = args.render_all or (args.render and (not text or low_text))
         if want_img:
             os.makedirs(img_dir, exist_ok=True)
             pix = page.get_pixmap(dpi=args.dpi)
@@ -119,6 +130,8 @@ def main() -> int:
     empty = report["empty_pages"]
     print(f"✓ 已导出 {limit}/{total} 页 → {pages_dir}")
     print(f"  无文字层 {len(empty)} 页" + (f"：{empty[:12]}{'…' if len(empty) > 12 else ''}" if empty else ""))
+    low = report["low_text_pages"]
+    print(f"  低文字但有图 {len(low)} 页" + (f"：{low[:12]}{'…' if len(low) > 12 else ''}" if low else ""))
     if rendered:
         print(f"  渲染图片 {rendered} 张 → {img_dir}")
     print(f"  建议分段：{len(report['suggested_segments'])} 段（每段 {seg} 页）→ {os.path.join(out, 'report.json')}")

@@ -102,7 +102,8 @@ function pickKicker(html) {
 function tagQuestions(html, rule, cid) {
   if (!rule) return { html, count: 0 };
   let count = 0;
-  const re = new RegExp(`<h(${rule.level})([^>]*)>([\\s\\S]{0,200}?)</h\\1>`, 'g');
+  // 标题内容长度不设上限：题干可能很长（曾因 {0,200} 上限导致 2 道长题干题被静默漏标）
+  const re = new RegExp(`<h(${rule.level})([^>]*)>([\\s\\S]*?)</h\\1>`, 'g');
   const out = html.replace(re, (m, lv, attrs, inner) => {
     if (!rule.test.test(stripTags(inner))) return m;
     const idMatch = attrs.match(/\sid="([^"]+)"/);

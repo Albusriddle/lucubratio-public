@@ -187,6 +187,21 @@ if (manifest) {
     }
   }
 
+  // 3.8) 每页「检测」标题数必须等于被标记的自评单元数（防长题干被静默漏标）
+  {
+    const mismatch = [];
+    for (const it of items) {
+      const p = path.join(OUT, decodeURIComponent(it.file));
+      if (!fs.existsSync(p)) continue;
+      const html = fs.readFileSync(p, 'utf8');
+      const heads = (html.match(/<h[23][^>]*id="检测\s*\d+"/g) || []).length;
+      const tagged = (html.match(/data-qid="[^"]*#检测/g) || []).length;
+      if (heads !== tagged) mismatch.push(`${it.id}: 标题 ${heads} / 标记 ${tagged}`);
+    }
+    if (mismatch.length) bad(`自评标题与标记数不一致：${mismatch.join('；')}`);
+    else ok('自评标题数与被标记数一致');
+  }
+
   // 3.9) 正文不得残留 Markdown 记号（作者常手滑把 **加粗** 写进 HTML）
   {
     const md = [];

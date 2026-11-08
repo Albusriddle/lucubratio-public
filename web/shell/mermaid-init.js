@@ -9,6 +9,14 @@
 (function () {
   'use strict';
 
+  // 同步阶段捕获本脚本的 data-lib：loadLib 在 IntersectionObserver 回调里执行，
+  // 那时 document.currentScript 已是 null，必须在这里先存下来（否则丢 ?v= 缓存击穿）。
+  var LIB_SRC = (function () {
+    var cs = document.currentScript;
+    if (cs && cs.dataset && cs.dataset.lib) return cs.dataset.lib;
+    return window.__SA_MERMAID_SRC || '/vendor/mermaid.min.js';
+  })();
+
   // ---------- 同步阶段：先快照源码 ----------
   // 构建期已把 mermaid 源码整体 HTML 转义，textContent 读出来就是原文（<br/> 等都在）。
   var early = document.querySelectorAll('.mermaid');
@@ -65,8 +73,7 @@
     libPromise = new Promise(function (resolve, reject) {
       // 库路径由注入的 <script src="/shell/mermaid-init.js" data-lib="…"> 提供；
       // 兼容旧写法 window.__SA_MERMAID_SRC（老产物/旧包），最后回落到默认路径。
-      var cs = document.currentScript;
-      var src = (cs && cs.dataset && cs.dataset.lib) || window.__SA_MERMAID_SRC || '/vendor/mermaid.min.js';
+      var src = LIB_SRC;
       var s = document.createElement('script');
       s.src = src;
       s.async = true;
