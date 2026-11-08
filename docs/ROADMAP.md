@@ -29,7 +29,7 @@
 - [x] `scripts/pack.mjs`：build → zip → `format.json` + `sha256` → `dist/<id>-<version>.lcr`
 - [x] `scripts/verify-package.mjs`：离线校验包结构和安全规则（见 PACKAGE-FORMAT §4）
 - [ ] Java 导入器：SAF 选包 → 校验 → 解压（防 Zip Slip）→ 写注册表（**Step 3–4**）
-- [ ] Java `UserCoursesHandler`：`/courses/<id>/...` → `filesDir/courses/<id>/...`（复用 MIME 表）
+- [x] Java `UserCoursesHandler`：`/courses/` → `filesDir/courses/`（含 `/courses/index.json` 动态注册表；`Mime` 共用；缺文件返 404 不回落网络）
 - [ ] 首页「课程库」：内置课程 + 我的课程（导入/删除/更新、显示体积与页数）
 - [x] 数据层：**不升 DB 版本**（命名空间前缀即可精确删数据）；`BACKUP_STORES` 白名单已加
 - [ ] 搜索：多份 `search.json` 合并（首次搜索缓存到 IndexedDB）

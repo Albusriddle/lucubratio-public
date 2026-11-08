@@ -14,7 +14,8 @@
     "pack": "node scripts/pack.mjs",
     "test:package": "node scripts/test-package.mjs",
     "verify:package": "node scripts/verify-package.mjs",
-    "test:all": "node scripts/test.mjs && node scripts/test-package.mjs"
+    "test:all": "node scripts/test.mjs && node scripts/test-package.mjs",
+    "verify:device": "node scripts/verify-device.mjs"
   },
   "engines": {
     "node": ">=20"
