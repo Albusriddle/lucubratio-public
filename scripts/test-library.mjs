@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { unzipSync } from './lib/zip.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,22 @@ const bad = (m) => { fail++; console.log('\x1b[31m✗\x1b[0m ' + m); };
  * 课程包内容从 dist/demo-0.1.0.lcr 解出来，和真实导入后的磁盘布局一致。
  */
 const PKG_DIR = path.join(ROOT, 'dist');
+
+/**
+ * dist/ 不入库（.gitignore），所以 CI 里没有现成课程包 —— 现场打一个。
+ * 这样这个测试不依赖任何"事先存在的产物"，任何机器上都能跑。
+ */
+function ensurePackage() {
+  const has = fs.existsSync(PKG_DIR) && fs.readdirSync(PKG_DIR).some((n) => n.endsWith('.lcr'));
+  if (has) return;
+  if (!fs.existsSync(path.join(OUT, 'manifest.json'))) {
+    throw new Error('缺少构建产物：请先跑 node scripts/build.mjs');
+  }
+  execFileSync(process.execPath,
+    [path.join(ROOT, 'scripts/pack.mjs'), '--id', 'demo', '--title', 'Lucubratio 示例课程', '--version', '0.1.0'],
+    { cwd: ROOT, stdio: 'ignore' });
+}
+
 function loadCourses() {
   const map = new Map(); // "/courses/demo/xxx" → Buffer
   if (!fs.existsSync(PKG_DIR)) return map;
@@ -67,6 +84,7 @@ function installBridge(metas) {
   };
 }
 
+ensurePackage();
 installFetchStub();
 const lib = await import('../web/shell/library.js');
 
