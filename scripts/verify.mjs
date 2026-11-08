@@ -222,6 +222,7 @@ const SHELL_FILES = [
   'search.html',
   'stats.html',
   'diagnostics.html',
+  'shell/library.js',
   'shell/shell.css',
   'shell/theme.css',
   'shell/boot.js',

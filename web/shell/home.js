@@ -7,6 +7,7 @@ import {
   reconcileContent, orphanCount, rearmOrphans,
 } from './store.js';
 import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABEL } from './theme.js';
+import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes } from './library.js';
 
 (function () {
   'use strict';
@@ -30,32 +31,67 @@ import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABE
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
   }
 
-  /* ---------------- 目录 ---------------- */
-  function renderList(manifest) {
-    var list = $('list');
-    var total = 0;
+  /* ---------------- 目录（内置 + 已导入） ---------------- */
+  function renderItems(items) {
+    var html = '';
+    items.forEach(function (it) {
+      var cls = 'item' + (it.kind === 'paper' ? ' paper' : (it.kind === 'memo' ? ' memo' : ''));
+      var meta = (it.kicker ? it.kicker + ' · ' : '') +
+                 (it.sections ? it.sections + ' 节 · ' : '') +
+                 (it.questions ? it.questions + ' 题 · ' : '') +
+                 Math.round((it.bytes || 0) / 1024) + ' KB';
+      html += '<a class="' + cls + '" href="' + encodeURI(it.file) + '">' +
+                '<span class="no">' + escapeHtml(it.no || '·') + '</span>' +
+                '<span class="body"><span class="t">' + escapeHtml(it.title) + '</span>' +
+                '<span class="m">' + escapeHtml(meta) + '</span></span>' +
+                '<span class="go">›</span>' +
+              '</a>';
+    });
+    return html;
+  }
+
+  function renderLibrary(lib) {
+    var st = libraryStats(lib);
     var html = '';
 
-    manifest.groups.forEach(function (g) {
-      g.items.forEach(function (it) {
-        total++;
-        var cls = 'item' + (it.kind === 'paper' ? ' paper' : (it.kind === 'memo' ? ' memo' : ''));
-        var meta = (it.kicker ? it.kicker + ' · ' : '') +
-                   (it.sections ? it.sections + ' 节 · ' : '') +
-                   (it.questions ? it.questions + ' 题 · ' : '') +
-                   Math.round((it.bytes || 0) / 1024) + ' KB';
-        html += '<a class="' + cls + '" href="' + encodeURI(it.file) + '">' +
-                  '<span class="no">' + escapeHtml(it.no || '·') + '</span>' +
-                  '<span class="body"><span class="t">' + escapeHtml(it.title) + '</span>' +
-                  '<span class="m">' + escapeHtml(meta) + '</span></span>' +
-                  '<span class="go">›</span>' +
-                '</a>';
-      });
-    });
+    // 内置课程
+    html += '<div class="course-head"><span class="course-t">内置课程</span>' +
+              '<span class="course-m">' + st.builtinPages + ' 篇</span></div>';
+    html += renderItems(flattenItems(lib.builtin));
 
+    // 我的课程（只有原生桥存在时才显示这一段，浏览器预览不干扰）
+    var hasBridge = !!(window.AndroidSA && typeof window.AndroidSA.listCourses === 'function');
+    if (lib.imported.length > 0 || hasBridge) {
+      html += '<div class="course-head"><span class="course-t">我的课程</span>' +
+                '<span class="course-m">' +
+                  (lib.imported.length ? st.importedCourses + ' 门 · ' + st.importedPages + ' 篇' : '未导入') +
+                '</span></div>';
+      if (!lib.imported.length) {
+        html += '<div class="empty">还没有导入课程。点上方「＋ 导入课程包」选择 .lcr 文件。</div>';
+      } else {
+        lib.imported.forEach(function (c) {
+          var m = c.meta || {};
+          var items = c.manifest ? flattenItems(c.manifest) : [];
+          html += '<div class="course-sub">' +
+                    '<span class="course-name">' + escapeHtml(m.title || m.id || '未命名课程') + '</span>' +
+                    '<span class="course-meta">' +
+                      escapeHtml(m.version ? 'v' + m.version + ' · ' : '') +
+                      (items.length || m.pages || 0) + ' 篇 · ' + fmtBytes(m.bytes) +
+                      (m.installedAt ? ' · ' + fmtDate(m.installedAt) : '') +
+                    '</span>' +
+                  '</div>';
+          html += items.length
+            ? renderItems(items)
+            : '<div class="empty">这门课的清单读不出来（可尝试删除后重新导入）</div>';
+        });
+      }
+    }
+
+    var list = $('list');
     list.innerHTML = html || '<div class="empty">没有内容</div>';
-    $('sub').innerHTML = '离线学习 · <b>' + total + '</b> 篇';
-    $('sec-count').textContent = total + ' 篇';
+    $('sub').innerHTML = '离线学习 · <b>' + st.totalPages + '</b> 篇';
+    var secCount = $('sec-count');
+    if (secCount) secCount.textContent = st.totalPages + ' 篇';
   }
 
   /* ---------------- 继续学习 ---------------- */
@@ -209,26 +245,27 @@ import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABE
     initTheme();
     initAppearance();
 
-    var manifest = null;
+    var lib = null;
     try {
-      manifest = await (await fetch('/manifest.json')).json();
+      lib = await loadLibrary();
     } catch (e) {
-      $('list').innerHTML = '<div class="empty">manifest 加载失败：' + escapeHtml(e && e.message) + '</div>';
+      $('list').innerHTML = '<div class="empty">课程库加载失败：' + escapeHtml(e && e.message) + '</div>';
     }
 
-    if (manifest) {
-      renderList(manifest);
-      $('ver').textContent = 'v' + manifest.appVersion;
+    if (lib) {
+      renderLibrary(lib);
+      var builtin = lib.builtin;
+      if (builtin) $('ver').textContent = 'v' + builtin.appVersion;
     }
 
     await init({
-      appVersion: manifest ? manifest.appVersion : '',
-      contentVersion: manifest ? manifest.contentHash : '',
+      appVersion: lib && lib.builtin ? lib.builtin.appVersion : '',
+      contentVersion: lib && lib.builtin ? lib.builtin.contentHash : '',
     });
 
     // 讲义更新后对账：把指向已变标题的旧卡片标为"待复核"，不直接丢弃
     try {
-      if (manifest && manifest.contentHash) await reconcileContent(manifest.contentHash);
+      if (lib && lib.builtin && lib.builtin.contentHash) await reconcileContent(lib.builtin.contentHash);
     } catch (e) {
       console.warn('[home] 内容版本对账失败', e);
     }
