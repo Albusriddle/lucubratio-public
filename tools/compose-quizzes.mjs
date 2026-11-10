@@ -64,7 +64,13 @@ function convertEntry(lines, idx) {
   for (const raw of body) {
     const line = raw.trim();
     if (!line) continue;
-    if (/^[A-D][.．、]\s*/.test(line)) { mode = 'opts'; opts.push(line); continue; }
+    if (/^[A-D][.．、]\s*/.test(line)) {
+      mode = 'opts';
+      // 四个选项可能挤在同一行（用全角空格分隔），先按 "X." 切
+      const parts = line.split(/(?=[A-D][.．、]\s*)/).filter(Boolean);
+      for (const part of parts) if (/^[A-D][.．、]\s*/.test(part.trim())) opts.push(part.trim());
+      continue;
+    }
     if (/^>\s*/.test(line)) { mode = 'expl'; expl.push(line.replace(/^>\s*/, '').replace(/^\*\*解析\*\*\s*[：:]\s*/, '').replace(/^解析\s*[：:]\s*/, '')); continue; }
     if (mode === 'stem') stem.push(line);
     else if (mode === 'expl') expl.push(line);
