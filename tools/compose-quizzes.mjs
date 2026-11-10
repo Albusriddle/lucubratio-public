@@ -16,6 +16,7 @@
 
 import fs from 'node:fs';
 
+const console_yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 const C = { red: (s) => `\x1b[31m${s}\x1b[0m`, green: (s) => `\x1b[32m${s}\x1b[0m`, yellow: (s) => `\x1b[33m${s}\x1b[0m`, dim: (s) => `\x1b[2m${s}\x1b[0m` };
 
 const argv = process.argv.slice(2);
@@ -67,7 +68,7 @@ function convertEntry(lines, idx) {
     if (/^[A-D][.．、]\s*/.test(line)) {
       mode = 'opts';
       // 四个选项可能挤在同一行（用全角空格分隔），先按 "X." 切
-      const parts = line.split(/(?=[A-D][.．、]\s*)/).filter(Boolean);
+      const parts = line.split(/(?<=[\s\u3000])(?=[A-D][.．、]\s*)/).filter(Boolean);
       for (const part of parts) if (/^[A-D][.．、]\s*/.test(part.trim())) opts.push(part.trim());
       continue;
     }
@@ -81,7 +82,7 @@ function convertEntry(lines, idx) {
   const label = m ? m[1] : `检测 ${idx + 1}（10 分）`;
   const rest = m ? m[2].trim() : '';
   // 标题后半段若是个问句，就直接当题干；否则它是考点标签，题干取正文第一段
-  const restIsQuestion = /[？?]\s*$/.test(rest);
+  const restIsQuestion = /[？?]\s*$/.test(rest) || !stem.length;
   const title = restIsQuestion ? `${label}${rest}` : `${label}${(stem[0] || '').replace(/\s*$/, '')}`;
   const extraLines = restIsQuestion ? stem : stem.slice(1);
   const stemPara = extraLines.filter(Boolean).join(' ');
@@ -118,7 +119,9 @@ function renumber(block, k) {
 
 // ---------- 解析 ----------
 const md = fs.readFileSync(REVIEW, 'utf8');
-const sec = sectionOf(md);
+let sec = sectionOf(md);
+// 规范化：把「**检测 N（10 分）**　题干…」这种加粗行内写法拆成「### 检测 N（10 分）」+ 题干段落
+sec = sec.replace(/\*\*(检测\s*\d+\s*[（(]\s*10\s*分\s*[）)])\*\*[\s\u3000]*/g, '### $1\n\n');
 if (!sec.trim()) {
   console.error('复核里找不到「最终题目清单」小节');
   process.exit(1);
@@ -134,6 +137,10 @@ for (const ch of chunks) {
   if (!/^#{3,4}\s*检测/.test(ch.trim())) continue;
   const lines = ch.trim().split(/\r?\n/);
   const conv = convertEntry(lines, entries.length);
+  if (!conv) {
+    const joined = lines.join(' ').slice(0, 60);
+    console.log(`  ${console_yellow('跳过')}：${joined}…（选项不足 4 或缺解析）`);
+  }
   if (conv) entries.push({ kind: 'written', html: `<h3 id="检测 0">${conv.title}</h3>\n${conv.stem ? `<p>${conv.stem}</p>\n` : ''}${conv.optHtml}\n${conv.quote}` });
 }
 
@@ -145,6 +152,14 @@ if (!entries.length) {
     for (const m of blk.matchAll(/<h3 id="检测 \d+">[\s\S]*?(?=<h3 id="检测 |\s*$)/g)) {
       if (/<blockquote/.test(m[0])) entries.push({ kind: 'html', html: m[0].trim() });
     }
+  }
+}
+
+// ①c 裸 HTML 模式：小节里直接写 <h3 id="检测 N">…（无 ``` 围栏）
+if (!entries.length && /<h3\s+id="检测/.test(sec)) {
+  const norm = sec.replace(/\n(?=<h3\s+id="检测)/g, '\n\n');
+  for (const m of norm.matchAll(/<h3 id="检测 \d+">[\s\S]*?(?=<h3 id="检测 |\s*$)/g)) {
+    if (/<blockquote/.test(m[0])) entries.push({ kind: 'html', html: m[0].trim() });
   }
 }
 
