@@ -433,6 +433,17 @@ import { fmtDue } from './time.js';
     return bar;
   }
 
+  function revealAnswer(bar) {
+    var block = bar.saAnsEl;
+    if (!block) return;
+    block.hidden = false;
+    var prev = block.previousElementSibling;
+    if (prev && prev.classList && prev.classList.contains('sa-ans-toggle')) {
+      prev.textContent = '收起解析';
+      prev.setAttribute('aria-expanded', 'true');
+    }
+  }
+
   async function rate(bar, qid, anchor, text, rating) {
     if (bar.dataset.busy === '1') return;
     bar.dataset.busy = '1';
@@ -451,6 +462,7 @@ import { fmtDue } from './time.js';
       renderState(bar, card);
       var st = bar.querySelector('.sa-qbar-state');
       if (st) st.setAttribute('title', '再点一次可修改本次评分');
+      revealAnswer(bar);
     } catch (e) {
       console.warn('[page] 记录失败', e);
       var el = bar.querySelector('.sa-qbar-state');
@@ -459,6 +471,45 @@ import { fmtDue } from './time.js';
       bar.dataset.busy = '0';
       for (var j = 0; j < btns.length; j++) btns[j].disabled = false;
     }
+  }
+
+  // 解析默认折叠，点按钮才显示；自评后自动展开
+  function setupAnswerReveal() {
+    var blocks = document.querySelectorAll('blockquote');
+    for (var i = 0; i < blocks.length; i++) {
+      var bq = blocks[i];
+      if (bq.dataset.saAns === '1') continue;
+      var head = (bq.textContent || '').replace(/^\s+/, '').slice(0, 2);
+      if (head !== '解析') continue;           // 只折叠「解析」，易错点等其他引用块保持可见
+      bq.dataset.saAns = '1';
+      bq.classList.add('sa-ans');
+      bq.hidden = true;
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sa-ans-toggle';
+      btn.setAttribute('aria-expanded', 'false');
+      btn.textContent = '查看解析';
+      (function (block, button) {
+        button.addEventListener('click', function () {
+          var opening = block.hidden;
+          block.hidden = !opening;
+          button.textContent = opening ? '收起解析' : '查看解析';
+          button.setAttribute('aria-expanded', opening ? 'true' : 'false');
+        });
+      })(bq, btn);
+      if (bq.parentNode) bq.parentNode.insertBefore(btn, bq);
+    }
+  }
+
+  // 给某道题找它自己的解析块（在题目范围里）
+  function answerBlockOf(heading) {
+    var el = heading.nextElementSibling;
+    while (el && !/^H[123]$/.test(el.tagName)) {
+      if (el.tagName === 'BLOCKQUOTE' && el.classList.contains('sa-ans')) return el;
+      el = el.nextElementSibling;
+    }
+    return null;
   }
 
   async function setupQuestions() {
@@ -490,9 +541,12 @@ import { fmtDue } from './time.js';
           && last.nextElementSibling.classList.contains('sa-qbar')) continue;
 
       var bar = buildBar(qid, anchor, (h.textContent || '').replace(/\s+/g, ' ').trim(), cards[qid]);
+      bar.saAnsEl = answerBlockOf(h);          // 自评后自动展开解析
       if (last.parentNode) last.parentNode.insertBefore(bar, last.nextSibling);
     }
   }
+
+  setupAnswerReveal();
 
   storeReady
     .then(setupQuestions)

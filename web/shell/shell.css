@@ -675,3 +675,37 @@ html.sa-dark .sa-viewer-content { background: #171c24; }
 .sa-zoom-wrap { position: relative; }
 .sa-zoom-wrap > .sa-zoom { right: 8px; bottom: 12px; }
 .sa-zoom-wrap > .table-wrap .sa-zoom { bottom: 22px; }
+
+/* ---- 解析折叠：默认隐藏，点按钮展开 ---- */
+.sa-ans-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sa-ans-toggle:hover { background: var(--soft); }
+.sa-ans-toggle:active { background: var(--card); }
+.sa-ans-toggle::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform .15s ease;
+}
+.sa-ans-toggle[aria-expanded="true"] {
+  color: var(--fg);
+  border-color: #3a4553;
+}
+.sa-ans-toggle[aria-expanded="true"]::before { transform: rotate(45deg); }
+blockquote.sa-ans { margin-top: 6px; }
