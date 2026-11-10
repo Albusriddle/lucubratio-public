@@ -1,3 +1,7 @@
+> **仓库已开放（Apache-2.0）**：https://github.com/Albusriddle/lucubratio-public
+> 你可以直接 clone 使用；Releases 页提供签名过的查看器 APK。
+> 本仓库**不含任何课程素材**——课程内容由使用者自己生成并导入。
+
 # Lucubratio · 流水线 + 查看器
 
 > 把**任意课程内容**编译成可离线学习的内容包，再用一个只读查看器读它、记进度、按 FSRS 复习。

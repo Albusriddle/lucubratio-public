@@ -29,6 +29,9 @@
 
 ### 变更
 
+- **仓库转为公开**（Apache-2.0）：<https://github.com/Albusriddle/lucubratio-public>；
+  发布前已审计全历史无令牌/密钥/课程素材，9 张装机截图移出索引
+
 - **`verify-package` 从 10 项增至 11 项**：新增「检索索引与页面清单一致」——此前 `search.json`
   指向不存在页面的包能通过校验（实测悬空键 + bytes 补正的包曾以 10/10、退出码 0 放行）
 - `verify.mjs` 壳资源清单补 `shell/diagram-viewer.js`、`shell/ui-extras.js`（此前缺失不会被发现）
