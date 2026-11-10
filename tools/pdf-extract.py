@@ -84,8 +84,9 @@ def main() -> int:
     ap.add_argument("--max-pages", type=int, default=0, help="只处理前 N 页（0=全部）")
     ap.add_argument("--segment", type=int, default=30, help="建议每段页数（写进 report）")
     ap.add_argument("--check-deps", action="store_true", help="只检查依赖环境后退出")
-    ap.add_argument("--low-text", type=int, default=24,
-                    help="文字少于该值且页面含内嵌图片时，也当作'要看的图页'（默认 24）")
+    ap.add_argument("--low-text", type=int, default=200,
+                    help="含内嵌图且文字少于该值的页，会在 md 里提示看图（默认 200；"
+                         "实测「文字 26 字 + 整页图」这种页只按字数会漏标）")
     args = ap.parse_args()
     if args.check_deps:
         require_deps(check_only=True)
@@ -125,8 +126,16 @@ def main() -> int:
         text = page.get_text("text").strip()
         report["chars_by_page"][str(i + 1)] = len(text)
 
-        has_img = len(page.get_images(full=True)) > 0
-        low_text = bool(text) and len(text) < args.low_text and has_img
+        # 图有两种：内嵌位图（get_images）与矢量图（get_drawings）。
+        # 只数位图会漏掉「整页状态图」这种矢量插图——实测 p29 就是纯矢量。
+        n_img = len(page.get_images(full=True))
+        try:
+            n_draw = len(page.get_drawings())
+        except Exception:
+            n_draw = 0
+        has_img = n_img > 0
+        has_draw = n_draw >= 20          # 少量线条多是分隔线/表格框，不算插图
+        low_text = bool(text) and len(text) < args.low_text and (has_img or has_draw)
         if low_text:
             report["low_text_pages"].append(i + 1)
 
@@ -143,7 +152,9 @@ def main() -> int:
         with open(os.path.join(pages_dir, f"p{i + 1:03d}.md"), "w", encoding="utf-8") as f:
             f.write("".join(body))
 
-        want_img = args.render_all or (args.render and (not text or low_text))
+        # 只要页面含内嵌图就渲染：文字多少不代表图里没有信息
+        # （实测 vcpu-1 的 p29/p48 文字 26 字左右，却是整页状态图与 29 行代码）
+        want_img = args.render_all or (args.render and (not text or low_text or has_img or has_draw))
         if want_img:
             os.makedirs(img_dir, exist_ok=True)
             pix = page.get_pixmap(dpi=args.dpi)
