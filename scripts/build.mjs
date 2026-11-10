@@ -48,6 +48,9 @@ const QUESTION_RULES = {
   'os-05': { level: 3, test: /^检测\s*\d+/ },
   'os-08': { level: 3, test: /^检测\s*\d+/ },
   'os-03': { level: 3, test: /^检测\s*\d+/ },
+  'os-10': { level: 3, test: /^检测\s*\d+/ },
+  'os-11': { level: 3, test: /^检测\s*\d+/ },
+  'os-12': { level: 3, test: /^检测\s*\d+/ },
   'os-01': { level: 3, test: /^检测\s*\d+/ },
   'os-02': { level: 3, test: /^检测\s*\d+/ },
 };
