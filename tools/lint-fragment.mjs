@@ -83,6 +83,18 @@ function lint(file) {
   if (cites === 0 && !ALLOW_NO_CITE) problems.push('整段没有页码引用（每条事实/解析都要能指到课件页码）');
   else if (cites < quizzes) warns.push(`页码引用 ${cites} 处，少于检测题数 ${quizzes}（解析里每题都应有页码）`);
 
+  // 6.5) 标签配平（防止 producer 被截断：文件结尾停在 <blockquote> 中间）
+  {
+    const pairs = ['p', 'blockquote', 'table', 'ul', 'li', 'tr', 'td', 'th', 'div', 'h2', 'h3', 'strong', 'code', 'pre'];
+    const unbalanced = [];
+    for (const tag of pairs) {
+      const open = (src.match(new RegExp(`<${tag}\\b[^>]*>`, 'g')) || []).length;
+      const close = (src.match(new RegExp(`</${tag}\\s*>`, 'g')) || []).length;
+      if (open !== close) unbalanced.push(`${tag}: ${open} 开 / ${close} 闭`);
+    }
+    if (unbalanced.length) problems.push(`标签未配平（可能被截断）：${unbalanced.join('；')}`);
+  }
+
   // 7) 图片与字符画
   const imgs = [...src.matchAll(/<img\b[^>]*src\s*=\s*"([^"]+)"/gi)].map((m) => m[1]);
   const badImg = imgs.filter((s) => !/\.(webp|svg)$/i.test(s) || /^https?:|^\/\//i.test(s));
