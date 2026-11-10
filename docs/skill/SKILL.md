@@ -111,6 +111,10 @@ node tools/assemble.mjs <序号>_<标签> "<页面标题>" .work/<id>/<段>.fina
 
 ## 4. 出题
 
+> **解析默认折叠**：查看器会把每道题的 `<blockquote><strong>解析</strong>…` 折起来，
+> 学生点「查看解析」才看到；自评（不会/模糊/会）之后会自动展开。
+> 因此**解析必须独立成一个 blockquote**，不要与选项写在同一段，也不要提前把答案写进题干。
+
 每个课件 5–8 道「检测」，题面来自课件原页，**解析必须标页码**：
 
 ```html
@@ -146,6 +150,11 @@ node scripts/verify-package.mjs dist/<课程id>-1.0.0.lcr
 4. 每个 `h2/h3` 必须有页内唯一 `id`
 5. 图一律 Mermaid，禁止字符画；写法：`<div class="mermaid"><script type="text/plain">flowchart TD` 同一行开头
 6. 不许为了"看起来完整"编造课件里没有的内容；不确定就写「课件未展开」
+7. **解析块格式固定**：每道检测题必须以 `<blockquote><strong>解析</strong>：…</blockquote>` 结尾，
+   紧跟第 4 个选项、中间不插别的元素。查看器会**默认把它折叠**，点「查看解析」才展开；
+   不要在题干/选项里泄露答案，也不要自己写 `<details>` 或「查看解析」按钮（壳层会自动加）
+8. **课程包禁止上传 GitHub**：`.lcr` 及其内容（正文页、图片、学案）一律不进 git、不进 Releases、
+   不贴进 issue/PR。课程内容只保留在本地工作区与用户指定位置（详见 `AGENTS.md`）
 
 ## 常见坑
 

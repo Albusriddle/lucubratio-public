@@ -330,6 +330,22 @@ const total = walk(OUT);
 ok('产物总体积 ' + (total / 1048576).toFixed(2) + ' MB');
 if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含课件图片）: ' + (total / 1048576).toFixed(2) + ' MB');
 
+// 8) 仓库卫生（红线）：不得跟踪课程包 / 课程内容
+try {
+  const { execFileSync } = await import('node:child_process');
+  const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
+    .split('\n').map((x) => x.trim()).filter(Boolean);
+  const pkg = tracked.filter((f) => /\.lcr$/i.test(f));
+  const coursePages = tracked.filter((f) => f.startsWith('content/os/') && !/_demo_/.test(f));
+  const imgs = tracked.filter((f) => /^content\/os\/.*\.(png|jpe?g|webp|svg)$/i.test(f));
+  if (pkg.length) bad('仓库跟踪了课程包（红线）：' + pkg.slice(0, 3).join(', '));
+  else if (coursePages.length) bad('仓库跟踪了课程内容页（红线，只允许 *_demo_*）：' + coursePages.slice(0, 3).join(', '));
+  else if (imgs.length) bad('仓库跟踪了课程图片（红线）：' + imgs.slice(0, 3).join(', '));
+  else ok('仓库卫生：无课程包 / 无课程内容页 / 无课程图片');
+} catch (e) {
+  ok('仓库卫生：跳过（非 git 环境或 git 不可用）');
+}
+
 // ---------- 汇总 ----------
 console.log('');
 for (const m of oks) console.log('\x1b[32m✓\x1b[0m ' + m);
