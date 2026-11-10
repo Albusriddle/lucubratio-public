@@ -42,6 +42,18 @@ jobs:
       - name: Course library self-test
         run: node scripts/test-library.mjs
 
+      - name: Quiz self-check (题目可答性：答案/选项/页码)
+        run: |
+          for f in content/os/*.html; do node tools/self-check-quizzes.mjs "$f" --allow-no-cite; done
+
+      - name: Tooling smoke (片段预检 + 多段合并)
+        run: |
+          node tools/lint-fragment.mjs content/os/*.html --page --allow-no-cite
+          printf '<h2 id="1-甲">1. 甲</h2>\n<h3 id="检测 1">检测 1（10 分）题干</h3>\n' > /tmp/f1.html
+          printf '<h2 id="2-乙">2. 乙</h2>\n<h3 id="检测 1">检测 1（10 分）题干</h3>\n' > /tmp/f2.html
+          node tools/merge-pages.mjs /tmp/merged.html /tmp/f1.html /tmp/f2.html
+          grep -q 'id="检测 2"' /tmp/merged.html
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

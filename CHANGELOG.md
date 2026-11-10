@@ -2,6 +2,52 @@
 
 本仓库（`lucubratio-public`）是 Lucubratio 的**流水线 + 查看器**部分，不含任何课程素材。
 
+## [Unreleased]
+
+（暂无）
+
+## [0.2.3] - 2026-11-10
+
+### 新增（工具链）
+
+- `tools/apply-patches.mjs`：把复核报告里的 **PATCH 清单**机械应用到片段
+  - `--as A|B` 按「文件：」字段过滤（解决了"B 的补丁喂给 A 会整批失败"）
+  - **`IMPORT` 指令**：跨文件搬块（`取/到/替换` 三段标记定位，自动改 id 前缀）
+  - 任一条失败则整批不写入，避免半成品
+- `tools/merge-pages.mjs`：多段合并 + 全局重编号 + 章节 id 唯一性 + 元叙述残留 + **全页题量上限**检查
+- `tools/self-check-quizzes.mjs`：**题目可答性**自检（答案唯一 / 干扰项完整 / 解析带页码 / 同页去重）
+- `tools/lint-fragment.mjs`：片段预检，新增 `--page`（校验完整内容页）与 `--allow-no-cite`
+- `tools/pdf-extract.py`：新增 `--low-text`（文字很少但含内嵌图的页也渲染）与 `--check-deps`
+- `scripts/push-retry.sh` + `scripts/gh-tunnel.mjs`：推送重试（以 `ls-remote` 核对远端 SHA）与 github.com 入口 IP 隧道
+
+### 新增（文档）
+
+- `docs/QUICKSTART.md`：三条上手路径（只读课程 / 改界面 / 做成自己的 App）
+- `docs/TROUBLESHOOTING.md`：推送排障（含"假成功"现象）、adb 设备身份误判、错误码索引
+- `docs/skill/`：生成技能镜像（`SKILL.md` / `prompts.md` / `quality-guide` / `page-template` / `pitfalls` / `merge-playbook`）
+- `NOTICE`：版权与第三方组件声明（Mermaid / ts-fsrs 均为 MIT）
+
+### 变更
+
+- **`verify-package` 从 10 项增至 11 项**：新增「检索索引与页面清单一致」——此前 `search.json`
+  指向不存在页面的包能通过校验（实测悬空键 + bytes 补正的包曾以 10/10、退出码 0 放行）
+- `verify.mjs` 壳资源清单补 `shell/diagram-viewer.js`、`shell/ui-extras.js`（此前缺失不会被发现）
+- `scripts/test-package.mjs` 夹具改为与 `pack.mjs` 产物一致（`search.json` 覆盖清单每页）
+
+### 修复
+
+- `web/shell/home.js`：浏览器预览（无原生桥）点「删除」不再静默清数据，改为提示后返回
+- `web/shell/mermaid-init.js`：库路径改为脚本执行时捕获（`document.currentScript` 在
+  IntersectionObserver 回调里已为 null，曾导致丢 `?v=` 版本号）
+- `scripts/build.mjs`：`tagQuestions` 去掉 200 字符上限（长题干的自评单元曾被静默漏标）
+- `docs/PACKAGE-FORMAT.md`：示例 `appMin` 从 `3.1.0` 改为 `0.1.0`，并说明填自己 App 的基线
+
+### CI
+
+- 新增步骤：空构建冒烟、课程库自测、**题目自检**、工具链冒烟（片段预检 + 多段合并）
+- 新增 `gradle/actions/setup-gradle` 缓存 + `networkTimeout` 120s：缓解 runner 下载
+  Gradle 发行包被 504 打挂（本机与 Actions 侧都遇到过）
+
 ## [0.2.2] - 2026-11-08
 
 ### 修复
@@ -32,7 +78,7 @@
 
 - **课程包格式 `.lcr`**（zip：`format.json` / `manifest.json` / `search.json` / `content/` / `img/`），见 [docs/PACKAGE-FORMAT.md](docs/PACKAGE-FORMAT.md)
 - **打包器** `scripts/pack.mjs`：零依赖 zip 写入、路径重写、cid 命名空间化（`<课程id>:<原cid>`）、`format.bytes`、二次打包保护
-- **包校验器** `scripts/verify-package.mjs`：11 项（zip 安全 / 结构 / 一致性 / 标签级内容安全 / 体积）
+- **包校验器** `scripts/verify-package.mjs`：10 项（zip 安全 / 结构 / 一致性 / 标签级内容安全 / 体积）
 - **App 内导入**：SAF 选包 → 流式解压 → 全量校验（含 Java 侧 HtmlGuard）→ `ATOMIC_MOVE` 提交（失败回滚）
 - **课程库首页**：内置课程 + 我的课程（页数/体积/导入时间），支持删除（两段式确认，删课同时清进度/卡片/日志）
 - **多课程**：搜索索引合并、复习标题表、逐页孤儿卡对账（`reconcileByCid`）全部支持导入课程

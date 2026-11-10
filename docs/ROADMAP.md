@@ -38,7 +38,7 @@
 
 | 天 | 做什么 | 通过标准 |
 |---|---|---|
-| D1 ✅ | **已完成**：`scripts/pack.mjs`（零依赖 zip 写入 + 路径重写）、`scripts/verify-package.mjs`（11 项校验）、`scripts/test-package.mjs`（6 项正/负面自测） | 示例包 10.0KB，校验 11/11 通过；Zip Slip / 外部脚本 / 缺页 / 未知格式 全部被拒 |
+| D1 ✅ | **已完成**：`scripts/pack.mjs`（零依赖 zip 写入 + 路径重写）、`scripts/verify-package.mjs`（11 项校验，含检索索引一致性）、`scripts/test-package.mjs`（15 项正/负面自测） | 示例包 ~18KB，校验 11/11 通过；Zip Slip / 外部脚本 / 缺页 / 未知格式 全部被拒 |
 | D2 | App 端加 `/courses/` 的 `PathHandler`（映射 `filesDir`）+ 一个硬编码导入入口 | 导入后能打开 `courses/<id>/content/os/xx.html`，壳层样式与 Mermaid 正常 |
 | D3 | **清空内置课程**，只靠导入包跑 | 首页/阅读/自评/搜索/统计/重启后仍在 —— 全通 |
 
@@ -71,7 +71,9 @@
 
 ## 阶段 2 · 生成侧体验（约 3–5 人日）
 
-- [ ] **DSH 技能**：从 PDF/PPTX 出发 → 逐页文本 → 双盲生成 → 复核 → 打包（把本项目已有的 `AGENTS-SPEC` 固化成一键流程）
+- [x] **DSH 技能**：`lucubratio-course`（`SKILL.md` + 6 个附件，镜像在 [`skill/`](skill/)）。
+        已用 3 门课件试跑（conc-1 52 页 / vm-3 79 页 / vm-2 90 页），产出 3 个课程包；
+        双盲 + 复核共拦下 15 处编造、19 处硬性事实错。
 - [ ] 规则去硬编码：`QUESTION_RULES` 改为由 `manifest.json` 声明（`questions: [{level, pattern}]`）
 - [ ] 模板仓库：`lucubratio-template`，给不写代码的人一个"把课件丢进去就能出包"的最小入口
 

@@ -261,6 +261,8 @@ const SHELL_FILES = [
   'stats.html',
   'diagnostics.html',
   'shell/library.js',
+  'shell/diagram-viewer.js',
+  'shell/ui-extras.js',
   'shell/shell.css',
   'shell/theme.css',
   'shell/boot.js',

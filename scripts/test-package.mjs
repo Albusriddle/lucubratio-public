@@ -46,7 +46,20 @@ function makePkg(overrides = {}) {
   };
   const body = [
     { name: 'manifest.json', data: JSON.stringify(manifest) },
-    { name: 'search.json', data: JSON.stringify({ v: 1, pages: {}, sections: [] }) },
+    // 夹具要贴近真实包：pack.mjs 生成的 search.json 一定覆盖清单里的每一页，
+    // 否则 verify-package 的「检索索引与清单一致」检查会（正确地）判它不合格。
+    {
+      name: 'search.json',
+      data: JSON.stringify({
+        v: 1,
+        pages: Object.fromEntries(
+          (manifest.groups || []).flatMap((g) => g.items || []).map((it) => [it.id, it.title || it.id])
+        ),
+        sections: (manifest.groups || [])
+          .flatMap((g) => g.items || [])
+          .map((it) => ({ p: it.id, a: 'a', h: it.title || 'P', x: 'hi' })),
+      }),
+    },
     { name: 'content/p.html', data: page },
     ...(overrides.extra || []),
   ];

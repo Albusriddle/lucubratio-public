@@ -107,6 +107,29 @@ if (search === null) bad('缺少 search.json');
 else if (search === undefined) bad('search.json 不是合法 JSON');
 else ok(`search.json 合法：${(search.sections || []).length} 节`);
 
+/* ---------- 3.5) 检索索引与页面清单一致 ----------
+   为什么需要它：search.json 指向不存在的页面时，App 搜索会命中 404 链接。
+   曾经构造过这样的包（悬空键 + bytes 补正）——旧版本 10 项全过、退出码 0。 */
+if (manifest && search && Array.isArray(manifest.groups)) {
+  const cids = new Set(
+    manifest.groups.flatMap((g) => g.items || []).map((it) => String(it.id || '')).filter(Boolean)
+  );
+  const keys = Object.keys(search.pages || {});
+  const danglingKeys = keys.filter((k) => !cids.has(k));
+  const danglingSecs = [...new Set((search.sections || []).map((s) => String(s.p || '')).filter((p) => p && !cids.has(p)))];
+  const unindexed = [...cids].filter((c) => !keys.includes(c));
+
+  if (danglingKeys.length) {
+    bad(`search.pages 里有 ${danglingKeys.length} 个页面不在清单里：${danglingKeys.slice(0, 3).join(', ')}`);
+  } else if (danglingSecs.length) {
+    bad(`search.sections 指向不存在的页面：${danglingSecs.slice(0, 3).join(', ')}`);
+  } else if (unindexed.length) {
+    bad(`有 ${unindexed.length} 页没有进检索索引：${unindexed.slice(0, 3).join(', ')}`);
+  } else {
+    ok(`检索索引与页面清单一致（${keys.length} 页 / ${(search.sections || []).length} 节）`);
+  }
+}
+
 /* ---------- 4) 页面内容安全（标签级扫描，不再用正则） ---------- */
 const pages = entries.filter((e) => e.name.endsWith('.html'));
 let imgMissing = 0;

@@ -133,6 +133,12 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
     btn.textContent = '删除中…';
     try {
       var native = window.AndroidSA && window.AndroidSA.deleteCourse;
+      if (!native) {
+        // 浏览器预览没有原生桥：删不掉课程文件，只清数据会造成"删了一半"的错觉
+        toast('浏览器预览模式不会删除课程文件，请在 App 内操作');
+        btn.disabled = false; btn.textContent = '删除'; btn.dataset.armed = '0';
+        return;
+      }
       if (native) {
         var res = JSON.parse(window.AndroidSA.deleteCourse(id) || '{}');
         if (!res.ok) {

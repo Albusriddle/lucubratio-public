@@ -1,6 +1,6 @@
 # 生成技能的镜像
 
-这里的 5 个文件是 DSH 技能 `lucubratio-course` 的**原样镜像**，便于版本管理与评审（有 diff 可查）。
+这里的 6 个文件（+ 本说明）是 DSH 技能 `lucubratio-course` 的**原样镜像**，便于版本管理与评审（有 diff 可查）。
 
 | 文件 | 作用 |
 |---|---|
@@ -9,6 +9,7 @@
 | `quality-gate.md` | 双盲为什么有效、reviewer 三件事、合稿判定表 |
 | `page-template.md` | 页面四块结构、id 命名、篇幅建议 |
 | `pitfalls.md` | 按报错查的对照表 |
+| `merge-playbook.md` | 合稿分工、决策模板、`IMPORT` 用法、合稿后四项自查 |
 
 ## 安装到本机
 

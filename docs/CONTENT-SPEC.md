@@ -170,3 +170,51 @@ node scripts/build.mjs     # 看日志：公式数、mermaid 块数、纯文本�
 node scripts/verify.mjs    # 必须全绿
 npm test                   # 21 项纯函数测试
 ```
+
+### Mermaid 写法（硬性，否则 `verify` 会拒）
+
+**必须**写成"同一行开头"的形式：
+
+```html
+<div class="mermaid"><script type="text/plain">flowchart TD
+  A["起点"] --> B["中间"]
+  B --> C["结果"]
+</script></div>
+```
+
+反例（会被 `node scripts/verify.mjs` 判为非法）：
+
+```html
+<!-- ❌ div 与 script 分行 -->
+<div class="mermaid">
+<script type="text/plain">flowchart TD
+```
+
+规则小结：
+
+| 项 | 要求 |
+|---|---|
+| 起始 | `<div class="mermaid"><script type="text/plain">flowchart TD` 必须在**同一行** |
+| 结束 | `</script></div>`（中间不要插 `</div>`） |
+| 节点文字 | 一律用双引号包裹，如 `A["页表项"]` |
+| 字符画 | **禁止**（盒线字符 `─│┌` 与方块 `█▀` 都会被打回），一律改用 Mermaid |
+| 脚本 | 全篇只允许 `<script type="text/plain">` 这一种 `<script>`（Mermaid 源码容器）；其它任何 `<script>` 都会被 `pack`/导入拒绝 |
+
+### 检测题（自评单元）约定
+
+```html
+<h3 id="检测 1">检测 1（10 分）题干……</h3>
+<p>A. …　B. …　C. …　D. …</p>
+<blockquote><strong>解析</strong>：…（课件 p42）</blockquote>
+```
+
+| 项 | 要求 |
+|---|---|
+| 标题 | `检测 N（10 分）`——`build.mjs` 的 `QUESTION_RULES` 按**标题文字**匹配，`N` 只用于生成锚点 |
+| 题干长度 | ≤80 字（过长说明把整段塞进了题干） |
+| 选项 | A–D 四个都要有，**错因各不相同**（概念混淆 / 方向反 / 条件错 / 算错） |
+| 解析 | 必须标页码；每个干扰项都要被点破 |
+| 一页题量 | 3–8 道（整门课按 `AGENTS-SPEC` 的配额表） |
+
+写好之后可以先自检：`node tools/self-check-quizzes.mjs <页面.html>`。
+

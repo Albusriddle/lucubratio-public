@@ -1,0 +1,12 @@
+Lucubratio · pipeline & viewer
+Copyright 2026 Albusriddle
+
+本仓库以 Apache License 2.0 授权（见 LICENSE）。
+
+它只包含「编译器 + 查看器」的代码与文档，**不包含任何课程素材**。
+用户自行生成的课程内容（.lcr 课程包及其源文件）版权归其各自作者，
+不在本仓库的许可范围之内。
+
+第三方组件（web/vendor/，各自许可见同目录）：
+- Mermaid — MIT
+- ts-fsrs — MIT

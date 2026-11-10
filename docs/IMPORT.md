@@ -92,6 +92,9 @@ node scripts/verify-package.mjs dist/my-course-1.0.0.lcr
 | `E_FORMAT` / `E_FORMAT_VERSION` | 不是 `lcr/1` 或字段缺失 | 用本仓库的 `pack.mjs` 重新打包 |
 | `E_APP_TOO_OLD` | 包要求的 App 版本更高 | 升级 App，或把 `--appMin` 调低后重打 |
 | `E_ID` | id 不合法 | 只用小写字母/数字/连字符 |
+| `E_ZIP` | 不是有效的 zip（或文件被截断） | 重新打包；或清理手机空间后重试 |
+| `E_CRC` | 解压后大小与 zip 记录不符，通常意味着文件损坏 | 重新打包；或清理手机空间后重试 |
+| `E_IO` | 读写失败（空间不足、权限问题、临时目录建不出来） | 重新打包；或清理手机空间后重试 |
 | `E_MANIFEST` | 清单里的页面在包里找不到 | 重新 `build` 后再 `pack`（别手工删文件） |
 | `E_SEARCH` | search.json 损坏 | 同上，重新构建 |
 | `E_HTML` | 页面含不安全内容 | 看提示里指出的规则（内联脚本/on*/外链/iframe…） |
