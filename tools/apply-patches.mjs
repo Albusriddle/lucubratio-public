@@ -36,6 +36,7 @@ const optVal = (name) => {
 };
 const DRY = flag('--dry');
 const ALLOW_MULTI = flag('--去重');
+const LENIENT = flag('--lenient');   // 跳过失败项、其余照改（用于「一处描述多处」这类无法逐字命中的补丁）
 const AS = optVal('--as').toUpperCase().slice(0, 1);
 const OTHER = optVal('--other');
 
@@ -65,7 +66,7 @@ function parsePatches(md) {
   let inPatchSection = false;
 
   const isHeader = (line) => {
-    if (/^\s*(\*\*)?PATCH\s+\d+/.test(line)) return true;
+    if (/^\s*#{0,4}\s*(\*\*)?PATCH[\s-]+\d+/.test(line)) return true;
     if (inPatchSection && /^\s*#{3,4}\s*[A-Z]\d+\b/.test(line)) return true;
     return false;
   };
@@ -207,9 +208,12 @@ for (const f of failed) {
   if (f.why) console.log(`${C.dim('    理由：' + f.why)}`);
 }
 
-if (failed.length) {
+if (failed.length && !LENIENT) {
   console.log(`\n${C.red(`${failed.length} 条失败——未写入任何改动（避免半成品）`)}`);
   process.exit(1);
+}
+if (failed.length && LENIENT) {
+  console.log(`\n${C.yellow(`${failed.length} 条失败已跳过（--lenient），其余 ${applied.length} 条照改`)}`);
 }
 
 if (DRY) {
