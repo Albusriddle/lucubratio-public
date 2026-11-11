@@ -17,6 +17,7 @@ const OUT = path.join(ROOT, 'android', 'app', 'src', 'main', 'assets', 'web');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 const fails = [];
+const warns = [];
 const oks = [];
 const ok = (m) => oks.push(m);
 const bad = (m) => fails.push(m);
@@ -380,7 +381,10 @@ try {
     .split('\n').map((x) => x.trim()).filter(Boolean);
   const pkg = tracked.filter((f) => /\.lcr$/i.test(f));
   const coursePages = tracked.filter((f) => f.startsWith('content/os/') && !/_demo_/.test(f));
-  const imgs = tracked.filter((f) => /^content\/os\/.*\.(png|jpe?g|webp|svg)$/i.test(f));
+  // 课程图片：content 下任意图片 + web/img/（课件截图目录，AGENTS.md 红线所指）
+  const imgs = tracked.filter((f) =>
+    /^content\/.*\.(png|jpe?g|webp|svg)$/i.test(f) || /^web\/img\//i.test(f)
+  );
   if (pkg.length) bad('仓库跟踪了课程包（红线）：' + pkg.slice(0, 3).join(', '));
   else if (coursePages.length) bad('仓库跟踪了课程内容页（红线，只允许 *_demo_*）：' + coursePages.slice(0, 3).join(', '));
   else if (imgs.length) bad('仓库跟踪了课程图片（红线）：' + imgs.slice(0, 3).join(', '));
@@ -389,9 +393,104 @@ try {
   ok('仓库卫生：跳过（非 git 环境或 git 不可用）');
 }
 
+
+/* ---------- 9) 页面脚本引用的 DOM id 必须存在于该页面（或由脚本自己创建） ----------
+   为什么需要：守卫写成「有 #a 就继续」，但函数体内又用了 #b；#b 缺失时抛 TypeError，
+   同一函数/启动流程里后续代码全部不执行——历史上「我的页备份按钮失效」就是这样，
+   而既有检查全看不见。
+
+   语义按真实写法建模：
+     · 页面里有该 id        → 通过
+     · 脚本里动态创建该 id  → 通过（el.id = 'x' / setAttribute('id','x')）
+     · 该 id 本身被用作守卫 → 通过（if (document.getElementById('x')) … / if (!…) return）
+     · 引用它的函数带有「守卫 id」，而该守卫 id 在本页不存在 → 整个函数被短路，通过
+     · 其余                 → 报错
+   共享脚本（如 home.js 同时给 index 与 me 用）就是靠最后这条规则正确区分页面的。 */
+{
+  const OUT_DIR = OUT;
+  const pages = fs.existsSync(OUT_DIR)
+    ? fs.readdirSync(OUT_DIR, { withFileTypes: true })
+        .filter((e) => e.isFile() && e.name.endsWith('.html'))
+        .map((e) => e.name)
+    : [];
+  const shellDir = path.join(OUT_DIR, 'shell');
+  const problems = [];
+
+  /** 用花括号配平切出所有函数体：[{name, body}] */
+  function functionsOf(src) {
+    const out = [];
+    const re = /function\s+([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{/g;
+    let m;
+    while ((m = re.exec(src))) {
+      let i = re.lastIndex - 1; // 指向 '{'
+      let depth = 0;
+      let j = i;
+      for (; j < src.length; j++) {
+        if (src[j] === '{') depth++;
+        else if (src[j] === '}') { depth--; if (depth === 0) break; }
+      }
+      out.push({ name: m[1], from: i, to: j, body: src.slice(i, j + 1) });
+    }
+    return out;
+  }
+
+  const idUsage = /\$\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)|getElementById\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
+  const guardRe = /if\s*\([^)]*getElementById\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
+
+  for (const page of pages) {
+    const html = fs.readFileSync(path.join(OUT_DIR, page), 'utf8');
+    const pageIds = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+    const scripts = [...html.matchAll(/<script[^>]+src="\/shell\/([a-zA-Z0-9._-]+\.js)[^"]*"/g)].map((m) => m[1]);
+
+    for (const js of scripts) {
+      const file = path.join(shellDir, js);
+      if (!fs.existsSync(file)) continue;
+      const src = fs.readFileSync(file, 'utf8');
+
+      const created = new Set([
+        ...[...src.matchAll(/\.id\s*=\s*['"]([a-zA-Z0-9_:-]+)['"]/g)].map((m) => m[1]),
+        ...[...src.matchAll(/setAttribute\(\s*['"]id['"]\s*,\s*['"]([^'"]+)['"]/g)].map((m) => m[1]),
+      ]);
+      const guards = new Set([...src.matchAll(guardRe)].map((m) => m[1]));
+      const fns = functionsOf(src);
+
+      for (const mm of src.matchAll(idUsage)) {
+        const id = mm[1] || mm[2];
+        if (pageIds.has(id) || created.has(id) || guards.has(id)) continue;
+
+        // 找包含这次引用的函数，看它是否带「本页不存在的守卫」
+        const at = mm.index;
+        const fn = fns.find((f) => at >= f.from && at <= f.to);
+        let shortCircuited = false;
+        if (fn) {
+          for (const gm of fn.body.matchAll(guardRe)) {
+            if (!pageIds.has(gm[1])) { shortCircuited = true; break; }
+          }
+        }
+        if (shortCircuited) continue;
+
+        problems.push(`${page}: ${js} 使用 #${id}（页面没有、脚本也没创建，且无守卫）`);
+      }
+    }
+  }
+
+  // 只报警告：静态分析看不见「调用点守卫」（例：renderLibrary 只在 #list 存在时被调用，
+  // 所以函数内对 #sub 的使用是安全的）。真正的门禁是 tools/check-pages.mjs 的运行时检查。
+  if (problems.length) {
+    problems.slice(0, 6).forEach((m) => warns.push('DOM id 可疑（静态分析）：' + m));
+    if (problems.length > 6) warns.push(`DOM id 可疑：另有 ${problems.length - 6} 处（跑 npm run check:pages 精确判定）`);
+  } else {
+    ok(`页面脚本引用的 DOM id 全部可解析（${pages.length} 页）`);
+  }
+}
+
 // ---------- 汇总 ----------
 console.log('');
 for (const m of oks) console.log('\x1b[32m✓\x1b[0m ' + m);
+if (warns.length) {
+  console.log('');
+  for (const m of warns) console.log('\x1b[33m!\x1b[0m ' + m);
+}
 if (fails.length) {
   console.log('');
   for (const m of fails) console.log('\x1b[31m✗\x1b[0m ' + m);

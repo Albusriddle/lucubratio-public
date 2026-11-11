@@ -130,6 +130,27 @@ if (manifest && search && Array.isArray(manifest.groups)) {
   }
 }
 
+/* ---------- 3.6) 包内不得有「未被引用」的图片 ----------
+   打包时如果无差别收集 img/，会把本机的课件截图塞进无关的包里（实测 2 页 demo 曾带 224 张、
+   5.47MB）。这里反向核对：每张图都必须被某个页面的 src/href 引用。 */
+{
+  const imgs = entries.filter((e) => /^img\//.test(e.name)).map((e) => e.name);
+  if (imgs.length === 0) {
+    ok('包内无图片（页面未引用任何 /img/ 资源）');
+  } else {
+    const referenced = new Set();
+    for (const e of entries.filter((x) => x.name.endsWith('.html'))) {
+      const html = e.data.toString('utf8');
+      for (const m of html.matchAll(/(?:src|href)="([^"]*?\/img\/[^"?#]+)/g)) {
+        referenced.add(decodeURIComponent(m[1]));
+      }
+    }
+    const orphan = imgs.filter((n) => ![...referenced].some((r) => r.endsWith(n.replace(/^img\//, ''))));
+    if (orphan.length) bad(`包内有 ${orphan.length} 张未被页面引用的图片（例：${orphan.slice(0, 3).join(', ')}）`);
+    else ok(`图片全部被引用（${imgs.length} 张）`);
+  }
+}
+
 /* ---------- 4) 页面内容安全（标签级扫描，不再用正则） ---------- */
 const pages = entries.filter((e) => e.name.endsWith('.html'));
 let imgMissing = 0;

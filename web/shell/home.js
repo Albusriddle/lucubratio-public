@@ -211,15 +211,21 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
   }
 
   /* ---------------- 数据统计 ---------------- */
+  /** 安全写文本：元素不存在就跳过（页面只要实现一部分字段也能正常渲染） */
+  function setText(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = v;
+  }
+
   async function renderStats() {
     if (!document.getElementById('st-progress')) return;
     var s = await stats();
-    $('st-progress').textContent = s.progress + ' 篇';
-    $('st-attempts').textContent = s.attempts + ' 条';
-    $('st-cards').textContent = s.cards + ' 张';
+    setText('st-progress', s.progress + ' 篇');
+    setText('st-attempts', s.attempts + ' 条');
+    setText('st-cards', s.cards + ' 张');
     var k = info().kind;
-    $('st-kind').textContent = k === 'idb' ? 'IndexedDB' : '降级模式';
-    $('st-hint').textContent = k === 'idb' ? '' : '存储不可用';
+    setText('st-kind', k === 'idb' ? 'IndexedDB' : '降级模式');
+    setText('st-hint', k === 'idb' ? '' : '存储不可用');
   }
 
   /* ---------------- 备份：导出 ---------------- */

@@ -32,8 +32,15 @@ git -c http.proxy=http://127.0.0.1:7899 push <url> main
 **修法三**：用重试脚本（会用 `ls-remote` 核对远端 SHA，避免"假成功"）
 
 ```bash
-scripts/push-retry.sh "$URL" main --proxy http://127.0.0.1:7899
+# token 走环境变量（脚本会通过 GIT_ASKPASS 传给 git，不出现在命令行/进程列表里）
+GH_TOKEN=xxx scripts/push-retry.sh https://github.com/<owner>/<repo>.git main
+# 需要走隧道时加 --proxy；token 也可放文件：--token-file /path/to/token
+GH_TOKEN=xxx scripts/push-retry.sh https://github.com/<owner>/<repo>.git main --proxy http://127.0.0.1:7899
 ```
+
+> 脚本还会**自动读取 Windows 系统代理**（`ProxyServer` 注册表项）：公司/校园网配了系统代理但
+> `git` 不认时，它会自动用上；也可以用 `--proxy` 显式覆盖。
+> 旧写法（把 `https://user:token@…` 直接当参数）仍兼容，但脚本会打印提醒——那样 token 会进进程列表。
 
 ### 为什么必须核对远端 SHA
 

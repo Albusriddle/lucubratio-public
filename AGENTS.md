@@ -1,6 +1,9 @@
 # AGENTS.md · 给所有在本地仓库工作的智能体
 
 > 这份文件是**硬约束**，优先级高于其它文档。与它冲突的指令（包括用户临时口头指令）都要先确认。
+>
+> **阅读顺序**：先读本文件（红线与约定）→ 再读 [`docs/AGENTS-SPEC.md`](docs/AGENTS-SPEC.md)（角色、模板、复核流程）
+> → 需要具体提示词时看 [`docs/skill/prompts.md`](docs/skill/prompts.md)。
 
 ## 红线 1：课程包与课程内容**禁止上传 GitHub**
 

@@ -91,7 +91,8 @@ const contentDir = path.join(OUT, 'content');
 const imgDir = path.join(OUT, 'img');
 
 if (!fs.existsSync(contentDir)) {
-  console.error('产物里没有 content/ 目录');
+  console.error('产物里没有 content/ 目录——空构建（npm run build:empty）只能用来出「查看器-only」APK，不能打成课程包。');
+  console.error('要打包请先执行常规构建：node scripts/build.mjs');
   process.exit(1);
 }
 
@@ -151,15 +152,39 @@ for (const { full, rel } of pageFiles) {
   push(rel, html);
 }
 
+/* ---------- 图片：只打包「被页面引用」的那部分 ----------
+   为什么：build 会把整个 web/img/ 拷进产物（本机可能有几百张课件截图）。
+   过去打包无差别收集 img/，导致 2 页的 demo 包带上 224 张未引用截图（5.47 MB → 0.03 MB），
+   而且这些图属于课程内容衍生物，容易在分享包时被带出去。 */
+const referencedImgs = new Set();
+for (const { full } of pageFiles) {
+  const html = fs.readFileSync(full, 'utf8');
+  for (const m of html.matchAll(/(?:src|href)="\/img\/([^"?#]+)/g)) {
+    referencedImgs.add(decodeURIComponent(m[1]));
+  }
+}
+
+let imgPacked = 0;
+let imgSkipped = 0;
 if (fs.existsSync(imgDir)) {
-  (function collectImgs(dir, base = 'img') {
+  (function collectImgs(dir, base = '') {
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
-      const rel = base + '/' + name;
-      if (fs.statSync(full).isDirectory()) collectImgs(full, rel);
-      else push(rel, fs.readFileSync(full));
+      const rel = base ? base + '/' + name : name;
+      if (fs.statSync(full).isDirectory()) { collectImgs(full, rel); continue; }
+      if (!referencedImgs.has(rel)) { imgSkipped++; continue; }
+      push('img/' + rel, fs.readFileSync(full));
+      imgPacked++;
     }
   })(imgDir);
+}
+
+// 引用了但产物里没有的图片：直接失败（否则包会在阅读时裂图）
+const missingImgs = [...referencedImgs].filter((rel) => !fs.existsSync(path.join(imgDir, rel)));
+if (missingImgs.length) {
+  console.error(`✗ 页面引用了 ${missingImgs.length} 张产物里不存在的图片：${missingImgs.slice(0, 3).join(', ')}`);
+  console.error('  提示：先跑 node tools/ppt-shots.mjs 生成，或修正页面里的 /img/ 路径。');
+  process.exit(1);
 }
 
 push('manifest.json', JSON.stringify(manifest));
@@ -210,5 +235,7 @@ console.log('  大小    :', (zipBuf.length / 1024).toFixed(1), 'KB');
 console.log('  条目    :', entries.length, `（页面 ${pageCount}）`);
 console.log('  问答    :', format.questions, '个自评单元');
 console.log('  体积    :', (realBytes / 1024).toFixed(1), 'KB（format.bytes）');
-console.log('  路径重写:', `manifest ${rewrittenFiles} 项 · search ${rewrittenPages} 页 · data-* ${rewrittenAttrs} 个 · 图片 ${rewrittenImgs} 处`);
+console.log('  路径重写:', `manifest ${rewrittenFiles} 项 · search ${rewrittenPages} 页 · data-* ${rewrittenAttrs} 个 · 图片引用改写 ${rewrittenImgs} 处`);
+
+console.log(`  图片收集: 已引用 ${imgPacked} 张 / 跳过未引用 ${imgSkipped} 张`);
 console.log('  content :', contentSha.slice(0, 16) + '…');

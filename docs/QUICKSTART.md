@@ -67,13 +67,19 @@ npm run build:debug      # 需要 JDK 17 + Android SDK 35
 
 | 想改什么 | 改哪里 |
 |---|---|
-| 首页布局、按钮 | `web/index.html` + `web/shell/home.js` |
-| 阅读页行为（顶栏/抽屉/断点续读/自评条） | `web/shell/page.js` |
+| 首页内容与交互 | `web/index.html` + `web/shell/home.js` |
+| 首页/我的页样式（布局、卡片、数据行） | `web/shell/home.css` |
+| 底栏三 tab 与切页动效 | `web/shell/tabbar.js`、`web/shell/nav.js` |
+| 目录页（三级树、展开记忆） | `web/toc.html` + `web/shell/toc.js` |
+| 我的页（设置、备份、存储） | `web/me.html`（逻辑复用 `home.js`） |
+| 阅读页行为（顶栏/抽屉/断点续读/自评条/解析折叠） | `web/shell/page.js` |
+| 课件页截图（`sa-ppt` 标记 → 图片） | `scripts/build.mjs`（替换）+ `tools/ppt-shots.mjs`（生成） |
 | 课程库合并逻辑 | `web/shell/library.js` |
 | 数据层 / 复习算法 | `web/shell/store.js`、`fsrs.js`、`db.js` |
 | 深色主题配色 | `web/shell/theme.css` |
 | 导入器 / WebView 壳 | `android/.../CourseImporter.java`、`MainActivity.java` |
-| 编译规则（公式、自评、索引） | `scripts/build.mjs` |
+| 编译规则（公式、自评、索引、表格包裹） | `scripts/build.mjs` |
+| 改完自检 | `npm run test:all`（与 CI 同套）+ `npm run check:pages`（真机跑页面） |
 
 ### 改完怎么验
 

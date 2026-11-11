@@ -240,11 +240,18 @@ if (orphan.orphaned >= 1 && orphan.orphanCount >= 1 && orphan.inDueBefore === fa
 const search = JSON.parse(await evalJs(`(async()=>{
   const r = await fetch('/search.json');
   const j = await r.json();
-  const hits = j.sections.filter(function(s){ return (s.h+' '+s.x).toLowerCase().indexOf('fork') >= 0; }).length;
-  return JSON.stringify({ok:r.ok, sections:j.sections.length, pages:Object.keys(j.pages||{}).length, forkHits:hits});
+  // 探针词从索引自身取（不写死关键字）：私有用 937 节、公开只有 14 节，
+  // 写死 'fork' + 'sections > 50' 会让公开仓库必然失败。
+  // 第一段通常是页面标题区（h 为空），要往后找第一个有标题的小节
+  var firstSec = j.sections.filter(function(s){ return (s.h || '').trim(); })[0];
+  // 去掉标题前的编号（"1. " / "二、"），用真正的内容词做探针
+  var first = firstSec ? String(firstSec.h).trim().replace(/^[0-9一二三四五六七八九十]+[.、．) ]*/, '') : '';
+  var probe = first.slice(0, 2);
+  var hits = probe ? j.sections.filter(function(s){ return (s.h+' '+s.x).indexOf(probe) >= 0; }).length : 0;
+  return JSON.stringify({ok:r.ok, sections:j.sections.length, pages:Object.keys(j.pages||{}).length, probe:probe, hits:hits});
 })()`));
-if (search.ok && search.sections > 50 && search.forkHits > 0) {
-  ok(`检索索引可用（${search.sections} 节 / ${search.pages} 页，'fork' 命中 ${search.forkHits}）`);
+if (search.ok && search.sections > 0 && search.pages > 0 && search.hits > 0) {
+  ok(`检索索引可用（${search.sections} 节 / ${search.pages} 页，'${search.probe}' 命中 ${search.hits}）`);
 } else {
   bad('检索索引异常：' + JSON.stringify(search));
 }

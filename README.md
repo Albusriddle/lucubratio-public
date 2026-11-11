@@ -18,9 +18,9 @@
 |---|---|---|
 | **内容规范** | [`docs/CONTENT-SPEC.md`](docs/CONTENT-SPEC.md) | 一页内容该怎么写：标题/锚点、公式、Mermaid 图、表格、自评单元、图片 |
 | **编译器** | [`scripts/build.mjs`](scripts/build.mjs) | 源 HTML → 可运行站点：注入壳层、公式转 MathML、给命中规则的标题打自评标记、生成检索索引与 manifest |
-| **查看器** | [`web/`](web) + [`android/`](android) | 离线阅读、目录抽屉、断点续读、自评 → FSRS 复习、全文搜索、学习统计 |
+| **查看器** | [`web/`](web) + [`android/`](android) | 底栏三 tab（主页/目录/我的）、三级目录、离线阅读、断点续读、自评 → FSRS 复习、解析默认折叠、全文搜索、学习统计、课件页截图内嵌 |
 
-生成侧还有一套**作业规范**：[`docs/AGENTS-SPEC.md`](docs/AGENTS-SPEC.md) —— 规定了"双人独立产出 + 第三人复核"的流程，用来保证 AI 生成的内容不出事实错误。
+生成侧还有一套规范：[`AGENTS.md`](AGENTS.md)（硬约束与红线）+ [`docs/AGENTS-SPEC.md`](docs/AGENTS-SPEC.md)（角色分工、逐页模板、复核流程）—— 规定了"双人独立产出 + 第三人复核"，用来保证 AI 生成的内容不出事实错误。
 
 ## 快速开始
 
@@ -55,10 +55,16 @@ npm run build:debug
 
 ```
 content/os/          # 课程内容（源）：本仓库只有 2 页 demo，请替换成你自己的
-web/                 # 查看器（壳层 HTML/JS/CSS + 内置 Mermaid / ts-fsrs）
-scripts/             # 编译器 / 校验器 / 单测 / 冒烟 / 打包 / gradle 入口
+web/                 # 查看器：index / toc / me 三个壳页 + shell/ 脚本样式 + vendor/ 内置库
+web/img/             # 课件页截图（本地渲染，gitignored，不进仓库）
+scripts/             # 编译器 / 校验器 / 单测 / 冒烟 / 打包 / 测试汇总 / gradle 入口
+tools/               # 生成侧工具（抽取 / 写作 / 合稿 / 质量检查），见 tools/README.md
 android/             # Android WebView 壳（无网络权限，纯本地）
-docs/                # 内容规范 / 作业规范 / 课程包格式 / 路线图
+docs/                # 内容规范 / 作业规范 / 课程包格式 / 排障 / 路线图
+docs/skill/          # DSH 生成技能镜像（SKILL / prompts / 模板 / 踩坑）
+.github/workflows/   # CI 与 Release
+AGENTS.md            # 硬约束（红线）：课程内容与课程包不得进 git / 不得上传
+NOTICE               # 版权与第三方组件声明
 ```
 
 ## 设计约束（有意为之）
