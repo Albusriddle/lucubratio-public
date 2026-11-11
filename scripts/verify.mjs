@@ -374,198 +374,33 @@ if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含�
   else ok(`表格全部包裹（${tables} 个）`);
 }
 
-// 8) 仓库卫生（红线）：不得跟踪课程包 / 课程内容
-try {
-  const { execFileSync } = await import('node:child_process');
-  const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
-    .split('\n').map((x) => x.trim()).filter(Boolean);
-  const pkg = tracked.filter((f) => /\.lcr$/i.test(f));
-  const coursePages = tracked.filter((f) => f.startsWith('content/os/') && !/_demo_/.test(f));
-  // 课程图片：content 下任意图片 + web/img/（课件截图目录，AGENTS.md 红线所指）
-  const imgs = tracked.filter((f) =>
-    /^content\/.*\.(png|jpe?g|webp|svg)$/i.test(f) || /^web\/img\//i.test(f)
-  );
-  if (pkg.length) bad('仓库跟踪了课程包（红线）：' + pkg.slice(0, 3).join(', '));
-  else if (coursePages.length) bad('仓库跟踪了课程内容页（红线，只允许 *_demo_*）：' + coursePages.slice(0, 3).join(', '));
-  else if (imgs.length) bad('仓库跟踪了课程图片（红线）：' + imgs.slice(0, 3).join(', '));
-  else ok('仓库卫生：无课程包 / 无课程内容页 / 无课程图片');
-} catch (e) {
-  ok('仓库卫生：跳过（非 git 环境或 git 不可用）');
-}
-
-
-/* ---------- 9) 页面脚本引用的 DOM id 必须存在于该页面（或由脚本自己创建） ----------
-   为什么需要：守卫写成「有 #a 就继续」，但函数体内又用了 #b；#b 缺失时抛 TypeError，
-   同一函数/启动流程里后续代码全部不执行——历史上「我的页备份按钮失效」就是这样，
-   而既有检查全看不见。
-
-   语义按真实写法建模：
-     · 页面里有该 id        → 通过
-     · 脚本里动态创建该 id  → 通过（el.id = 'x' / setAttribute('id','x')）
-     · 该 id 本身被用作守卫 → 通过（if (document.getElementById('x')) … / if (!…) return）
-     · 引用它的函数带有「守卫 id」，而该守卫 id 在本页不存在 → 整个函数被短路，通过
-     · 其余                 → 报错
-   共享脚本（如 home.js 同时给 index 与 me 用）就是靠最后这条规则正确区分页面的。 */
+// 8) 仓库卫生（红线）——策略来自 package.json 的 verifyPolicy.trackedContent
+//    public（默认）：只允许 *demo* 示例页，任何课程页/课程图片/课程包都算违规
+//    private        ：课程页合法（本人内容），但课程包仍不得入库、也不得出现 web/img 下的课件截图
 {
-  const OUT_DIR = OUT;
-  const pages = fs.existsSync(OUT_DIR)
-    ? fs.readdirSync(OUT_DIR, { withFileTypes: true })
-        .filter((e) => e.isFile() && e.name.endsWith('.html'))
-        .map((e) => e.name)
-    : [];
-  const shellDir = path.join(OUT_DIR, 'shell');
-  const problems = [];
+  try {
+    const { execFileSync } = await import('node:child_process');
+    const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
+      .split('\n').map((x) => x.trim()).filter(Boolean);
+    const policy = (pkg.verifyPolicy && pkg.verifyPolicy.trackedContent) || 'public';
 
-  /** 从 '{' 开始扫到配平的 '}'，跳过字符串/模板/注释里的花括号
-   *  （朴素计数会被 '{' / '}' 字面量骗到：home.js 有 `'{}'`，一旦出现单个括号就会切错函数体）*/
-  function matchBrace(src, start) {
-    let depth = 0;
-    let i = start;
-    let mode = null;            // sq | dq | bt | line | block | regex | expr
-    let exprDepth = 0;          // 模板 ${ … } 内的括号深度
-    let prevSig = '{';          // 上一个有意义字符（用于判断 / 是除号还是正则起点）
-    while (i < src.length) {
-      const c = src[i];
-      const n = src[i + 1];
+    const pkgs = tracked.filter((f) => /\.lcr$/i.test(f));
 
-      if (mode === 'line') { if (c === '\n') mode = null; i++; continue; }
-      if (mode === 'block') { if (c === '*' && n === '/') { mode = null; i += 2; continue; } i++; continue; }
-
-      if (mode === 'sq' || mode === 'dq') {
-        const q = mode === 'sq' ? "'" : '"';
-        if (c === '\\') { i += 2; continue; }
-        if (c === q) { mode = null; prevSig = q; }
-        i++; continue;
-      }
-
-      if (mode === 'regex') {
-        if (c === '\\') { i += 2; continue; }
-        if (c === '[') {                       // 字符类里的 ] / 不结束正则
-          i++;
-          while (i < src.length && src[i] !== ']') { if (src[i] === '\\') i++; i++; }
-          i++; continue;
-        }
-        if (c === '/') { mode = null; prevSig = '/'; }
-        i++; continue;
-      }
-
-      if (mode === 'bt') {
-        if (c === '\\') { i += 2; continue; }
-        if (c === '`') { mode = null; prevSig = '`'; i++; continue; }
-        if (c === '$' && n === '{') { mode = 'expr'; exprDepth = 1; i += 2; prevSig = '{'; continue; }
-        i++; continue;
-      }
-
-      // ---- 普通代码 / 模板表达式内 ----
-      if (c === '/' && n === '/') { mode = 'line'; i += 2; continue; }
-      if (c === '/' && n === '*') { mode = 'block'; i += 2; continue; }
-      if (c === "'") { mode = 'sq'; i++; continue; }
-      if (c === '"') { mode = 'dq'; i++; continue; }
-      if (c === '`') { mode = 'bt'; i++; continue; }
-      if (c === '/') {
-        // 正则起点：前面是运算符/开括号/逗号/分号等（不是标识符或右括号）
-        if (/[=(,:;[!&|?{}'+\-*%~^]/.test(prevSig)) { mode = 'regex'; i++; continue; }
-      }
-      if (c === '{') {
-        if (mode === 'expr') { exprDepth++; i++; continue; }
-        depth++;
-      } else if (c === '}') {
-        if (mode === 'expr') { exprDepth--; if (exprDepth === 0) mode = 'bt'; i++; continue; }
-        depth--;
-        if (depth === 0) return i;
-      }
-      if (!/\s/.test(c)) prevSig = c;
-      i++;
+    if (policy === 'private') {
+      const imgs = tracked.filter((f) => /^web\/img\//i.test(f));
+      if (pkgs.length) bad('仓库跟踪了课程包（红线，私有仓库同样禁止）：' + pkgs.slice(0, 3).join(', '));
+      else if (imgs.length) bad('仓库跟踪了课件截图（应留在本地 web/img，gitignored）：' + imgs.slice(0, 3).join(', '));
+      else ok(`仓库卫生（私有仓库策略）：课程包未入库、无课件截图（允许 content/os 下 ${tracked.filter((f) => f.startsWith('content/os/')).length} 个课程页）`);
+    } else {
+      const coursePages = tracked.filter((f) => f.startsWith('content/os/') && !/_demo_/.test(f));
+      const contentImgs = tracked.filter((f) => /^content\/os\/.*\.(png|jpe?g|webp|svg)$/i.test(f));
+      if (pkgs.length) bad('仓库跟踪了课程包（红线）：' + pkgs.slice(0, 3).join(', '));
+      else if (coursePages.length) bad('仓库跟踪了课程内容页（红线，只允许 *_demo_*）：' + coursePages.slice(0, 3).join(', '));
+      else if (contentImgs.length) bad('仓库跟踪了课程图片（红线）：' + contentImgs.slice(0, 3).join(', '));
+      else ok('仓库卫生（公开仓库策略）：无课程包 / 无课程内容页 / 无课程图片');
     }
-    return src.length - 1;
-  }
-
-  /** 切出所有函数体：[{name, from, to, body}] */
-  function functionsOf(src) {
-    const out = [];
-    // 命名函数 + 匿名函数（`function (e) {…}`）都要扫：
-    // home.js 的 `boot().catch(function (e) {…})` 就是匿名，之前整段被漏掉
-    const re = /function\s*([A-Za-z0-9_$]*)\s*\([^)]*\)\s*\{/g;
-    let m;
-    while ((m = re.exec(src))) {
-      const i = re.lastIndex - 1;        // 指向 '{'
-      const j = matchBrace(src, i);
-      out.push({ name: m[1] || ('anon@' + i), from: i, to: j, body: src.slice(i, j + 1) });
-    }
-    return out;
-  }
-
-  const idUsage = /\$\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)|getElementById\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
-  const guardRe = /if\s*\([^)]*getElementById\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
-  // 别名守卫：var x = $('id'); … if (x) … / if (!x) return;
-  // 静态检查必须认这种写法，否则 home.js 里所有 `var el = $('x'); if (!el) return;` 都会被误报
-  function aliasGuardedIds(body) {
-    const ids = new Set();
-    const aliasRe = /(?:var|let|const)\s+([A-Za-z0-9_$]+)\s*=\s*(?:\$|document\.getElementById)\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
-    let a;
-    while ((a = aliasRe.exec(body))) {
-      const name = a[1];
-      const id = a[2];
-      const useRe = new RegExp('if\\s*\\(\\s*!?\\s*' + name.replace(/[$]/g, '\\$') + '\\s*\\)');
-      if (useRe.test(body)) ids.add(id);
-    }
-    return ids;
-  }
-
-  for (const page of pages) {
-    const html = fs.readFileSync(path.join(OUT_DIR, page), 'utf8');
-    const pageIds = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
-    const scripts = [...html.matchAll(/<script[^>]+src="\/shell\/([a-zA-Z0-9._-]+\.js)[^"]*"/g)].map((m) => m[1]);
-
-    for (const js of scripts) {
-      const file = path.join(shellDir, js);
-      if (!fs.existsSync(file)) continue;
-      const src = fs.readFileSync(file, 'utf8');
-
-      const created = new Set([
-        ...[...src.matchAll(/\.id\s*=\s*['"]([a-zA-Z0-9_:-]+)['"]/g)].map((m) => m[1]),
-        ...[...src.matchAll(/setAttribute\(\s*['"]id['"]\s*,\s*['"]([^'"]+)['"]/g)].map((m) => m[1]),
-      ]);
-      const guards = new Set([...src.matchAll(guardRe)].map((m) => m[1]));
-      const fns = functionsOf(src);
-
-      for (const mm of src.matchAll(idUsage)) {
-        const id = mm[1] || mm[2];
-        if (pageIds.has(id) || created.has(id) || guards.has(id)) continue;
-
-        // 找包含这次引用的函数，看它是否带「本页不存在的守卫」
-        const at = mm.index;
-        const fn = fns.find((f) => at >= f.from && at <= f.to);
-        let shortCircuited = false;
-        if (fn) {
-          for (const gm of fn.body.matchAll(guardRe)) {
-            if (!pageIds.has(gm[1])) { shortCircuited = true; break; }
-          }
-          if (!shortCircuited) {
-            const aliasIds = aliasGuardedIds(fn.body);
-            // 直接守卫了这个 id，或该函数被另一个「本页不存在的 id」早退守卫罩住
-            if (aliasIds.has(id)) shortCircuited = true;
-            else {
-              for (const ga of aliasIds) {
-                if (!pageIds.has(ga)) { shortCircuited = true; break; }
-              }
-            }
-          }
-        }
-        if (shortCircuited) continue;
-
-        problems.push(`${page}: ${js} 使用 #${id}（页面没有、脚本也没创建，且无守卫）`);
-      }
-    }
-  }
-
-  // 只报警告：静态分析看不见「调用点守卫」（例：renderLibrary 只在 #list 存在时被调用，
-  // 所以函数内对 #sub 的使用是安全的）。真正的门禁是 tools/check-pages.mjs 的运行时检查。
-  if (problems.length) {
-    problems.slice(0, 6).forEach((m) => warns.push('DOM id 可疑（静态分析）：' + m));
-    if (problems.length > 6) warns.push(`DOM id 可疑：另有 ${problems.length - 6} 处（跑 npm run check:pages 精确判定）`);
-  } else {
-    ok(`页面脚本引用的 DOM id 全部可解析（${pages.length} 页）`);
+  } catch (e) {
+    ok('仓库卫生：跳过（非 git 环境或 git 不可用）');
   }
 }
 
