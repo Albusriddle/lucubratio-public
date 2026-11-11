@@ -111,6 +111,49 @@ body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
   border-radius: 999px;
 }
 /* 折叠分章 */
+/* ---------- 目录行（章：左 75% 跳转 / 右 25% 展开；节：整行跳转） ---------- */
+#sidebar .sa-toc-row {
+  display: flex; align-items: stretch;
+  position: sticky; top: 0; z-index: 2;       /* 章标题吸顶，随时可收起 */
+  background: var(--sidebar, #fff);
+  border-bottom: 1px solid var(--line);
+}
+html.sa-dark #sidebar .sa-toc-row { background: var(--sidebar, #141a22); }
+#sidebar .sa-toc-row.cur .sa-toc-main { color: var(--accent2); font-weight: 600; }
+
+#sidebar .sa-toc-main {
+  flex: 1 1 75%; min-width: 0;
+  padding: 11px 4px 11px 10px;
+  background: none; border: 0; color: inherit; font: inherit; font-size: 14px;
+  text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#sidebar .sa-toc-more {
+  flex: 0 0 25%;
+  background: none; border: 0; border-left: 1px solid var(--line);
+  color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer;
+  transition: transform .18s ease;
+}
+#sidebar .sa-toc-row.open .sa-toc-more { transform: rotate(90deg); color: var(--accent2); }
+
+#sidebar ul.toc { display: none; list-style: none; margin: 0; padding: 0 0 6px; }
+#sidebar ul.toc.open { display: block; }
+#sidebar .sa-toc-leaf {
+  display: block; width: 100%;
+  padding: 9px 6px 9px 22px;
+  background: none; border: 0; color: inherit; font: inherit; font-size: 13.5px;
+  text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#sidebar .sa-toc-leaf:active { background: var(--soft); }
+
+/* 跳转后 200ms 高亮闪烁（反馈"确实跳了"） */
+@keyframes saTocFlash {
+  0% { background: rgba(111, 182, 255, .32); }
+  100% { background: transparent; }
+}
+#sidebar .sa-toc-flash { animation: saTocFlash .24s ease-out; }
+
 #sidebar details.sa-toc-group { margin: 2px 0 4px; }
 #sidebar details.sa-toc-group > summary {
   list-style: none;
@@ -270,6 +313,9 @@ body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
   p, li, blockquote { font-size: var(--sa-fs, 16px) !important; line-height: 1.82 !important; }
 
   /* 表格：贴边横滑，避免被压缩 */
+  /* 窄表格：表格自身居中（容器仍全出血，宽表格靠左横滑） */
+  .table-wrap.table-fit > table { margin-left: auto; margin-right: auto; }
+
   .table-wrap {
     margin-left: -16px;
     margin-right: -16px;

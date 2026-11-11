@@ -58,9 +58,32 @@
     }
   }
 
+  /* ---------- 表格对齐：窄表格居中，宽表格保持贴边横滑 ----------
+     为什么不用纯 CSS：需要先量「表格实际宽度 vs 容器宽度」才知道该不该居中。
+     宽表格继续贴边（横滑时左边缘对齐观感更好），窄表格居中更美观。 */
+  function fitNarrowTables() {
+    var wraps = document.querySelectorAll('.table-wrap');
+    for (var i = 0; i < wraps.length; i++) {
+      var w = wraps[i];
+      var t = w.querySelector('table');
+      if (!t) continue;
+      // 先按"未居中"状态量：clientWidth 不受 margin 影响
+      var fits = t.scrollWidth <= w.clientWidth + 2;
+      w.classList.toggle('table-fit', fits);
+    }
+  }
+
   function boot() {
     setupChecks();
     setupScrollHints();
+    fitNarrowTables();
+    var rt = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(fitNarrowTables, 150);
+    });
+    // 图片/字体加载完成后宽度会变，再量一次
+    window.addEventListener('load', function () { setTimeout(fitNarrowTables, 60); });
   }
 
   if (document.readyState === 'complete') setTimeout(boot, 0);

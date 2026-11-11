@@ -24,6 +24,7 @@
   var titleEl = null;
 
   var scale = 1;
+  var initialCap = 1;      // 图片：正文内嵌宽度 / 原图宽度
   var tx = 0;
   var ty = 0;
   var naturalW = 0;
@@ -264,6 +265,7 @@
     build();
     content.innerHTML = '';
     content.style.transform = 'none';
+    initialCap = 1;
     titleEl.textContent = title || '图表';
 
     var svg = source.querySelector('svg');
@@ -282,18 +284,49 @@
       clone.setAttribute('height', String(naturalH));
       content.appendChild(clone);
     } else {
-      var node = source.querySelector('table') || source.querySelector('pre') || source;
-      content.appendChild(node.cloneNode(true));
-      naturalW = content.scrollWidth || 320;
-      naturalH = content.scrollHeight || 480;
+      var img = source.tagName === 'IMG' ? source : source.querySelector('img');
+      if (img) {
+        // 关键：必须用 naturalWidth/Height，且未加载完时要等 onload 重算，
+        // 否则 naturalW 会退化成 0/320，倍率与居中全错。
+        naturalW = img.naturalWidth || img.clientWidth || 900;
+        naturalH = img.naturalHeight || img.clientHeight || 675;
+        // 正文里这张图实际占多宽 → 打开时保持同样倍率（用户要求：不要一开就放大）
+        var inlineW = img.getBoundingClientRect().width || naturalW;
+        initialCap = inlineW / naturalW;
+        var clone = img.cloneNode(true);
+        clone.style.setProperty('max-width', 'none', 'important');
+        clone.style.setProperty('width', naturalW + 'px', 'important');
+        clone.style.setProperty('height', 'auto', 'important');
+        clone.removeAttribute('width');
+        clone.removeAttribute('height');
+        content.appendChild(clone);
+        if (!img.complete) {
+          img.addEventListener('load', function () {
+            naturalW = img.naturalWidth || naturalW;
+            naturalH = img.naturalHeight || naturalH;
+            var c2 = content.querySelector('img');
+            if (c2) {
+              c2.style.setProperty('width', naturalW + 'px', 'important');
+              c2.style.setProperty('height', 'auto', 'important');
+            }
+            scale = clampScale(Math.min(initialCap, containScale()));
+            center();
+          }, { once: true });
+        }
+      } else {
+        var node = source.querySelector('table') || source.querySelector('pre') || source;
+        content.appendChild(node.cloneNode(true));
+        naturalW = content.scrollWidth || 320;
+        naturalH = content.scrollHeight || 480;
+      }
     }
 
     overlay.hidden = false;
     document.body.style.overflow = 'hidden';
 
-    scale = clampScale(Math.min(1, containScale()));
+    scale = clampScale(Math.min(initialCap, containScale()));
     requestAnimationFrame(function () {
-      scale = clampScale(Math.min(1, containScale()));
+      scale = clampScale(Math.min(initialCap, containScale()));
       center();
       requestAnimationFrame(verifyNotEmpty);
     });
@@ -330,6 +363,7 @@
     overlay.hidden = true;
     content.innerHTML = '';
     content.style.transform = 'none';
+    initialCap = 1;
     document.body.style.overflow = '';
   }
 
@@ -358,9 +392,11 @@
   function addButton(el) {
     var wrap = ensureWrap(el);
     if (wrap.querySelector(':scope > .sa-zoom')) return;
+    var isImg = el.tagName === 'IMG';
     var hasSvg = !!el.querySelector('svg');
     var hasTable = !!el.querySelector('table');
-    if (!hasSvg && !hasTable) return;
+    // 课件截图（<img>）也要能放大：以前这里早退，点击只会触发 <a href> 的原生整页看图
+    if (!hasSvg && !hasTable && !isImg) return;
     el.classList.add('sa-zoomable');
     var btn = document.createElement('button');
     btn.type = 'button';
@@ -381,7 +417,20 @@
 
     // 课件截图：一律可点开放大（手机上看不清细节）
     var shots = document.querySelectorAll('.sa-ppt img');
-    for (var k = 0; k < shots.length; k++) addButton(shots[k]);
+    for (var k = 0; k < shots.length; k++) {
+      addButton(shots[k]);
+      var link = shots[k].closest ? shots[k].closest('a.sa-ppt-open') : null;
+      if (link && !link.dataset.saZoomBound) {
+        link.dataset.saZoomBound = '1';
+        // 拦住 <a href="/img/…">：否则 WebView 会整页打开原图（倍率 1:1、左上角对齐）
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var im = this.querySelector('img');
+          if (im) open(im, titleOf(im));
+        });
+      }
+    }
 
     // 只给"横向溢出的宽表格"加放大镜，避免每张表都长按钮
     var tables = document.querySelectorAll('.table-wrap');

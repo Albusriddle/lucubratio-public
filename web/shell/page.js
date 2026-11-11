@@ -116,33 +116,52 @@ import { fmtDue } from './time.js';
     head.appendChild(home);
     aside.appendChild(head);
 
-    function addLink(parent, href, text) {
-      var a = document.createElement('a');
-      a.href = '#' + href;
-      a.textContent = text;
-      parent.appendChild(a);
-    }
-
+    /* 目录行结构（与「目录」大页一致）：
+         章：[左 75% 跳转][右 25% 展开/收起]   节：整行跳转、无展开按钮
+       点任何位置都**不关闭抽屉**，只做平滑滚动 + 该行 200ms 高亮闪烁。 */
     for (var g = 0; g < groups.length; g++) {
       var grp = groups[g];
-      var det = document.createElement('details');
-      det.className = 'sa-toc-group';
-      if (grp.id) det.dataset.hid = grp.id;
-      var sum = document.createElement('summary');
-      sum.textContent = grp.title;
-      det.appendChild(sum);
+      var row = document.createElement('div');
+      row.className = 'sa-toc-row';
+      if (grp.id) row.dataset.hid = grp.id;
+
+      var mainBtn = document.createElement('button');
+      mainBtn.type = 'button';
+      mainBtn.className = 'sa-toc-main';
+      mainBtn.textContent = grp.title;
+      if (grp.id) mainBtn.dataset.target = grp.id;
+      else mainBtn.disabled = true;               // 没有 id 的“本页”伪章不可跳
+      row.appendChild(mainBtn);
+
+      var kids = null;
       if (grp.items.length) {
-        var ul = document.createElement('ul');
-        ul.className = 'toc';
+        var more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'sa-toc-more';
+        more.setAttribute('aria-expanded', 'false');
+        more.setAttribute('aria-label', '展开或收起本章');
+        more.textContent = '›';
+        more.dataset.toggle = String(g);
+        row.appendChild(more);
+
+        kids = document.createElement('ul');
+        kids.className = 'toc';
+        kids.dataset.kids = String(g);
         for (var k = 0; k < grp.items.length; k++) {
           var li = document.createElement('li');
           li.className = 'lv3';
-          addLink(li, grp.items[k].id, grp.items[k].title);
-          ul.appendChild(li);
+          var leaf = document.createElement('button');
+          leaf.type = 'button';
+          leaf.className = 'sa-toc-leaf';
+          leaf.textContent = grp.items[k].title;
+          leaf.dataset.target = grp.items[k].id;
+          li.appendChild(leaf);
+          kids.appendChild(li);
         }
-        det.appendChild(ul);
       }
-      aside.appendChild(det);
+
+      aside.appendChild(row);
+      if (kids) aside.appendChild(kids);
     }
 
     body.insertBefore(aside, body.firstChild);
@@ -161,12 +180,14 @@ import { fmtDue } from './time.js';
       var y = el.getBoundingClientRect().top + (window.pageYOffset || 0);
       if (y <= top) curId = el.id;
     }
-    var det = box.querySelector('details[data-hid="' + curId + '"]');
-    if (!det) return;
-    det.open = true;
-    det.classList.add('cur');
-    if (det.offsetTop > box.clientHeight * 0.6) {
-      box.scrollTop = Math.max(0, det.offsetTop - 60);
+    var row = box.querySelector('.sa-toc-row[data-hid="' + curId + '"]');
+    if (!row) return;
+    row.classList.add('cur');
+    // 自动展开当前章，方便直接看到所在小节
+    var idx = row.querySelector('.sa-toc-more');
+    if (idx) expandGroup(row, true);
+    if (row.offsetTop > box.clientHeight * 0.6) {
+      box.scrollTop = Math.max(0, row.offsetTop - 60);
     }
   }
 
@@ -215,11 +236,73 @@ import { fmtDue } from './time.js';
 
   if (sidebar) {
     sidebar.addEventListener('click', function (e) {
-      var a = e.target && e.target.closest ? e.target.closest('a') : null;
-      if (!a) return;
-      navPushed = false;
-      body.classList.remove('sa-nav-open');
+      var t = e.target;
+      if (!t || !t.closest) return;
+
+      // 右 25%：展开 / 收起
+      var more = t.closest('.sa-toc-more');
+      if (more) {
+        e.preventDefault();
+        var row = more.closest('.sa-toc-row');
+        if (row) expandGroup(row, !row.classList.contains('open'));
+        return;
+      }
+
+      // 其余位置：跳转（章/节都算），不弹确认、不关抽屉
+      var target = t.closest('[data-target]');
+      if (target && target.dataset.target) {
+        e.preventDefault();
+        var el = document.getElementById(target.dataset.target);
+        if (!el) return;
+        var row2 = target.closest('.sa-toc-row');
+        if (row2) expandGroup(row2, true);
+        smoothTo(el);
+        flash(target.closest('.sa-toc-row') || target);
+      }
     });
+  }
+
+  /** 展开/收起某一章（只切 class，不用 <details>） */
+  function expandGroup(row, on) {
+    var more = row.querySelector('.sa-toc-more');
+    var kids = row.nextElementSibling;
+    row.classList.toggle('open', !!on);
+    if (more) more.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (kids && kids.classList && kids.classList.contains('toc')) {
+      kids.classList.toggle('open', !!on);
+    }
+  }
+
+  /** 平滑滚动到元素：420ms、easeInOutCubic（缓启动→加速→减速） */
+  function smoothTo(el) {
+    var barH = 0;
+    var cs = getComputedStyle(document.documentElement);
+    var v = cs.getPropertyValue('--sa-bar-h');
+    if (v) barH = parseFloat(v) || 0;
+    var top = el.getBoundingClientRect().top + (window.pageYOffset || 0) - barH - 12;
+    if (top < 0) top = 0;
+    var startY = window.pageYOffset || 0;
+    var dist = top - startY;
+    if (Math.abs(dist) < 2) return;
+    var ms = 420;
+    var t0 = performance.now();
+    var ease = function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+    function step(now) {
+      var k = Math.min(1, (now - t0) / ms);
+      window.scrollTo(0, startY + dist * ease(k));
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /** 200ms 高亮闪烁：跳转后给用户"确实动了"的反馈 */
+  function flash(node) {
+    if (!node || !node.classList) return;
+    node.classList.remove('sa-toc-flash');
+    // 强制回流，保证连点同一条也能重放动画
+    void node.offsetWidth;
+    node.classList.add('sa-toc-flash');
+    setTimeout(function () { node.classList.remove('sa-toc-flash'); }, 260);
   }
 
   btnTop.addEventListener('click', function () { scrollToInstant(0); });
