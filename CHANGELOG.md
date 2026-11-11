@@ -6,6 +6,40 @@
 
 （暂无）
 
+## [0.3.1] - 2026-11-11
+
+### 修复（影响发布物）
+
+- **APK 不再夹带课件截图**：`build.mjs` 复制壳层时排除 `web/img/`（此前本地构建的 APK 会多出
+  224 张课程截图、+5.5 MB，对外分发等于夹带课件内容）；`pack.mjs` 改从源目录 `web/img/` 取图
+- **恢复「删除课程」入口**：P4 把课程列表搬进目录页后，`#list` 在全仓库消失，导致
+  `renderLibrary()` 永不可达、用户无法删除已导入课程。现于目录页每门导入课程行内提供「删除」
+  （二次确认 → 原生删文件 + 清本地数据）
+- **切换动效覆盖首页**：`nav.js` 之前只拦截 `/…` 与 `./` 开头的链接，首页的 `search.html` 这类
+  裸相对路径全部漏掉；改为「只放行带 scheme 的链接」
+- **壳页资源补版本号**：`index/me/toc/search/stats/review/diagnostics` 引用的 `/shell/*.css|js`
+  统一追加 `?v=<版本>`，避免 APK 升级后读到旧缓存
+
+### 修复（工具与校验）
+
+- `verify.mjs` 的「DOM id 可解析」静态检查：识别 `var x = $('id'); if (!x) return` 这类别名守卫
+  （此前 6 条误报），并把函数体切分改成**跳过字符串/注释/模板**的花括号状态机
+- `verify.mjs` 的表格包裹检查放宽为 `class="…table-wrap…"`，允许追加第二个类名
+- `tools/ppt-shots.mjs`：不再写死本机课件路径（改用 `--src` / `COURSE_PDF_DIR`），课程表外置到
+  `tools/decks.json`（附 `decks.sample.json`）
+- `tools/mark-ppt.mjs`：跨讲标记遇到映射表外的讲次会**打警告**而不是静默跳过
+- `tools/check-pages.mjs`：任何退出路径（含 `exit(2)`）都会清理 `adb forward`，不再残留端口
+
+### 清理
+
+- `home.js` 删除 P4 之后不可达的 110 行（`renderLibrary` / `renderItems` / `wireCourseDelete` /
+  `doCourseDelete` 与 `#sec-count` 分支），412 → 285 行
+- 删除死样式 `.foot`、无用 id `#toc-sub`；`me.html` 的内联 `onclick` 改为 JS 绑定
+
+
+
+（暂无）
+
 ## [0.3.0] - 2026-11-11
 
 ### 新增（阅读体验）

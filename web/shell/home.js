@@ -7,7 +7,7 @@ import {
   reconcileContent, reconcileByCid, orphanCount, rearmOrphans, deleteCourseData,
 } from './store.js';
 import { initTheme, getTheme, setTheme, getFont, setFont, THEME_LABEL, FONT_LABEL } from './theme.js';
-import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMap } from './library.js';
+import { loadLibrary, libraryStats, buildCverMap } from './library.js';
 
 (function () {
   'use strict';
@@ -32,131 +32,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
   }
 
   /* ---------------- 目录（内置 + 已导入） ---------------- */
-  function renderItems(items) {
-    var html = '';
-    items.forEach(function (it) {
-      var cls = 'item' + (it.kind === 'paper' ? ' paper' : (it.kind === 'memo' ? ' memo' : ''));
-      var meta = (it.kicker ? it.kicker + ' · ' : '') +
-                 (it.sections ? it.sections + ' 节 · ' : '') +
-                 (it.questions ? it.questions + ' 题 · ' : '') +
-                 Math.round((it.bytes || 0) / 1024) + ' KB';
-      html += '<a class="' + cls + '" href="' + encodeURI(it.file) + '">' +
-                '<span class="no">' + escapeHtml(it.no || '·') + '</span>' +
-                '<span class="body"><span class="t">' + escapeHtml(it.title) + '</span>' +
-                '<span class="m">' + escapeHtml(meta) + '</span></span>' +
-                '<span class="go">›</span>' +
-              '</a>';
-    });
-    return html;
-  }
-
-  function renderLibrary(lib) {
-    var st = libraryStats(lib);
-    var html = '';
-
-    // 内置课程（空构建时整段不出现）
-    if (st.builtinPages > 0) {
-      html += '<div class="course-head"><span class="course-t">内置课程</span>' +
-                '<span class="course-m">' + st.builtinPages + ' 篇</span></div>';
-      html += renderItems(flattenItems(lib.builtin));
-    }
-
-    // 我的课程（只有原生桥存在时才显示这一段，浏览器预览不干扰）
-    var hasBridge = !!(window.AndroidSA && typeof window.AndroidSA.listCourses === 'function');
-    if (lib.imported.length > 0 || hasBridge) {
-      html += '<div class="course-head"><span class="course-t">我的课程</span>' +
-                '<span class="course-m">' +
-                  (lib.imported.length ? st.importedCourses + ' 门 · ' + st.importedPages + ' 篇' : '未导入') +
-                '</span></div>';
-      if (!lib.imported.length) {
-        html += '<div class="empty">还没有导入课程。点上方「＋ 导入课程包」选择 .lcr 文件。</div>';
-      } else {
-        lib.imported.forEach(function (c) {
-          var m = c.meta || {};
-          var items = c.manifest ? flattenItems(c.manifest) : [];
-          html += '<div class="course-sub">' +
-                    '<span class="course-name">' + escapeHtml(m.title || m.id || '未命名课程') + '</span>' +
-                    '<span class="course-meta">' +
-                      escapeHtml(m.version ? 'v' + m.version + ' · ' : '') +
-                      (items.length || m.pages || 0) + ' 篇 · ' + fmtBytes(m.bytes) +
-                      (m.installedAt ? ' · ' + fmtDate(m.installedAt) : '') +
-                    '</span>' +
-                    '<button class="course-del" type="button" data-id="' + escapeHtml(m.id || '') + '">删除</button>' +
-                  '</div>';
-          html += items.length
-            ? renderItems(items)
-            : '<div class="empty">这门课的清单读不出来（可尝试删除后重新导入）</div>';
-        });
-      }
-    }
-
-    // 完全没有课程时给一句引导（空构建 + 未导入 = 这个状态）
-    if (!html.trim()) {
-      html = '<div class="empty">还没有课程。点上方「＋ 导入课程包」选择 .lcr 文件开始。</div>';
-    }
-
-    var list = $('list');
-    list.innerHTML = html;
-    wireCourseDelete(list);
-    $('sub').innerHTML = '离线学习 · <b>' + st.totalPages + '</b> 篇';
-    var secCount = $('sec-count');
-    if (secCount) secCount.textContent = st.totalPages + ' 篇';
-  }
-
   /* ---------------- 删除课程（两段式确认） ---------------- */
-  function wireCourseDelete(root) {
-    var btns = root.querySelectorAll('.course-del');
-    for (var i = 0; i < btns.length; i++) {
-      (function (btn) {
-        btn.addEventListener('click', function () {
-          if (btn.dataset.armed === '1') { doDeleteCourse(btn); return; }
-          // 第一次点击：变成"确认删除？"，3 秒不点自动还原
-          btn.dataset.armed = '1';
-          btn.textContent = '确认删除？';
-          btn.classList.add('danger');
-          setTimeout(function () {
-            if (btn.isConnected && btn.dataset.armed === '1') {
-              btn.dataset.armed = '0';
-              btn.textContent = '删除';
-              btn.classList.remove('danger');
-            }
-          }, 3000);
-        });
-      })(btns[i]);
-    }
-  }
-
-  async function doDeleteCourse(btn) {
-    var id = btn.dataset.id;
-    if (!id) return;
-    btn.disabled = true;
-    btn.textContent = '删除中…';
-    try {
-      var native = window.AndroidSA && window.AndroidSA.deleteCourse;
-      if (!native) {
-        // 浏览器预览没有原生桥：删不掉课程文件，只清数据会造成"删了一半"的错觉
-        toast('浏览器预览模式不会删除课程文件，请在 App 内操作');
-        btn.disabled = false; btn.textContent = '删除'; btn.dataset.armed = '0';
-        return;
-      }
-      if (native) {
-        var res = JSON.parse(window.AndroidSA.deleteCourse(id) || '{}');
-        if (!res.ok) {
-          toast(res.message || '删除失败');
-          btn.disabled = false; btn.textContent = '删除'; btn.dataset.armed = '0';
-          return;
-        }
-      }
-      var n = await deleteCourseData(id);
-      toast('已删除课程，清掉 ' + n + ' 条本地记录');
-      setTimeout(function () { location.reload(); }, 500);
-    } catch (e) {
-      console.error('[delete] 失败', e);
-      toast('删除出错：' + (e && e.message));
-      btn.disabled = false; btn.textContent = '删除'; btn.dataset.armed = '0';
-    }
-  }
-
   /* ---------------- 继续学习 ---------------- */
   async function renderContinue() {
     if (!document.getElementById('continue')) return;   // 精简首页/我的页可能没有这个卡
@@ -327,13 +203,10 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
     }
 
     if (lib) {
-      if (document.getElementById('list')) {
-        renderLibrary(lib);            // 目录页/我的页没有列表，跳过
-      } else {
-        var st0 = libraryStats(lib);   // 但顶部「离线学习 · N 篇」仍要更新
-        var subEl = document.getElementById('sub');
-        if (subEl) subEl.innerHTML = '离线学习 · <b>' + st0.totalPages + '</b> 篇';
-      }
+      // 顶部「离线学习 · N 篇」（课程列表已搬到目录页，这里只更新计数）
+      var st0 = libraryStats(lib);
+      var subEl = document.getElementById('sub');
+      if (subEl) subEl.innerHTML = '离线学习 · <b>' + st0.totalPages + '</b> 篇';
       var builtin = lib.builtin;
       if (builtin && document.getElementById('ver')) $('ver').textContent = 'v' + builtin.appVersion;
     }
@@ -355,6 +228,9 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
     await renderDue();
     await renderOrphan();
     await renderStats();
+
+    var diagBtn = document.getElementById('btn-diag');
+    if (diagBtn) diagBtn.addEventListener('click', function () { location.href = '/diagnostics.html'; });
 
     if (document.getElementById('btn-export')) $('btn-export').addEventListener('click', doExport);
     if (document.getElementById('btn-import')) $('btn-import').addEventListener('click', doImport);

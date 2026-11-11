@@ -22,6 +22,13 @@ const ADB = process.env.ADB || arg('adb', 'adb');
 const SERIAL = process.env.SERIAL || arg('serial', '');
 const PKG = process.env.PKG || arg('pkg', 'com.lucubratio.reader.dev');
 const PORT = Number(arg('port', '9224'));
+// 任何退出路径（含 process.exit(2)）都要清掉 adb forward，否则端口残留、
+// 下次可能连到旧 target。
+let forwardSet = false;
+process.on('exit', () => {
+  if (!forwardSet) return;
+  try { adb(['forward', '--remove', `tcp:${PORT}`]); } catch { /* ignore */ }
+});
 const WAIT = Number(arg('wait', '2500'));
 
 const RED = (s) => `\x1b[31m${s}\x1b[0m`;
@@ -45,6 +52,7 @@ if (!pid) {
 }
 
 adb(['forward', `tcp:${PORT}`, `localabstract:webview_devtools_remote_${pid}`]);
+  forwardSet = true;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let targets = [];

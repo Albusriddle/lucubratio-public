@@ -1,0 +1,47 @@
+{
+  "01": {
+    "deck": "intro",
+    "pdf": "intro.pdf",
+    "work": "intro1"
+  },
+  "02": {
+    "deck": "vcpu1",
+    "pdf": "vcpu-1.pdf",
+    "work": "vcpu1"
+  },
+  "03": {
+    "deck": "vcpu2",
+    "pdf": "vcpu-2.pdf",
+    "work": "vcpu2"
+  },
+  "04": {
+    "deck": "vcpu3",
+    "pdf": "vcpu-3.pdf",
+    "work": "vcpu3"
+  },
+  "05": {
+    "deck": "vm1",
+    "pdf": "vm-1.pdf",
+    "work": "vm1"
+  },
+  "06": {
+    "deck": "vm2",
+    "pdf": "vm-2.pdf",
+    "work": "vm2"
+  },
+  "07": {
+    "deck": "vm3",
+    "pdf": "vm-3.pdf",
+    "work": "vm3"
+  },
+  "08": {
+    "deck": "vm4",
+    "pdf": "vm-4.pdf",
+    "work": "vm4"
+  },
+  "09": {
+    "deck": "conc1",
+    "pdf": "conc-1.pdf",
+    "work": "conc1"
+  }
+}

@@ -1,6 +1,7 @@
 // 目录页：课程 → 讲义页（章） → 小节，三级可折叠
 // 每行右侧 1/4 是「展开」按钮，点行内其余部分=跳转（跳转前二次确认）。
 import { loadLibrary, loadSearchIndex } from '/shell/library.js';
+import { deleteCourseData } from '/shell/store.js';
 
 const $ = (id) => document.getElementById(id);
 const STORE_KEY = 'lucubratio.toc.expanded';
@@ -15,11 +16,13 @@ function saveExpanded(obj) {
 const expanded = loadExpanded();
 
 /* ---------------- 二次确认 ---------------- */
-function confirmJump(label, sub) {
+function confirmAsk(label, sub, kicker) {
   return new Promise((resolve) => {
     const dlg = $('toc-confirm');
     $('toc-confirm-title').textContent = label;
     $('toc-confirm-sub').textContent = sub || '';
+    const k = $('toc-confirm-kicker');
+    if (k) k.textContent = kicker || '跳转到';
     const yes = $('toc-confirm-yes');
     const no = $('toc-confirm-no');
 
@@ -42,7 +45,7 @@ function confirmJump(label, sub) {
 }
 
 async function jump(file, anchor, label, sub) {
-  const ok = await confirmJump(label, sub);
+  const ok = await confirmAsk(label, sub, '跳转到');
   if (!ok) return;
   const url = file + (anchor ? '#' + anchor : '');
   if (typeof document.startViewTransition === 'function') {
@@ -50,6 +53,25 @@ async function jump(file, anchor, label, sub) {
     document.startViewTransition(() => { location.href = url; });
   } else {
     location.href = url;
+  }
+}
+
+/** 删除一门导入课程（原生删文件 + 本地清数据） */
+async function deleteCourse(course) {
+  const ok = await confirmAsk(course.title || course.id, '这门课的页面与学习记录会一起删掉', '删除课程');
+  if (!ok) return;
+  const bridge = window.AndroidSA;
+  if (!bridge || typeof bridge.deleteCourse !== 'function') {
+    window.alert('浏览器预览模式不会删除课程文件，请在 App 内操作');
+    return;
+  }
+  try {
+    const res = JSON.parse(bridge.deleteCourse(course.id) || '{}');
+    if (!res.ok) throw new Error(res.message || '删除失败');
+    await deleteCourseData(course.id);
+    location.reload();
+  } catch (e) {
+    window.alert('删除失败：' + ((e && e.message) || e));
   }
 }
 
@@ -126,6 +148,7 @@ async function render() {
         id: (c.meta && c.meta.id) || 'imported',
         title: (c.meta && c.meta.title) || '未命名课程',
         pages: items,
+        deletable: true,
       });
     }
   });
@@ -155,6 +178,15 @@ async function render() {
       key: ckey,
       onGo: () => jump(pages[0] ? pages[0].file : '/', '', course.title, '课程首页'),
     });
+    // 导入课程才给删除入口（内置课程随 APK，不提供删除）
+    if (course.deletable) {
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'toc-del';
+      del.textContent = '删除';
+      del.addEventListener('click', (e) => { e.stopPropagation(); deleteCourse(course); });
+      cRow.insertBefore(del, cRow.querySelector('.toc-more'));
+    }
     const cKids = makeKids();
     if (expanded[ckey]) cKids.classList.add('open');
 

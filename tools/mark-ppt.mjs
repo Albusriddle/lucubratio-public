@@ -49,6 +49,7 @@ if (has('--cross')) {
     .map((m) => m[1] || m[2])
     .filter((x) => x.includes(':')));
   const hits = [];
+  const unknownLectures = new Set();
   // 扫描所有可能引用课件的块：段落、解析块、题目标题
   const blockRe = /<(p|blockquote|h3)\b[^>]*>([\s\S]*?)<\/\1>/g;
   let m;
@@ -58,7 +59,13 @@ if (has('--cross')) {
     for (const r of body.matchAll(/(0[1-9])\s*讲?[^0-9p\n]{0,4}((?:p0*\d{1,3}[、,，\s]*)+)/g)) {
       const lec = r[1];
       const deck = DECK_BY_LECTURE[lec];
-      if (!deck) continue;
+      if (!deck) {
+        if (!unknownLectures.has(lec)) {
+          unknownLectures.add(lec);
+          console.log(`  ! 讲次 ${lec} 不在映射表里（只认 01–09），已跳过；如需支持请改 DECK_BY_LECTURE`);
+        }
+        continue;
+      }
       for (const pg of r[2].matchAll(/p0*(\d{1,3})/g)) {
         const pno = Number(pg[1]);
         const key = `${lec}:${pno}`;

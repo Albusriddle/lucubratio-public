@@ -606,6 +606,29 @@ const contentHash = sha1(collected.map((c) => `${c.cid}:${c.rawHash}`).sort().jo
 rimraf(OUT);
 fs.mkdirSync(OUT, { recursive: true });
 copyDir(WEB, OUT);
+    // 课件截图（web/img）只服务打包流程，不进 APK：
+    // 否则本地构建的 APK 会平白多出 224 张课程截图（+5.5 MB），对外分发等于夹带课件内容。
+    fs.rmSync(path.join(OUT, 'img'), { recursive: true, force: true });
+
+// ===== 壳页（OUT 根下的 *.html）资源引用补版本号 =====
+// 内容页由 inject() 加了 ?v=，壳页是静态文件；不给版本号的话，
+// APK 升级后 WebView 可能仍用旧缓存（P3/P4 新增了 home.css / tabbar.js / nav.js 后尤其明显）。
+{
+  const shellPages = fs.readdirSync(OUT).filter((f) => f.endsWith('.html'));
+  const ver = encodeURIComponent(pkg.version);
+  let touched = 0;
+  for (const f of shellPages) {
+    const fp = path.join(OUT, f);
+    let h = fs.readFileSync(fp, 'utf8');
+    const before = h;
+    h = h.replace(/(["'])(\/shell\/[^"'?]+\.(?:js|css))\1/g, (m, q, u) => `${q}${u}?v=${ver}${q}`);
+    if (h !== before) {
+      fs.writeFileSync(fp, h);
+      touched += 1;
+    }
+  }
+  log(`  ${KJ.dim}壳页资源版本号：${touched} 个页面已标注${KJ.reset}`);
+}
 
 for (const f of ['index.html', 'shell/shell.css', 'shell/page.js', 'shell/store.js', 'shell/db.js']) {
   if (!fs.existsSync(path.join(OUT, f))) {

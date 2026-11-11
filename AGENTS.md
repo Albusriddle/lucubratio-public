@@ -75,7 +75,7 @@
 - 同讲页面写页码即可（`data-ppt="13"`）；跨讲引用写 `讲次:页码`（`data-ppt="05:42"`）
 - **一页只标一次**，放在"首次转述该页"的段落之后
 - 构建期替换成真实 `<img>`（宽 900 webp、懒加载、点击放大），**不要自己写 `<img>`**
-- 缺图 → 构建失败。图片由 `node tools/ppt-shots.mjs --all` 生成到 `web/img/<deck>/`（gitignored）
+- 缺图 → 构建失败。图片由 `node tools/ppt-shots.mjs --all --src <课件目录>` 生成到 `web/img/<deck>/`（gitignored）
 
 ## 约定 2：双盲 + 复核
 

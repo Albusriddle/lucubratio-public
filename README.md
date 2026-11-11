@@ -35,9 +35,12 @@ node scripts/verify.mjs
 
 # 3) 纯函数单测 + 打包器自测
 npm test
+npm run test:all        # 全量：构建 + 校验 + 四套测试 + 片段预检 + 题目自检
 npm run test:package
 
 # 4)（可选）出一个"没有内置内容"的包：课程全靠导入
+npm run build:empty     # 出「无内置课程」的查看器包
+npm run check:pages     # 真机页面体检（需 ADB + debug 包）
 npm run build:empty
 SKIP_WEB_BUILD=1 npm run build:debug   # 必须跳过 preBuild，否则会被常规构建覆盖
 

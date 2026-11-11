@@ -42,7 +42,9 @@
     var href = a.getAttribute('href');
     if (!href || href.charAt(0) === '#') return;
     if (a.origin && a.origin !== location.origin) return;          // 外链放行
-    if (!/^\/(?!\/)/.test(href) && !/^\.{0,2}\//.test(href)) return; // 只处理站内相对/绝对路径
+    // 只放行「带 scheme」的链接（http/https/mailto/tel…）；
+    // 裸相对路径（search.html）、./x、../x、/x 全部按站内跳转处理。
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return;
     e.preventDefault();
     navigate(a.href, kindOf(a));
   }, false);

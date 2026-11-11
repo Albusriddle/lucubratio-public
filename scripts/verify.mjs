@@ -366,7 +366,7 @@ if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含�
   for (const f of pages) {
     const h = fs.readFileSync(f, 'utf8');
     const t = (h.match(/<table\b/g) || []).length;
-    const w = (h.match(/<div class="table-wrap">/g) || []).length;
+    const w = (h.match(/<div\b[^>]*class="[^"]*\btable-wrap\b[^"]*"/g) || []).length;
     tables += t; wrapped += w;
     if (t !== w) bad.push(`${path.basename(f)}（表 ${t} / 包 ${w}）`);
   }
@@ -416,19 +416,40 @@ try {
   const shellDir = path.join(OUT_DIR, 'shell');
   const problems = [];
 
-  /** 用花括号配平切出所有函数体：[{name, body}] */
+  /** 从 '{' 开始扫到配平的 '}'，跳过字符串/模板/注释里的花括号
+   *  （朴素计数会被 '{' / '}' 字面量骗到：home.js 有 `'{}'`，一旦出现单个括号就会切错函数体）*/
+  function matchBrace(src, start) {
+    let depth = 0;
+    let i = start;
+    let mode = null;                     // sq | dq | bt | line | block
+    while (i < src.length) {
+      const c = src[i];
+      const n = src[i + 1];
+      if (mode === 'line') { if (c === '\n') mode = null; i++; continue; }
+      if (mode === 'block') { if (c === '*' && n === '/') { mode = null; i += 2; continue; } i++; continue; }
+      if (mode === 'sq') { if (c === '\\') { i += 2; continue; } if (c === "'") mode = null; i++; continue; }
+      if (mode === 'dq') { if (c === '\\') { i += 2; continue; } if (c === '"') mode = null; i++; continue; }
+      if (mode === 'bt') { if (c === '\\') { i += 2; continue; } if (c === '`') mode = null; i++; continue; }
+      if (c === '/' && n === '/') { mode = 'line'; i += 2; continue; }
+      if (c === '/' && n === '*') { mode = 'block'; i += 2; continue; }
+      if (c === "'") { mode = 'sq'; i++; continue; }
+      if (c === '"') { mode = 'dq'; i++; continue; }
+      if (c === '`') { mode = 'bt'; i++; continue; }
+      if (c === '{') depth++;
+      else if (c === '}') { depth--; if (depth === 0) return i; }
+      i++;
+    }
+    return src.length - 1;
+  }
+
+  /** 切出所有函数体：[{name, from, to, body}] */
   function functionsOf(src) {
     const out = [];
     const re = /function\s+([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{/g;
     let m;
     while ((m = re.exec(src))) {
-      let i = re.lastIndex - 1; // 指向 '{'
-      let depth = 0;
-      let j = i;
-      for (; j < src.length; j++) {
-        if (src[j] === '{') depth++;
-        else if (src[j] === '}') { depth--; if (depth === 0) break; }
-      }
+      const i = re.lastIndex - 1;        // 指向 '{'
+      const j = matchBrace(src, i);
       out.push({ name: m[1], from: i, to: j, body: src.slice(i, j + 1) });
     }
     return out;
@@ -436,6 +457,20 @@ try {
 
   const idUsage = /\$\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)|getElementById\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
   const guardRe = /if\s*\([^)]*getElementById\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
+  // 别名守卫：var x = $('id'); … if (x) … / if (!x) return;
+  // 静态检查必须认这种写法，否则 home.js 里所有 `var el = $('x'); if (!el) return;` 都会被误报
+  function aliasGuardedIds(body) {
+    const ids = new Set();
+    const aliasRe = /(?:var|let|const)\s+([A-Za-z0-9_$]+)\s*=\s*(?:\$|document\.getElementById)\(\s*['"]([a-zA-Z0-9_:-]+)['"]\s*\)/g;
+    let a;
+    while ((a = aliasRe.exec(body))) {
+      const name = a[1];
+      const id = a[2];
+      const useRe = new RegExp('if\\s*\\(\\s*!?\\s*' + name.replace(/[$]/g, '\\$') + '\\s*\\)');
+      if (useRe.test(body)) ids.add(id);
+    }
+    return ids;
+  }
 
   for (const page of pages) {
     const html = fs.readFileSync(path.join(OUT_DIR, page), 'utf8');
@@ -466,6 +501,7 @@ try {
           for (const gm of fn.body.matchAll(guardRe)) {
             if (!pageIds.has(gm[1])) { shortCircuited = true; break; }
           }
+          if (!shortCircuited && aliasGuardedIds(fn.body).has(id)) shortCircuited = true;
         }
         if (shortCircuited) continue;
 

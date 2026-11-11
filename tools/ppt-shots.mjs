@@ -81,7 +81,10 @@ function runDeck(deck, pdf, pages) {
 
 /* ---------- --all：一次跑全 9 门 ---------- */
 // 课件 PDF 与抽取目录的对应关系（讲次编号 → deck）
-const DECKS = {
+const DECKS_FILE = opt('--decks', 'tools/decks.json');
+const DECKS = JSON.parse(fs.existsSync(DECKS_FILE)
+  ? fs.readFileSync(DECKS_FILE, 'utf8')
+  : JSON.stringify({
   '01': { deck: 'intro', pdf: 'intro.pdf', work: 'intro1' },
   '02': { deck: 'vcpu1', pdf: 'vcpu-1.pdf', work: 'vcpu1' },
   '03': { deck: 'vcpu2', pdf: 'vcpu-2.pdf', work: 'vcpu2' },
@@ -91,10 +94,23 @@ const DECKS = {
   '07': { deck: 'vm3', pdf: 'vm-3.pdf', work: 'vm3' },
   '08': { deck: 'vm4', pdf: 'vm-4.pdf', work: 'vm4' },
   '09': { deck: 'conc1', pdf: 'conc-1.pdf', work: 'conc1' },
-};
-const SRC_DIR = opt('--src', 'F:/26秋季专业课/操作系统');
+  }));
+if (!fs.existsSync(DECKS_FILE)) {
+  console.log(`· 未找到 ${DECKS_FILE}，使用内置 9 门示例表（可用 --decks 指定自己的）`);
+}
+// 课件所在目录：不再写死本机路径。优先 --src，其次环境变量 COURSE_PDF_DIR。
+const SRC_DIR = opt('--src', process.env.COURSE_PDF_DIR || '');
 
 if (flag('--all')) {
+  if (!SRC_DIR) {
+    console.error('需要课件目录：--src <dir> 或设置环境变量 COURSE_PDF_DIR');
+    console.error('例：node tools/ppt-shots.mjs --all --src "D:/课件/操作系统"');
+    process.exit(2);
+  }
+  if (!fs.existsSync(SRC_DIR)) {
+    console.error('课件目录不存在：' + SRC_DIR);
+    process.exit(2);
+  }
   let all = { written: 0, bytes: 0 };
   for (const [no, d] of Object.entries(DECKS)) {
     const reportPath = path.join('.work', d.work, 'report.json');

@@ -88,7 +88,8 @@ const entries = [];
 const push = (name, data) => entries.push({ name, data });
 
 const contentDir = path.join(OUT, 'content');
-const imgDir = path.join(OUT, 'img');
+// 图片不再随 build 进 assets，直接从源目录取（web/img 是本地素材，gitignored）
+const imgDir = path.join(ROOT, 'web/img');
 
 if (!fs.existsSync(contentDir)) {
   console.error('产物里没有 content/ 目录——空构建（npm run build:empty）只能用来出「查看器-only」APK，不能打成课程包。');
