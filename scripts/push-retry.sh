@@ -75,6 +75,25 @@ if [ -n "$TOKEN" ]; then
   export GIT_TERMINAL_PROMPT=0
   trap 'rm -f "$ASKPASS"' EXIT INT TERM
 fi
+# 没给 --proxy 时，自动读 Windows 系统代理（很多人日常挂着代理，但 git 默认不读它）
+# 注意：在 MSYS/git-bash 里必须关掉路径转换，否则 /v 会被当成路径改写
+if [ -z "$PROXY" ] && command -v reg >/dev/null 2>&1; then
+  _reg() {
+    MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' reg query \
+      "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v "$1" 2>/dev/null \
+      | awk -v k="$1" '$1 == k {print $NF}' | tr -d '\r'
+  }
+  SP="$(_reg ProxyServer)"
+  EN="$(_reg ProxyEnable)"
+  if [ "$EN" = "0x1" ] && [ -n "$SP" ]; then
+    case "$SP" in
+      *";"*) PROXY="http://$(echo "$SP" | tr ';' '\n' | awk -F= '/https=/{print $2}' | head -1)" ;;
+      *)     PROXY="http://$SP" ;;
+    esac
+    echo "· 自动使用系统代理：$PROXY"
+  fi
+fi
+
 [ -n "$PROXY" ] && GIT_AUTH+=(-c "http.proxy=$PROXY")
 
 if [ "$LEGACY" = "1" ]; then
