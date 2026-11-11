@@ -95,6 +95,8 @@ import { fmtDue } from './time.js';
       if (h.tagName === 'H2') {
         groups.push({ id: h.id, title: title, items: [] });
       } else {
+        // 自评题（检测 N）不进目录：它们不是"章节"，列出来只会把目录撑长
+        if (/^\s*检测\s*\d+/.test(title)) continue;
         if (!groups.length) groups.push({ id: '', title: '本页', items: [] });
         groups[groups.length - 1].items.push({ id: h.id, title: title });
       }

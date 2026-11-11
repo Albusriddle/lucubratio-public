@@ -867,3 +867,48 @@ figure.sa-ppt figcaption {
   height: auto;
   display: block;
 }
+
+/* ---------- 宽屏（>880px）：顶栏与遮罩同样可用 ----------
+   此前 .sa-topbar / .sa-scrim 的基础规则是 display:none，真实样式只写在窄屏媒体查询里，
+   结果平板 / 横屏下内容页没有 ☰，**侧栏根本打不开**（2026-11 发现）。 */
+@media (min-width: 881px) {
+  body { padding-top: var(--sa-bar-h); }
+
+  .sa-topbar {
+    display: flex; align-items: center; gap: 2px;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 950;
+    height: var(--sa-bar-h);
+    padding: 0 6px;
+    background: var(--sa-bar-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    box-shadow: var(--sa-shadow);
+    color: var(--fg);
+  }
+  .sa-topbar .sa-icon {
+    flex: 0 0 auto; width: 44px; height: 44px;
+    border: 0; padding: 0; background: transparent; color: var(--fg);
+    font-size: 19px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+  }
+  .sa-topbar .sa-icon:active { background: rgba(0, 0, 0, .07); }
+  .sa-topbar .sa-titles { flex: 1 1 auto; min-width: 0; padding: 0 2px; }
+  .sa-topbar .sa-t1 {
+    font-size: 14px; font-weight: 600; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sa-topbar .sa-t2 {
+    font-size: 11.5px; color: var(--muted); line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
+  }
+  .sa-bar-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; }
+  .sa-bar-progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .1s linear; }
+
+  .sa-scrim {
+    display: block; position: fixed; inset: 0; z-index: 880;
+    background: rgba(16, 20, 26, .42);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
+}
