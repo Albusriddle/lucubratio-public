@@ -143,14 +143,15 @@ async function render() {
   }
   ((lib && lib.imported) || []).forEach((c) => {
     const items = flatten(c.manifest);
-    if (items.length) {
-      courses.push({
-        id: (c.meta && c.meta.id) || 'imported',
-        title: (c.meta && c.meta.title) || '未命名课程',
-        pages: items,
-        deletable: true,
-      });
-    }
+    // 清单读不出来也要列出来：否则这门课在目录页完全不可见，
+    // 连「删除」都用不了（只能想别的办法清数据）。
+    courses.push({
+      id: (c.meta && c.meta.id) || 'imported',
+      title: (c.meta && c.meta.title) || '未命名课程',
+      pages: items,
+      deletable: true,
+      broken: items.length === 0,
+    });
   });
   if (!courses.length) {
     host.innerHTML = '<div class="empty">还没有导入课程。<br>到「主页 → 导入课程包」加一门吧。</div>';
@@ -173,7 +174,7 @@ async function render() {
     const cRow = makeRow({
       level: 1,
       title: course.title || course.id,
-      sub: pages.length + ' 讲',
+      sub: course.broken ? '清单读不出来（建议删除后重新导入）' : pages.length + ' 讲',
       hasChildren: true,
       key: ckey,
       onGo: () => jump(pages[0] ? pages[0].file : '/', '', course.title, '课程首页'),

@@ -126,6 +126,19 @@ node tools/assemble.mjs <序号>_<标签> "<页面标题>" .work/<id>/<段>.fina
 - 四个选项都要有"错在哪"的理由，不允许三个明显凑数
 - 数值题（调度顺序/命中率/页表大小）必须**独立重算一遍**再写解析
 
+## 4.5 课件截图（可选，但推荐）
+
+把「正文里转述的那页课件」截出来嵌进正文，读者不用来回翻 PDF。
+
+```bash
+node tools/ppt-shots.mjs --all --src "<课件目录>"     # 渲染 web/img/<deck>/pNNN.webp（宽 900 webp）
+node tools/mark-ppt.mjs --file .work/pages/05_vm1.html --report .work/vm1/report.json   # 存量内容机械预标
+```
+
+- 内容侧只写标记：`<figure class="sa-ppt" data-ppt="42"></figure>`（跨讲写 `05:42`）
+- 构建期替换成 `<img loading="lazy">` + 图注，点击可放大
+- **缺图会直接构建失败**（`web/img` 是 gitignored 的本地产物，换机器要重跑一次）
+
 ## 5. 校验（不许跳过）
 
 ```bash

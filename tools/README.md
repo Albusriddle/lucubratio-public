@@ -57,3 +57,9 @@ node scripts/verify-package.mjs dist/vcpu1-1.0.0.lcr                  # 8 包校
 
 技能是"怎么想"，脚本是"怎么做"。脚本放仓库：可以被 CI 跑、可以被别人复现、改错了有 diff 可查。
 技能文档见 [`../docs/skill/`](../docs/skill/)。
+
+### `decks.sample.json`
+
+`ppt-shots.mjs --all` 用的「讲次 → 课件 PDF / 抽取目录」映射表样例。
+复制成 `tools/decks.json` 后按自己的课件改（该文件在 `.gitignore` 之外，可提交也可不提交），
+或直接用 `--decks <你的文件>` 指定。缺省时脚本用内置 9 门示例表并打印提示。

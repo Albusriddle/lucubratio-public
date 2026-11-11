@@ -421,22 +421,60 @@ try {
   function matchBrace(src, start) {
     let depth = 0;
     let i = start;
-    let mode = null;                     // sq | dq | bt | line | block
+    let mode = null;            // sq | dq | bt | line | block | regex | expr
+    let exprDepth = 0;          // 模板 ${ … } 内的括号深度
+    let prevSig = '{';          // 上一个有意义字符（用于判断 / 是除号还是正则起点）
     while (i < src.length) {
       const c = src[i];
       const n = src[i + 1];
+
       if (mode === 'line') { if (c === '\n') mode = null; i++; continue; }
       if (mode === 'block') { if (c === '*' && n === '/') { mode = null; i += 2; continue; } i++; continue; }
-      if (mode === 'sq') { if (c === '\\') { i += 2; continue; } if (c === "'") mode = null; i++; continue; }
-      if (mode === 'dq') { if (c === '\\') { i += 2; continue; } if (c === '"') mode = null; i++; continue; }
-      if (mode === 'bt') { if (c === '\\') { i += 2; continue; } if (c === '`') mode = null; i++; continue; }
+
+      if (mode === 'sq' || mode === 'dq') {
+        const q = mode === 'sq' ? "'" : '"';
+        if (c === '\\') { i += 2; continue; }
+        if (c === q) { mode = null; prevSig = q; }
+        i++; continue;
+      }
+
+      if (mode === 'regex') {
+        if (c === '\\') { i += 2; continue; }
+        if (c === '[') {                       // 字符类里的 ] / 不结束正则
+          i++;
+          while (i < src.length && src[i] !== ']') { if (src[i] === '\\') i++; i++; }
+          i++; continue;
+        }
+        if (c === '/') { mode = null; prevSig = '/'; }
+        i++; continue;
+      }
+
+      if (mode === 'bt') {
+        if (c === '\\') { i += 2; continue; }
+        if (c === '`') { mode = null; prevSig = '`'; i++; continue; }
+        if (c === '$' && n === '{') { mode = 'expr'; exprDepth = 1; i += 2; prevSig = '{'; continue; }
+        i++; continue;
+      }
+
+      // ---- 普通代码 / 模板表达式内 ----
       if (c === '/' && n === '/') { mode = 'line'; i += 2; continue; }
       if (c === '/' && n === '*') { mode = 'block'; i += 2; continue; }
       if (c === "'") { mode = 'sq'; i++; continue; }
       if (c === '"') { mode = 'dq'; i++; continue; }
       if (c === '`') { mode = 'bt'; i++; continue; }
-      if (c === '{') depth++;
-      else if (c === '}') { depth--; if (depth === 0) return i; }
+      if (c === '/') {
+        // 正则起点：前面是运算符/开括号/逗号/分号等（不是标识符或右括号）
+        if (/[=(,:;[!&|?{}'+\-*%~^]/.test(prevSig)) { mode = 'regex'; i++; continue; }
+      }
+      if (c === '{') {
+        if (mode === 'expr') { exprDepth++; i++; continue; }
+        depth++;
+      } else if (c === '}') {
+        if (mode === 'expr') { exprDepth--; if (exprDepth === 0) mode = 'bt'; i++; continue; }
+        depth--;
+        if (depth === 0) return i;
+      }
+      if (!/\s/.test(c)) prevSig = c;
       i++;
     }
     return src.length - 1;
@@ -445,12 +483,14 @@ try {
   /** 切出所有函数体：[{name, from, to, body}] */
   function functionsOf(src) {
     const out = [];
-    const re = /function\s+([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{/g;
+    // 命名函数 + 匿名函数（`function (e) {…}`）都要扫：
+    // home.js 的 `boot().catch(function (e) {…})` 就是匿名，之前整段被漏掉
+    const re = /function\s*([A-Za-z0-9_$]*)\s*\([^)]*\)\s*\{/g;
     let m;
     while ((m = re.exec(src))) {
       const i = re.lastIndex - 1;        // 指向 '{'
       const j = matchBrace(src, i);
-      out.push({ name: m[1], from: i, to: j, body: src.slice(i, j + 1) });
+      out.push({ name: m[1] || ('anon@' + i), from: i, to: j, body: src.slice(i, j + 1) });
     }
     return out;
   }
@@ -501,7 +541,16 @@ try {
           for (const gm of fn.body.matchAll(guardRe)) {
             if (!pageIds.has(gm[1])) { shortCircuited = true; break; }
           }
-          if (!shortCircuited && aliasGuardedIds(fn.body).has(id)) shortCircuited = true;
+          if (!shortCircuited) {
+            const aliasIds = aliasGuardedIds(fn.body);
+            // 直接守卫了这个 id，或该函数被另一个「本页不存在的 id」早退守卫罩住
+            if (aliasIds.has(id)) shortCircuited = true;
+            else {
+              for (const ga of aliasIds) {
+                if (!pageIds.has(ga)) { shortCircuited = true; break; }
+              }
+            }
+          }
         }
         if (shortCircuited) continue;
 

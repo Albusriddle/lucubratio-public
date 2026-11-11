@@ -198,8 +198,8 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
     try {
       lib = await loadLibrary();
     } catch (e) {
-      var lst = document.getElementById('list');
-      if (lst) lst.innerHTML = '<div class="empty">课程库加载失败：' + escapeHtml(e && e.message) + '</div>';
+      // 课程库读不出来时，首页只显示 0 篇（列表已移到目录页）
+      console.warn('[home] 课程库加载失败', e);
     }
 
     if (lib) {
@@ -242,8 +242,7 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
   boot().catch(function (e) {
     console.error('[home] 启动失败', e);
     if (window.__saSplashDone) window.__saSplashDone(e);
-    var lst2 = document.getElementById('list');
-    if (lst2) lst2.innerHTML = '<div class="empty">启动失败：' + escapeHtml(e && e.message) + '</div>';
+    // 没有列表可写：只记日志（页面顶部会显示 0 篇）
   });
 })();
 

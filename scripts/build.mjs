@@ -176,7 +176,14 @@ function expandPptFigures(html, fileName, errors) {
 
 function wrapTables(html) {
   let count = 0;
+  // <pre> 里的内容可能是「HTML 示例」，包一层 div 会破坏排版：先记下禁止区段
+  const preRanges = [];
+  for (const m of html.matchAll(/<pre\b[\s\S]*?<\/pre>/g)) {
+    preRanges.push([m.index, m.index + m[0].length]);
+  }
+  const inPre = (i) => preRanges.some(([a, b]) => i >= a && i < b);
   const out = html.replace(/<table\b[\s\S]*?<\/table>/g, (m, offset, whole) => {
+    if (inPre(offset)) return m;
     // 已经包在 .table-wrap 里就跳过
     const before = whole.slice(Math.max(0, offset - 400), offset);
     if (/<div[^>]*class="[^"]*table-wrap[^"]*"[^>]*>\s*$/.test(before)) return m;
@@ -697,6 +704,11 @@ for (const g of GROUPS) {
     totalTableWrapped += wrapped.count;
     const withPpt = expandPptFigures(wrapped.html, c.file, errors);
     totalPptShots += withPpt.count;
+    // 替换后仍有 data-ppt = 标记写法不标准（属性顺序/空格不同），build 阶段就报错，
+    // 不留给 verify 兜底
+    if (withPpt.html.includes('data-ppt="')) {
+      errors.push(`存在未能展开的 data-ppt 标记（检查 <figure class="sa-ppt" data-ppt="…"></figure> 的写法）: ${c.file}`);
+    }
     const html = inject(withPpt.html, { cid: c.cid, file: c.urlPath, cver: contentHash, appver: pkg.version });
     if (!html) {
       errors.push(`注入失败（缺少 </head> 或 </body>）: ${g.dir}/${c.file}`);
