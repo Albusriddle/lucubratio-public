@@ -376,7 +376,7 @@ if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含�
 
 // 8) 仓库卫生（红线）——策略来自 package.json 的 verifyPolicy.trackedContent
 //    public（默认）：只允许 *demo* 示例页，任何课程页/课程图片/课程包都算违规
-//    private        ：课程页合法（本人内容），但课程包仍不得入库、也不得出现 web/img 下的课件截图
+//    private        ：课程页与课件截图都合法（本人内容、永不转公开），只禁止课程包 .lcr 入库
 {
   try {
     const { execFileSync } = await import('node:child_process');
@@ -389,10 +389,11 @@ if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含�
     const pkgs = tracked.filter((f) => /\.lcr$/i.test(f));
 
     if (policy === 'private') {
-      const imgs = tracked.filter((f) => /^web\/img\//i.test(f));
+      // 私有仓库（仅本人可见、永不转公开）：课程页与课件截图都允许跟踪，
+      // 因为它的老流水线是直接把 <img src="/img/…"> 写进页面的，图片必须在库里才能构建。
+      // 唯一红线仍是「课程包 .lcr 不得入库」。
       if (pkgs.length) bad('仓库跟踪了课程包（红线，私有仓库同样禁止）：' + pkgs.slice(0, 3).join(', '));
-      else if (imgs.length) bad('仓库跟踪了课件截图（应留在本地 web/img，gitignored）：' + imgs.slice(0, 3).join(', '));
-      else ok(`仓库卫生（私有仓库策略）：课程包未入库、无课件截图（允许 content/os 下 ${tracked.filter((f) => f.startsWith('content/os/')).length} 个课程页）`);
+      else ok(`仓库卫生（私有仓库策略）：课程包未入库；允许跟踪 content/os ${tracked.filter((f) => f.startsWith('content/os/')).length} 页 + web/img ${tracked.filter((f) => f.startsWith('web/img/')).length} 张截图`);
     } else {
       const coursePages = tracked.filter((f) => f.startsWith('content/os/') && !/_demo_/.test(f));
       const contentImgs = tracked.filter((f) => /^content\/os\/.*\.(png|jpe?g|webp|svg)$/i.test(f));
