@@ -54,6 +54,22 @@
 - 私有仓库的 `package.json` 里 `verifyPolicy.trackedContent = "private"`
   （允许跟踪课程页与课件截图，只禁止 `.lcr` 入库）。
 
+### 发版规则（每次 release 都要发 GitHub）
+
+- **每次版本更新（`package.json.version` 变化）都必须打 tag 并发布到 GitHub Releases**：
+  ```bash
+  # 版本号与 CHANGELOG 就绪后
+  git tag -a v<版本> -m "v<版本>"
+  git push <url> v<版本>          # 触发 .github/workflows/release.yml
+  ```
+  `release.yml` 会跑全量检查 → 用 Secrets 里的 keystore 签出正式 APK → 建 Release（附件：APK + checksums）。
+- **Release 里只允许放查看器产物**（APK / checksums / 说明）。
+  **禁止**附 `.lcr` 课程包、课程正文页、课件截图——它们属课程内容，见红线 1。
+- 中间开发版本（同一个小版本内的多次提交）不必每次打 tag；但**功能/修复成组交付时就要发一个 release**，
+  不要连续几代只推 main 不发版（2026-11 就发生过 0.3.0–0.3.4 全部未发布）。
+- 发版后核对：Release 页有 APK、`apksigner` 指纹等于 `docs/DEVICE-CHECKLIST.md` 记录值、包名符合
+  `com.lucubratio.reader.public`（正式）/ `.dev`（debug）。
+
 ## 红线 2：不许编造课件里没有的内容
 
 只依据课件。课件没讲的写「课件未展开」，不确定就标注，不许用常识补写成结论。
