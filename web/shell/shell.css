@@ -1,3 +1,39 @@
+/* ===== 宽度锁死（基础层，不在媒体查询里）=====
+   目标：正文严格适配手机宽度，永不出现整页左右横移；
+   唯一允许横滑的是超宽表格（.table-wrap）与代码块（pre）。
+   注意：overflow-x 必须同时设在 html 与 body 上——只设 body 时，滚动的仍是 html。 */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  overscroll-behavior-x: none;
+}
+main, .sa-content, article {
+  overflow-x: clip;
+  max-width: 100%;
+}
+img, svg, video, canvas, figure {
+  max-width: 100%;
+  height: auto;
+}
+/* 代码块自己滚，不撑宽整页 */
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
+}
+/* Mermaid 图同样限宽 */
+.mermaid, .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+/* 表格：只有它允许横滑（build 会统一包一层 .table-wrap） */
+.table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ============================================================
    自习 · 壳层样式（构建时注入每个内容页）
    设计前提：只覆盖窄屏（<=880px），宽屏保持原有桌面排版不变
@@ -709,3 +745,45 @@ html.sa-dark .sa-viewer-content { background: #171c24; }
 }
 .sa-ans-toggle[aria-expanded="true"]::before { transform: rotate(45deg); }
 blockquote.sa-ans { margin-top: 6px; }
+
+
+/* ===== 页面切换动效（View Transitions API + 降级）===== */
+@view-transition { navigation: auto; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: .24s;
+  animation-timing-function: cubic-bezier(.22, .61, .36, 1);
+  animation-fill-mode: both;
+}
+
+/* 前进：新页从右侧滑入，旧页淡出左移 */
+html[data-nav-kind="forward"]::view-transition-new(root) { animation-name: sa-vt-in-right; }
+html[data-nav-kind="forward"]::view-transition-old(root) { animation-name: sa-vt-out-left; }
+
+/* 后退：反向 */
+html[data-nav-kind="back"]::view-transition-new(root) { animation-name: sa-vt-in-left; }
+html[data-nav-kind="back"]::view-transition-old(root) { animation-name: sa-vt-out-right; }
+
+/* tab 切换：淡入淡出 + 轻微缩放 */
+html[data-nav-kind="tab"]::view-transition-new(root) { animation-name: sa-vt-fade-in; }
+html[data-nav-kind="tab"]::view-transition-old(root) { animation-name: sa-vt-fade-out; }
+
+@keyframes sa-vt-in-right { from { transform: translateX(18%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sa-vt-out-left { from { transform: none; opacity: 1; } to { transform: translateX(-12%); opacity: 0; } }
+@keyframes sa-vt-in-left  { from { transform: translateX(-18%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sa-vt-out-right { from { transform: none; opacity: 1; } to { transform: translateX(12%); opacity: 0; } }
+@keyframes sa-vt-fade-in  { from { opacity: 0; transform: scale(.992); } to { opacity: 1; transform: none; } }
+@keyframes sa-vt-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* 降级：不支持 View Transitions 时，进页面做一次很轻的淡入 */
+@supports not (view-transition-name: none) {
+  body { animation: sa-page-in .2s ease both; }
+  @keyframes sa-page-in { from { opacity: 0; } to { opacity: 1; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body { animation: none !important; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
+}

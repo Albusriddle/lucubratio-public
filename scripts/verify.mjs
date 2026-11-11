@@ -268,6 +268,7 @@ const SHELL_FILES = [
   'shell/boot.js',
   'shell/splash.js',
   'shell/theme.js',
+  'shell/nav.js',
   'shell/page.js',
   'shell/home.js',
   'shell/store.js',
@@ -329,6 +330,26 @@ const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).reduce(
 const total = walk(OUT);
 ok('产物总体积 ' + (total / 1048576).toFixed(2) + ' MB');
 if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含课件图片）: ' + (total / 1048576).toFixed(2) + ' MB');
+
+// 7.5) 表格必须全部包裹（否则整页会被撑宽，手机上能左右拖）
+{
+  const pages = fs.readdirSync(path.join(OUT, 'content'), { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .flatMap((d) => fs.readdirSync(path.join(OUT, 'content', d.name))
+      .filter((f) => f.endsWith('.html'))
+      .map((f) => path.join(OUT, 'content', d.name, f)));
+  let tables = 0, wrapped = 0;
+  const bad = [];
+  for (const f of pages) {
+    const h = fs.readFileSync(f, 'utf8');
+    const t = (h.match(/<table\b/g) || []).length;
+    const w = (h.match(/<div class="table-wrap">/g) || []).length;
+    tables += t; wrapped += w;
+    if (t !== w) bad.push(`${path.basename(f)}（表 ${t} / 包 ${w}）`);
+  }
+  if (bad.length) bad.length && fails.push('表格未全部包裹（会导致整页横向滚动）: ' + bad.join('；'));
+  else ok(`表格全部包裹（${tables} 个）`);
+}
 
 // 8) 仓库卫生（红线）：不得跟踪课程包 / 课程内容
 try {

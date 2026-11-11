@@ -109,6 +109,25 @@ function pickKicker(html) {
 }
 
 /** 给命中的标题加 data-qid="<cid>#<标题id>"，返回 {html, count} */
+
+/** 给表格统一套一层 .table-wrap
+ *
+ * 为什么要在构建期做：CSS 只能让「有 wrapper 的表格」横滑；
+ * 没有 wrapper 的表格会把整页撑宽，手机会出现"整页左右拖"。
+ * 实测某一版：170 个表格里只有 31 个带 wrapper（producer 手写的），其余 139 个都在撑宽页面。
+ */
+function wrapTables(html) {
+  let count = 0;
+  const out = html.replace(/<table\b[\s\S]*?<\/table>/g, (m, offset, whole) => {
+    // 已经包在 .table-wrap 里就跳过
+    const before = whole.slice(Math.max(0, offset - 400), offset);
+    if (/<div[^>]*class="[^"]*table-wrap[^"]*"[^>]*>\s*$/.test(before)) return m;
+    count += 1;
+    return `<div class="table-wrap">${m}</div>`;
+  });
+  return { html: out, count };
+}
+
 function tagQuestions(html, rule, cid) {
   if (!rule) return { html, count: 0 };
   let count = 0;
@@ -456,7 +475,7 @@ function inject(html, { cid, file, cver, appver }) {
   // 库路径改由 data-lib 属性传给 mermaid-init.js（它用 document.currentScript 读取）。
   const tail = (needsMermaid
     ? '<script src="/shell/mermaid-init.js' + q + '" data-lib="/vendor/mermaid.min.js' + q + '"></script>\n'
-    : '') + extras + '<script type="module" src="/shell/page.js' + q + '"></script>';
+    : '') + '<script src="/shell/nav.js' + q + '"></script>\n' + extras + '<script type="module" src="/shell/page.js' + q + '"></script>';
   s = s.replace(/<\/body>/i, `${tail}\n</body>`);
 
   const ok = s.includes('/shell/shell.css') && s.includes('/shell/page.js') &&
@@ -561,6 +580,7 @@ let totalMdStripped = 0;
 let totalPlainBlocks = 0;
 let totalFormulaBlocks = 0;
 let totalTableMath = 0;
+let totalTableWrapped = 0;
 let totalTableMathSkipped = 0;
 const searchSections = [];
 const searchPages = {};
@@ -591,7 +611,9 @@ for (const g of GROUPS) {
     if (rule && tagged.count === 0) {
       errors.push(`自评单元规则未命中（结构可能变了）: ${c.cid} / ${c.file}`);
     }
-    const html = inject(tagged.html, { cid: c.cid, file: c.urlPath, cver: contentHash, appver: pkg.version });
+    const wrapped = wrapTables(tagged.html);
+    totalTableWrapped += wrapped.count;
+    const html = inject(wrapped.html, { cid: c.cid, file: c.urlPath, cver: contentHash, appver: pkg.version });
     if (!html) {
       errors.push(`注入失败（缺少 </head> 或 </body>）: ${g.dir}/${c.file}`);
       continue;
