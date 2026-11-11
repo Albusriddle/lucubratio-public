@@ -334,11 +334,12 @@ if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含�
 
 // 7.5) 表格必须全部包裹（否则整页会被撑宽，手机上能左右拖）
 {
-  const pages = fs.readdirSync(path.join(OUT, 'content'), { withFileTypes: true })
+  const contentDir = path.join(OUT, 'content');
+  const pages = (!fs.existsSync(contentDir) ? [] : fs.readdirSync(contentDir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .flatMap((d) => fs.readdirSync(path.join(OUT, 'content', d.name))
       .filter((f) => f.endsWith('.html'))
-      .map((f) => path.join(OUT, 'content', d.name, f)));
+      .map((f) => path.join(contentDir, d.name, f))));
   let tables = 0, wrapped = 0;
   const bad = [];
   for (const f of pages) {
