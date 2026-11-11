@@ -40,6 +40,20 @@
 **机械校验**：`node scripts/verify.mjs` 会检查 `git ls-files` 里是否出现 `.lcr` / 课程页 / 课程图片，
 命中即失败；CI 也会跑这一项。**不要试图绕过它**（比如改名、加 `.gitignore` 例外、用 `-f` 强制添加）。
 
+## 开发重心（2026-11-11 起）
+
+- **本仓库（`lucubratio-public`）是唯一开发主线**：新功能、修复、文档、发布都在这里做。
+- **私有仓库（`study-app`）只做「偶尔同步」**，不主动在其上开发：
+  ```bash
+  cd D:/std/study-app
+  node scripts/sync-upstream.mjs --from ../lucubratio-public   # 按白名单同步
+  node scripts/build.mjs && node scripts/verify.mjs            # 同步后自检
+  ```
+  同步白名单在 `study-app/scripts/sync-upstream.mjs`；`build.mjs` / `package.json` /
+  `MainActivity.java` 仍是「手工合并」（私有仓库特有配置）。
+- 私有仓库的 `package.json` 里 `verifyPolicy.trackedContent = "private"`
+  （允许跟踪课程页与课件截图，只禁止 `.lcr` 入库）。
+
 ## 红线 2：不许编造课件里没有的内容
 
 只依据课件。课件没讲的写「课件未展开」，不确定就标注，不许用常识补写成结论。
