@@ -134,4 +134,12 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+
+  /* 首页「今日份名言」：按天取一条，同一天不变 */
+  (function dailyQuote() {
+    var el = document.getElementById('sa-quote');
+    if (!el || !QUOTES.length) return;
+    var day = Math.floor(Date.now() / 86400000);
+    el.textContent = QUOTES[day % QUOTES.length];
+  })();
 })();

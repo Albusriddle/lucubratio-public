@@ -268,6 +268,7 @@ const SHELL_FILES = [
   'shell/boot.js',
   'shell/splash.js',
   'shell/theme.js',
+  'shell/tabbar.js', 'shell/toc.js', 'shell/home.css', 'me.html', 'toc.html',
   'shell/nav.js',
   'shell/page.js',
   'shell/home.js',

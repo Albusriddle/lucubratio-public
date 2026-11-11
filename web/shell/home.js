@@ -159,6 +159,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
 
   /* ---------------- 继续学习 ---------------- */
   async function renderContinue() {
+    if (!document.getElementById('continue')) return;   // 精简首页/我的页可能没有这个卡
     var last = await getLastRead();
     if (!last || !last.file) return;
     $('c-title').textContent = last.title || '上次的内容';
@@ -172,6 +173,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
 
   /* ---------------- 今日复习入口 ---------------- */
   async function renderDue() {
+    if (!document.getElementById('due')) return;
     var n = 0;
     try { n = await dueCount(); } catch (e) { n = 0; }
     var el = $('due');
@@ -210,6 +212,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
 
   /* ---------------- 数据统计 ---------------- */
   async function renderStats() {
+    if (!document.getElementById('st-progress')) return;
     var s = await stats();
     $('st-progress').textContent = s.progress + ' 篇';
     $('st-attempts').textContent = s.attempts + ' 条';
@@ -277,6 +280,7 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
   }
 
   function initAppearance() {
+    if (!document.getElementById('theme-seg')) return;
     var t = getTheme();
     var f = getFont();
     markSeg('theme-seg', 'data-t', t);
@@ -312,13 +316,20 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
     try {
       lib = await loadLibrary();
     } catch (e) {
-      $('list').innerHTML = '<div class="empty">课程库加载失败：' + escapeHtml(e && e.message) + '</div>';
+      var lst = document.getElementById('list');
+      if (lst) lst.innerHTML = '<div class="empty">课程库加载失败：' + escapeHtml(e && e.message) + '</div>';
     }
 
     if (lib) {
-      renderLibrary(lib);
+      if (document.getElementById('list')) {
+        renderLibrary(lib);            // 目录页/我的页没有列表，跳过
+      } else {
+        var st0 = libraryStats(lib);   // 但顶部「离线学习 · N 篇」仍要更新
+        var subEl = document.getElementById('sub');
+        if (subEl) subEl.innerHTML = '离线学习 · <b>' + st0.totalPages + '</b> 篇';
+      }
       var builtin = lib.builtin;
-      if (builtin) $('ver').textContent = 'v' + builtin.appVersion;
+      if (builtin && document.getElementById('ver')) $('ver').textContent = 'v' + builtin.appVersion;
     }
 
     await init({
@@ -339,8 +350,8 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
     await renderOrphan();
     await renderStats();
 
-    $('btn-export').addEventListener('click', doExport);
-    $('btn-import').addEventListener('click', doImport);
+    if (document.getElementById('btn-export')) $('btn-export').addEventListener('click', doExport);
+    if (document.getElementById('btn-import')) $('btn-import').addEventListener('click', doImport);
 
     // 首屏数据都好了 → 通知开屏可以退场（splash 自己保证至少停 500ms）
     if (window.__saSplashDone) window.__saSplashDone();
@@ -349,7 +360,8 @@ import { loadLibrary, flattenItems, libraryStats, fmtDate, fmtBytes, buildCverMa
   boot().catch(function (e) {
     console.error('[home] 启动失败', e);
     if (window.__saSplashDone) window.__saSplashDone(e);
-    $('list').innerHTML = '<div class="empty">启动失败：' + escapeHtml(e && e.message) + '</div>';
+    var lst2 = document.getElementById('list');
+    if (lst2) lst2.innerHTML = '<div class="empty">启动失败：' + escapeHtml(e && e.message) + '</div>';
   });
 })();
 
