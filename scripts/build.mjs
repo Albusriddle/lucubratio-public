@@ -613,8 +613,9 @@ const contentHash = sha1(collected.map((c) => `${c.cid}:${c.rawHash}`).sort().jo
 rimraf(OUT);
 fs.mkdirSync(OUT, { recursive: true });
 copyDir(WEB, OUT);
-    // 课件截图（web/img）只服务打包流程，不进 APK：
-    // 否则本地构建的 APK 会平白多出 224 张课程截图（+5.5 MB），对外分发等于夹带课件内容。
+    // 课件截图（web/img）**只回填被页面引用的那些**（见文件末尾「按引用回填图片」）。
+    // 为什么不是无差别排除：私有仓库的正文真的引用 /img/，排掉会整片裂图；
+    // 为什么不是无差别拷贝：公开仓库没有引用，却会平白多出几百张课程截图（+5MB）。
     fs.rmSync(path.join(OUT, 'img'), { recursive: true, force: true });
 
 // ===== 壳页（OUT 根下的 *.html）资源引用补版本号 =====
@@ -778,6 +779,39 @@ const searchJson = JSON.stringify({ v: 1, pages: searchPages, sections: searchSe
 fs.writeFileSync(path.join(OUT, 'search.json'), searchJson, 'utf8');
 
 log('');
+// ===== 按引用回填图片 =====
+// 扫产物里所有 HTML 的 /img/ 引用，只把用到的图从源目录 web/img 拷进 OUT/img。
+// 公开仓库（无引用）→ 0 张；私有仓库（正文引用 303 张）→ 303 张，两边都对。
+{
+  const srcImgRoot = path.join(WEB, 'img');
+  const used = new Set();
+  (function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) { walk(full); continue; }
+      if (!e.name.endsWith('.html')) continue;
+      const html = fs.readFileSync(full, 'utf8');
+      for (const m of html.matchAll(/(?:src|href)="\/img\/([^"?#]+)/g)) used.add(decodeURIComponent(m[1]));
+    }
+  })(OUT);
+
+  const missing = [];
+  let copied = 0;
+  for (const rel of used) {
+    const from = path.join(srcImgRoot, rel);
+    if (!fs.existsSync(from)) { missing.push(rel); continue; }
+    const to = path.join(OUT, 'img', rel);
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+    copied++;
+  }
+  if (missing.length) {
+    errors.push(`页面引用了 ${missing.length} 张不存在的图片：${missing.slice(0, 3).join(', ')}（先跑 tools/ppt-shots.mjs）`);
+  } else if (copied) {
+    log(`${KJ.dim}  图片：回填 ${copied} 张（仅被引用）→ ${path.join('assets', 'web', 'img')}${KJ.reset}`);
+  }
+}
+
 log(`${KJ.green}✓${KJ.reset} 构建完成：${collected.length} 页 / ${totalQuestions} 个自评单元，内容 ${(totalBytes / 1048576).toFixed(2)} MB${EMPTY ? '（--empty：无内置内容）' : ''}`);
 log(`${KJ.dim}  检索索引 ${searchSections.length} 节 / ${(fs.statSync(path.join(OUT, 'search.json')).size / 1024).toFixed(0)} KB`);
 log(`${KJ.dim}  图表：mermaid 替换 ${totalArtMermaid} 块 / SVG 兜底 ${totalArtBlocks - totalArtMermaid} 块（最宽 ${totalArtMaxCols} 列，修复 ${totalArtRepaired} 行错位）`);

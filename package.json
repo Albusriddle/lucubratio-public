@@ -30,5 +30,8 @@
     "math": 0,
     "sections": 5,
     "totalMB": 30
+  },
+  "verifyPolicy": {
+    "trackedContent": "public"
   }
 }

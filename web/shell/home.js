@@ -102,6 +102,9 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
     var k = info().kind;
     setText('st-kind', k === 'idb' ? 'IndexedDB' : '降级模式');
     setText('st-hint', k === 'idb' ? '' : '存储不可用');
+    // 存储正常时这行为空，留着会多一行「存储提示 」的空白——按内容显隐
+    var hintRow = document.getElementById('st-hint-row');
+    if (hintRow) hintRow.hidden = k === 'idb';
   }
 
   /* ---------------- 备份：导出 ---------------- */

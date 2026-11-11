@@ -2,6 +2,9 @@
 
 本仓库（`lucubratio-public`）是 Lucubratio 的**流水线 + 查看器**部分，不含任何课程素材。
 
+<!-- 书写约定：新版本段插在 [Unreleased] 之后；「暂无」占位符只保留在 [Unreleased] 里那一处，
+     写新版时不要把它往下挤（历史上因此出现过 2 处孤立占位符）。npm run test:all 会检查这一点。 -->
+
 ## [Unreleased]
 
 （暂无）
@@ -27,9 +30,6 @@
 - `pitfalls.md` 命令补 `--src`；`tools/README.md` 补 `decks.sample.json`
 - 清理 3 张无人引用的课件截图；重打 `os-homework-1.0.2.lcr`
 
-
-
-（暂无）
 
 ## [0.3.1] - 2026-11-11
 
@@ -60,10 +60,6 @@
 - `home.js` 删除 P4 之后不可达的 110 行（`renderLibrary` / `renderItems` / `wireCourseDelete` /
   `doCourseDelete` 与 `#sec-count` 分支），412 → 285 行
 - 删除死样式 `.foot`、无用 id `#toc-sub`；`me.html` 的内联 `onclick` 改为 JS 绑定
-
-
-
-（暂无）
 
 ## [0.3.0] - 2026-11-11
 

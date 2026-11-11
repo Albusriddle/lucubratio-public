@@ -154,9 +154,9 @@ for (const { full, rel } of pageFiles) {
 }
 
 /* ---------- 图片：只打包「被页面引用」的那部分 ----------
-   为什么：build 会把整个 web/img/ 拷进产物（本机可能有几百张课件截图）。
-   过去打包无差别收集 img/，导致 2 页的 demo 包带上 224 张未引用截图（5.47 MB → 0.03 MB），
-   而且这些图属于课程内容衍生物，容易在分享包时被带出去。 */
+   为什么只按引用：网页里没引用的图不该进包——2 页 demo 曾因此带上 224 张课件截图
+   （5.47 MB → 10 KB），而这些图属于课程内容衍生物，容易在分享包时被带出去。
+   注：build 现在也只把「被引用」的图回填进产物，本脚本直接从源目录 web/img 取，两边口径一致。 */
 const referencedImgs = new Set();
 for (const { full } of pageFiles) {
   const html = fs.readFileSync(full, 'utf8');

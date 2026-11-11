@@ -27,7 +27,10 @@ const PORT = Number(arg('port', '9224'));
 let forwardSet = false;
 process.on('exit', () => {
   if (!forwardSet) return;
-  try { adb(['forward', '--remove', `tcp:${PORT}`]); } catch { /* ignore */ }
+  try { // 收尾：端口可能已被移除/设备重启过，adb 会往 stderr 打印 "listener not found"，不影响结果
+try {
+  execFileSync(ADB, [...(SERIAL ? ['-s', SERIAL] : []), 'forward', '--remove', `tcp:${PORT}`], { stdio: 'ignore' });
+} catch { /* 忽略 */ } } catch { /* ignore */ }
 });
 const WAIT = Number(arg('wait', '2500'));
 

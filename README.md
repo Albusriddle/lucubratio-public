@@ -18,7 +18,7 @@
 |---|---|---|
 | **内容规范** | [`docs/CONTENT-SPEC.md`](docs/CONTENT-SPEC.md) | 一页内容该怎么写：标题/锚点、公式、Mermaid 图、表格、自评单元、图片 |
 | **编译器** | [`scripts/build.mjs`](scripts/build.mjs) | 源 HTML → 可运行站点：注入壳层、公式转 MathML、给命中规则的标题打自评标记、生成检索索引与 manifest |
-| **查看器** | [`web/`](web) + [`android/`](android) | 底栏三 tab（主页/目录/我的）、三级目录、离线阅读、断点续读、自评 → FSRS 复习、解析默认折叠、全文搜索、学习统计、课件页截图内嵌 |
+| **查看器** | [`web/`](web) + [`android/`](android) | 底栏三 tab（主页/目录/我的）、三级目录、离线阅读、断点续读、自评 → FSRS 复习、解析默认折叠、全文搜索、学习统计、课件页截图内嵌、目录页可删除已导入课程 |
 
 生成侧还有一套规范：[`AGENTS.md`](AGENTS.md)（硬约束与红线）+ [`docs/AGENTS-SPEC.md`](docs/AGENTS-SPEC.md)（角色分工、逐页模板、复核流程）—— 规定了"双人独立产出 + 第三人复核"，用来保证 AI 生成的内容不出事实错误。
 
