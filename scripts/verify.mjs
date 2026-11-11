@@ -380,8 +380,10 @@ if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含�
 {
   try {
     const { execFileSync } = await import('node:child_process');
-    const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
-      .split('\n').map((x) => x.trim()).filter(Boolean);
+    // 必须用 -z：默认输出会把中文文件名转义成 "content/os/11_vCPU1_\350\277…"（带引号），
+    // 导致后面前缀判断全部失效（私有仓库的 12 个课程页曾被数成 0）
+    const tracked = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' })
+      .split('\u0000').filter(Boolean);
     const policy = (pkg.verifyPolicy && pkg.verifyPolicy.trackedContent) || 'public';
 
     const pkgs = tracked.filter((f) => /\.lcr$/i.test(f));
