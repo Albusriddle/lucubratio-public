@@ -62,7 +62,8 @@ pre {
   width: min(86vw, 350px);
   height: auto;
   margin: 0;
-  padding: 10px 8px calc(28px + env(safe-area-inset-bottom));
+  /* 顶部不留 padding：章标题吸顶时才会严丝合缝贴在抽屉顶边（否则留一条缝能看到上一节） */
+  padding: 0 8px calc(28px + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   border-right: 1px solid var(--line);
@@ -89,6 +90,7 @@ body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
 
 /* 抽屉内容（运行时生成的标题目录） */
 .sa-drawer-head {
+    margin-top: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
