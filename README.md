@@ -1,5 +1,5 @@
 > **仓库已开放（Apache-2.0）**：https://github.com/Albusriddle/lucubratio-public
-> 你可以直接 clone 使用；Releases 页提供签名过的查看器 APK。
+> 你可以直接 clone 使用；Releases 页提供签名过的查看器 APK（包名 `com.lucubratio.reader.public`，可与其它版本共存）。
 > 本仓库**不含任何课程素材**——课程内容由使用者自己生成并导入。
 
 # Lucubratio · 流水线 + 查看器

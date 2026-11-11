@@ -73,6 +73,10 @@ android {
             applicationIdSuffix ".dev"
         }
         release {
+            // 正式版独立包名：com.lucubratio.reader.public
+            // 原因：私有仓库（本人自用 App）占用了 com.lucubratio.reader，且 versionCode 更大，
+            // 同包名会被系统判为「降级安装」而失败。加 .public 后两者可共存。
+            applicationIdSuffix ".public"
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

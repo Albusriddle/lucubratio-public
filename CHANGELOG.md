@@ -9,6 +9,20 @@
 
 （暂无）
 
+## [0.3.3] - 2026-11-11
+
+### 变更（安装身份）
+
+- **正式版包名改为 `com.lucubratio.reader.public`**（`applicationIdSuffix ".public"`）
+  - 原因：私有仓库的自用 App 占用 `com.lucubratio.reader` 且 versionCode 更大，
+    同包名安装会被系统判为降级（`INSTALL_FAILED_VERSION_DOWNGRADE`）而失败
+  - 效果：查看器（公开版）与自用 App 可**同时安装**；debug 版仍是 `.dev` 后缀
+  - 代价：从 v0.2.x 公开版升级会变成"装第二个 App"（老版本可自行卸载）
+
+
+
+（暂无）
+
 ## [0.3.2] - 2026-11-11
 
 ### 修复

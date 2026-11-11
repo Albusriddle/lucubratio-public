@@ -108,6 +108,7 @@ cd my-app
 | 项 | 位置 | 说明 |
 |---|---|---|
 | 包名 | `android/app/build.gradle` 的 `namespace` + `applicationId` | 改成你自己的域名反写 |
+| 三个包名（别搞混） | `com.lucubratio.reader.public`（正式版）/ `com.lucubratio.reader.dev`（debug）/ `com.lucubratio.reader`（私有仓库的自用版，与本仓库无关） |
 | Java 包目录 | `android/app/src/main/java/com/lucubratio/reader/` | 跟着包名改目录与 `package` 行 |
 | 应用名 | `android/app/src/main/res/values/strings.xml` 的 `app_name` | 桌面显示名 |
 | 图标题 / 开屏 | `web/index.html` | 首页 `<h1>` 与开屏文案 |
