@@ -36,6 +36,21 @@
 | 引用 | `<blockquote>` 用于「要点提示」和「解析」 |
 | 图片 | 用 Mermaid 或 `img/NN.webp`；**不要**贴课件截图以外的东西（版权） |
 
+## 课件截图标记
+
+```html
+<p>这一节的三条结论都来自同一张图：进程地址空间的六个段（课件 p11）。</p>
+<figure class="sa-ppt" data-ppt="11"></figure>
+```
+
+| 场景 | 写法 |
+|---|---|
+| 同讲页面 | `data-ppt="11"` |
+| 期中/复习页跨讲引用 | `data-ppt="05:11"`（讲次:页码） |
+
+构建期替换为 `<img src="/img/<deck>/pNNN.webp" loading="lazy">` + `<figcaption>课件 pNN</figcaption>`，
+点击可全屏放大。**不要直接写 `<img>`**。
+
 ## id 命名建议
 
 ```

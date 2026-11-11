@@ -787,3 +787,35 @@ html[data-nav-kind="tab"]::view-transition-old(root) { animation-name: sa-vt-fad
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
 }
+
+
+/* ===== 课件页截图（构建期由 <figure data-ppt> 生成）===== */
+figure.sa-ppt {
+  margin: 14px 0 18px;
+  padding: 0;
+}
+figure.sa-ppt a {
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line, #232b37);
+  background: var(--card, #171c24);
+}
+figure.sa-ppt img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+figure.sa-ppt figcaption {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted, #8b98a9);
+  text-align: center;
+}
+/* 全屏查看时让图片按原始比例展开（可双指/拖动） */
+.sa-viewer img {
+  max-width: none;
+  height: auto;
+  display: block;
+}

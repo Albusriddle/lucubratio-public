@@ -332,6 +332,26 @@ const total = walk(OUT);
 ok('产物总体积 ' + (total / 1048576).toFixed(2) + ' MB');
 if (total > BASELINE.totalMB * 1024 * 1024) bad('产物超预算（>24MB，含课件图片）: ' + (total / 1048576).toFixed(2) + ' MB');
 
+// 7.4) 课件截图标记必须全部展开（不允许把 data-ppt 原样发进包）
+{
+  const contentDir = path.join(OUT, 'content');
+  const pages = (!fs.existsSync(contentDir) ? [] : fs.readdirSync(contentDir, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .flatMap((d) => fs.readdirSync(path.join(contentDir, d.name))
+      .filter((f) => f.endsWith('.html'))
+      .map((f) => path.join(contentDir, d.name, f))));
+  let figs = 0;
+  const bad = [];
+  for (const f of pages) {
+    const h = fs.readFileSync(f, 'utf8');
+    figs += (h.match(/<figure class="sa-ppt">/g) || []).length;
+    const leftover = (h.match(/data-ppt="/g) || []).length;
+    if (leftover) bad.push(`${path.basename(f)}（残留 ${leftover} 个未展开）`);
+  }
+  if (bad.length) bad.length && fails.push('课件截图标记未展开: ' + bad.join('；'));
+  else ok(`课件截图标记已展开（${figs} 张）`);
+}
+
 // 7.5) 表格必须全部包裹（否则整页会被撑宽，手机上能左右拖）
 {
   const contentDir = path.join(OUT, 'content');

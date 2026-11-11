@@ -116,6 +116,64 @@ function pickKicker(html) {
  * 没有 wrapper 的表格会把整页撑宽，手机会出现"整页左右拖"。
  * 实测某一版：170 个表格里只有 31 个带 wrapper（producer 手写的），其余 139 个都在撑宽页面。
  */
+
+/* ---------- 课件页截图：<figure data-ppt="05:42"> → 真实 <img> ----------
+ * 为什么用标记而不是直接写 <img>：
+ *   · 图片路径要带 deck（/img/vm1/p042.webp），producer 不该关心目录结构
+ *   · 尺寸/懒加载/alt/figcaption 由构建统一，避免 224 张图各有各的写法
+ *   · 缺图时构建直接失败，不会把死链发进包里
+ */
+const DECK_BY_LECTURE = {
+  '01': 'intro', '02': 'vcpu1', '03': 'vcpu2', '04': 'vcpu3', '05': 'vm1',
+  '06': 'vm2', '07': 'vm3', '08': 'vm4', '09': 'conc1',
+};
+const PPT_IMG_ROOT = path.join(WEB, 'img');
+
+function expandPptFigures(html, fileName, errors) {
+  let count = 0;
+  let missing = 0;
+  // 本页所属讲次（文件名形如 05_vm1.html）
+  const mFile = String(fileName).match(/^(\d{2})_/);
+  const ownDeck = mFile ? DECK_BY_LECTURE[mFile[1]] : '';
+
+  const out = html.replace(
+    /<figure\s+class="sa-ppt"\s+data-ppt="([^"]+)"\s*><\/figure>/g,
+    (_m, spec) => {
+      const raw = String(spec).trim();
+      let deck;
+      let pageNo;
+      if (raw.includes(':')) {
+        const [lec, pg] = raw.split(':');
+        deck = DECK_BY_LECTURE[lec.trim()];
+        pageNo = Number(pg);
+      } else {
+        deck = ownDeck;
+        pageNo = Number(raw);
+      }
+      if (!deck || !Number.isFinite(pageNo) || pageNo < 1) {
+        errors.push(`data-ppt 写法无法解析: ${fileName} → "${raw}"`);
+        missing += 1;
+        return '';
+      }
+      const rel = `/img/${deck}/p${String(pageNo).padStart(3, '0')}.webp`;
+      const abs = path.join(PPT_IMG_ROOT, deck, `p${String(pageNo).padStart(3, '0')}.webp`);
+      if (!fs.existsSync(abs)) {
+        errors.push(`缺课件截图: ${fileName} → ${rel}（先跑 node tools/ppt-shots.mjs --all）`);
+        missing += 1;
+        return '';
+      }
+      count += 1;
+      return `<figure class="sa-ppt">` +
+        `<a class="sa-ppt-open" href="${rel}">` +
+        `<img src="${rel}" alt="课件 p${pageNo}" loading="lazy" decoding="async">` +
+        `</a>` +
+        `<figcaption>课件 p${pageNo}</figcaption>` +
+        `</figure>`;
+    }
+  );
+  return { html: out, count, missing };
+}
+
 function wrapTables(html) {
   let count = 0;
   const out = html.replace(/<table\b[\s\S]*?<\/table>/g, (m, offset, whole) => {
@@ -581,6 +639,7 @@ let totalPlainBlocks = 0;
 let totalFormulaBlocks = 0;
 let totalTableMath = 0;
 let totalTableWrapped = 0;
+let totalPptShots = 0;
 let totalTableMathSkipped = 0;
 const searchSections = [];
 const searchPages = {};
@@ -613,7 +672,9 @@ for (const g of GROUPS) {
     }
     const wrapped = wrapTables(tagged.html);
     totalTableWrapped += wrapped.count;
-    const html = inject(wrapped.html, { cid: c.cid, file: c.urlPath, cver: contentHash, appver: pkg.version });
+    const withPpt = expandPptFigures(wrapped.html, c.file, errors);
+    totalPptShots += withPpt.count;
+    const html = inject(withPpt.html, { cid: c.cid, file: c.urlPath, cver: contentHash, appver: pkg.version });
     if (!html) {
       errors.push(`注入失败（缺少 </head> 或 </body>）: ${g.dir}/${c.file}`);
       continue;

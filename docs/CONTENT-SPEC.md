@@ -200,6 +200,16 @@ npm test                   # 21 项纯函数测试
 | 字符画 | **禁止**（盒线字符 `─│┌` 与方块 `█▀` 都会被打回），一律改用 Mermaid |
 | 脚本 | 全篇只允许 `<script type="text/plain">` 这一种 `<script>`（Mermaid 源码容器）；其它任何 `<script>` 都会被 `pack`/导入拒绝 |
 
+### 课件页截图
+
+正文转述某页的图/表时，在该段之后写：
+
+```html
+<figure class="sa-ppt" data-ppt="42"></figure>
+```
+
+构建期替换为 `<img loading="lazy">` + 图注；宽度自动适配手机，点击可放大。
+
 ### 检测题（自评单元）约定
 
 ```html

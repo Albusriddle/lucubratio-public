@@ -379,6 +379,10 @@
     var diagrams = document.querySelectorAll('.mermaid');
     for (var i = 0; i < diagrams.length; i++) addButton(diagrams[i]);
 
+    // 课件截图：一律可点开放大（手机上看不清细节）
+    var shots = document.querySelectorAll('.sa-ppt img');
+    for (var k = 0; k < shots.length; k++) addButton(shots[k]);
+
     // 只给"横向溢出的宽表格"加放大镜，避免每张表都长按钮
     var tables = document.querySelectorAll('.table-wrap');
     for (var j = 0; j < tables.length; j++) {

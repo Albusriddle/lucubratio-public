@@ -37,3 +37,10 @@ content/**/*.pdf
 
 # 装机验收截图（本地产物，不入库）
 out-*.png
+
+# ---- 课程内容（红线：不进 git）----
+# 只允许自写的示例页；课程页由本地流水线生成，放在 .work/pages/
+content/os/*
+!content/os/*_demo_*.html
+# 课件截图（课程内容衍生，本地渲染）
+web/img/
