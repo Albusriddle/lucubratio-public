@@ -16,7 +16,8 @@ function saveExpanded(obj) {
 const expanded = loadExpanded();
 
 /* ---------------- 二次确认 ---------------- */
-function confirmAsk(label, sub, kicker) {
+function confirmAsk(label, sub, kicker, opts) {
+  opts = opts || {};
   return new Promise((resolve) => {
     const dlg = $('toc-confirm');
     $('toc-confirm-title').textContent = label;
@@ -25,6 +26,12 @@ function confirmAsk(label, sub, kicker) {
     if (k) k.textContent = kicker || '跳转到';
     const yes = $('toc-confirm-yes');
     const no = $('toc-confirm-no');
+
+    // 按钮文案与危险态**每次都显式重设**：
+    // dialog 是复用的，不重设就会出现"删除的红色「删除」残留到下次跳转"。
+    yes.textContent = opts.okText || '跳转';
+    yes.classList.toggle('danger', !!opts.danger);
+    yes.setAttribute('aria-label', opts.okText || '跳转');
 
     function done(v) {
       yes.removeEventListener('click', onYes);
@@ -58,7 +65,12 @@ async function jump(file, anchor, label, sub) {
 
 /** 删除一门导入课程（原生删文件 + 本地清数据） */
 async function deleteCourse(course) {
-  const ok = await confirmAsk(course.title || course.id, '这门课的页面与学习记录会一起删掉', '删除课程');
+  const ok = await confirmAsk(
+    course.title || course.id,
+    '这门课的页面与学习记录会一起删掉，不可恢复',
+    '删除课程',
+    { okText: '删除', danger: true }
+  );
   if (!ok) return;
   const bridge = window.AndroidSA;
   if (!bridge || typeof bridge.deleteCourse !== 'function') {
