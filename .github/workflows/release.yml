@@ -36,6 +36,15 @@ jobs:
       - name: Verify web bundle
         run: node scripts/verify.mjs
 
+      - name: CHANGELOG structure
+        run: node scripts/check-changelog.mjs
+
+      - name: Empty build smoke (D3：无内置内容也能通过校验)
+        run: |
+          node scripts/build.mjs --empty
+          node scripts/verify.mjs
+          node scripts/build.mjs   # 恢复常规产物，供后面打包用
+
       - name: Package pipeline self-test
         run: node scripts/test-package.mjs
 

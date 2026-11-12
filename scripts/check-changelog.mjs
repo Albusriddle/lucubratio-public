@@ -12,7 +12,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
-const md = fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8');
+const FILE = path.join(ROOT, 'CHANGELOG.md');
+if (!fs.existsSync(FILE)) {
+  console.error('✗ CHANGELOG 结构检查失败：找不到 CHANGELOG.md（' + FILE + '）');
+  process.exit(1);
+}
+const md = fs.readFileSync(FILE, 'utf8');
 const lines = md.split('\n');
 
 function fail(msg) {

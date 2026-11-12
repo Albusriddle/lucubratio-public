@@ -9,6 +9,24 @@
 
 （暂无）
 
+## [0.3.8] - 2026-11-13
+
+### 修复（发版闸门与文档一致性）
+
+- **`release.yml` 补齐检查项**：补上 `CHANGELOG structure` 与 `Empty build smoke` 两步
+  （此前这两项只在 `ci.yml` 里，打 tag 触发发版时并不检查——0.3.4–0.3.6 就是从这个缺口漏出去的）
+- **`toc.html` 删掉一条永不生效的声明**：`body` 同时带 `.toc-wrap` 与 `.has-tabbar`，
+  后者的 `padding-bottom` 优先级更高，`.toc-wrap` 里那句 `+24px` 从未生效
+- **`check-changelog.mjs` 缺文件时给友好提示**（原来直接抛 ENOENT 堆栈），并新增 `npm run check:changelog` 入口
+- **Secrets 单一来源**：`QUICKSTART.md` 不再重复列四个 Secrets 名字，改为指向
+  [`DEVICE-CHECKLIST.md`](DEVICE-CHECKLIST.md) §2.3（两处维护迟早漂移）
+
+### 文档
+
+- `README.md`：`docs/` 目录结构行补全（含 `DEVICE-CHECKLIST.md`）；命令表补
+  `test:library` / `check:changelog` / `smoke` / `verify:device`
+- `CHANGELOG.md`：`0.1.0` 段标注「仓库初始化（内部版本，未发布）」——该版本号从未打 tag 发布
+
 ## [0.3.7] - 2026-11-12
 
 ### 修复（发版流程与文档）
@@ -265,6 +283,6 @@
 
 `npm test`（21 项纯函数）+ `test-library`（14 项课程库）+ `test-package`（15 项打包/校验，含 7 个恶意探针）+ `verify:device`（设备侧 5 项）。
 
-## [0.1.0] - 2026-11-08
+## [0.1.0] - 仓库初始化（内部版本，未发布）
 
 从主项目（含个人课程内容的私有仓库）提炼出「流水线 + 查看器」平台部分，Apache-2.0 发布。

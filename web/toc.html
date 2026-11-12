@@ -10,7 +10,8 @@
 <link rel="stylesheet" href="/shell/theme.css">
 <title>目录 · Lucubratio</title>
 <style>
-  .toc-wrap { padding-bottom: calc(var(--sa-tabbar-h, 72px) + 24px + env(safe-area-inset-bottom)); }
+  /* 底部间距由 tabbar.js 注入的 body.has-tabbar 规则统一负责（它优先级更高，
+     这里再写一条 padding-bottom 只会成为永远不生效的死声明）。 */
   .toc-row {
     display: flex; align-items: stretch;
     border-bottom: 1px solid var(--line);

@@ -128,7 +128,7 @@ cd my-app
 
 `.github/workflows/release.yml` 会：跑测试 → 构建 → **有签名 Secrets 就出正式包，没有就出 debug 包并标注** → 用 CHANGELOG 生成 Release 说明。
 
-签名 Secrets（可选）：`KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`。
+签名 Secrets（可选，四个）：见 [`DEVICE-CHECKLIST.md`](DEVICE-CHECKLIST.md) §2.3（那里是唯一权威列表，本文不再重复）。
 
 ---
 

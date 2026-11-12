@@ -37,6 +37,10 @@ node scripts/verify.mjs
 
 # 3) 纯函数单测 + 打包器自测
 npm test
+npm run test:library    # 课程库合并逻辑自测（内置 + 已导入）
+npm run check:changelog # CHANGELOG 结构守则（CI 与 test:all 都跑）
+npm run smoke           # 真机冒烟（需设备）
+npm run verify:device   # 真机页面体检（需设备 + debug 包）
 npm run test:all        # 全量 11 步：构建/校验/单测/课程库/包自测/空构建冒烟/多段合并/片段预检/题目自检×2/CHANGELOG 结构
 npm run test:package
 
@@ -65,7 +69,7 @@ web/img/             # 课件页截图（本地渲染，gitignored，不进仓�
 scripts/             # 编译器 / 校验器 / 单测 / 冒烟 / 打包 / 测试汇总 / gradle 入口
 tools/               # 生成侧工具（抽取 / 写作 / 合稿 / 质量检查），见 tools/README.md
 android/             # Android WebView 壳（无网络权限，纯本地）
-docs/                # 内容规范 / 作业规范 / 课程包格式 / 排障 / 路线图
+docs/                # 内容规范 · 生成规范 · 课程包格式 · 导入 · 排障 · 路线图 · 真机验收清单
 docs/skill/          # DSH 生成技能镜像（SKILL / prompts / 模板 / 踩坑）
 .github/workflows/   # CI 与 Release
 AGENTS.md            # 硬约束（红线）：课程内容与课程包不得进 git / 不得上传
