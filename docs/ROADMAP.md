@@ -50,7 +50,7 @@
 - [x] `scripts/verify-package.mjs`：离线校验包结构和安全规则（见 PACKAGE-FORMAT §4）
 - [x] Java 导入器：SAF 选包 → 流式解压（防 Zip Slip / Zip 炸弹）→ 全量校验（含 HtmlGuard）→ ATOMIC_MOVE 提交（失败回滚）
 - [x] Java `UserCoursesHandler`：`/courses/` → `filesDir/courses/`（含 `/courses/index.json` 动态注册表；`Mime` 共用；缺文件返 404 不回落网络）
-- [x] 首页「课程库」：内置课程 + 我的课程（`web/shell/library.js` 合并两份清单；显示页数/体积/导入时间；无桥时自动隐藏该段）
+- [x] 课程库（P4 起在**目录页**，首页只保留继续学习 / 待复习 / 孤儿卡）：内置课程 + 我的课程（`web/shell/library.js` 合并两份清单；显示页数/体积/导入时间；无桥时自动隐藏该段）
 - [x] 数据层：**不升 DB 版本**（命名空间前缀即可精确删数据）；`BACKUP_STORES` 白名单已加
 - [x] 搜索：`loadSearchIndex()` 合并内置 + 各课程的 `search.json`（cids 已命名空间化，键不冲突）
 

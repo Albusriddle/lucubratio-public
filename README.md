@@ -37,7 +37,7 @@ node scripts/verify.mjs
 
 # 3) 纯函数单测 + 打包器自测
 npm test
-npm run test:all        # 全量：构建 + 校验 + 四套测试 + 片段预检 + 题目自检
+npm run test:all        # 全量 11 步：构建/校验/单测/课程库/包自测/空构建冒烟/多段合并/片段预检/题目自检×2/CHANGELOG 结构
 npm run test:package
 
 # 4)（可选）出一个"没有内置内容"的包：课程全靠导入

@@ -54,32 +54,8 @@ const steps = [
       const merged = fs.readFileSync(out, 'utf8');
       if (!merged.includes('id="检测 2"')) throw new Error('merge-pages 没有把重复题号重编号');
     } },
-  // —— 本地守则：CHANGELOG 结构（防止「暂无」占位符再次被挤到别的版本段里）——
-  { name: 'CHANGELOG 结构', custom: () => {
-      const md = fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8');
-      const lines = md.split('\n');
-      const placeholders = lines.filter((l) => l.trim() === '（暂无）').length;
-      // 允许 0 处（Unreleased 已有真实条目时不需要占位符）；但**最多 1 处**，且必须在 Unreleased 段内
-      if (placeholders > 1) throw new Error(`「（暂无）」最多 1 处（[Unreleased] 内），实际 ${placeholders} 处——多半是新版本插入时把旧的往下挤了`);
-      const unrel = lines.findIndex((l) => l.startsWith('## [Unreleased]'));
-      if (unrel < 0) throw new Error('缺少 [Unreleased] 段');
-      const firstVer = lines.findIndex((l, i) => i > unrel && /^## \[/.test(l));
-      if (placeholders === 1) {
-        const ph = lines.findIndex((l) => l.trim() === '（暂无）');
-        if (!(unrel < ph && (firstVer < 0 || ph < firstVer))) throw new Error('「（暂无）」不在 [Unreleased] 段内');
-      }
-      // [Unreleased] 必须在所有版本段之前
-      const anyVer = lines.findIndex((l) => /^## \[[0-9]/.test(l));
-      if (anyVer >= 0 && unrel > anyVer) throw new Error('[Unreleased] 不是第一个段落（被插到文件中间了）');
-      const vers = lines.filter((l) => /^## \[[0-9]+\.[0-9]+\.[0-9]+\]/.test(l)).map((l) => l.slice(4).split(']')[0]);
-      if (new Set(vers).size !== vers.length) throw new Error('版本段重复：' + vers.join(', '));
-      const nums = vers.map((v) => v.split('.').map(Number));
-      for (let i = 1; i < nums.length; i++) {
-        const [a, b] = [nums[i - 1], nums[i]];
-        const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
-        if (cmp <= 0) throw new Error(`版本段未按从新到旧排列：${vers[i - 1]} 在 ${vers[i]} 之前`);
-      }
-    } },
+  // —— 本地守则：CHANGELOG 结构（实现见 scripts/check-changelog.mjs，CI 也调它）——
+  ['CHANGELOG 结构', ['scripts/check-changelog.mjs']],
 ];
 
 let failed = 0;
@@ -94,7 +70,7 @@ for (const step of steps) {
   } catch (e) {
     failed++;
     console.log(RED('✗'));
-    const text = ((e.stdout || '') + (e.stderr || '')).replace(/\x1b\[[0-9;]*m/g, '');
+    const text = ((e.stdout || '') + (e.stderr || '') + '\n' + (e.message || '')).replace(/\x1b\[[0-9;]*m/g, '');
     console.log(text.split('\n').filter((l) => l.trim()).slice(-12).map((l) => '   ' + l).join('\n'));
     break;
   }

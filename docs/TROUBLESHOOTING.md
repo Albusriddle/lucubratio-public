@@ -67,3 +67,22 @@ adb -s <serial> shell getprop ro.build.flavor        # missi_V2362A-user → MuM
 ## 课程包导入报错
 
 见 [`IMPORT.md`](IMPORT.md) 第 7 节「出错时看这里」（10 个错误码逐条解释）。
+
+## 推 GitHub 失败 / 代理相关
+
+### 「代理明明开着，脚本却说连不上」
+
+- **不要用 `timeout` 做超时**：Git Bash 里 `timeout` 会命中 `C:\Windows\System32\timeout.exe`，语法不同、直接失败，
+  于是探测结果永远是"不通"。用 curl 自带超时：
+  ```bash
+  curl -s -m 6 -o /dev/null -w "%{http_code}" -x http://127.0.0.1:7892 https://api.github.com
+  ```
+  返回 `200` 才算通。
+- **代理客户端重启瞬间会空窗**：注册表可能已经是 `ProxyEnable=1`、`ProxyServer=127.0.0.1:7892`，
+  但端口还没有监听（`netstat` 查不到）。重试 30~60 秒即可，不要立刻改端口。
+- `git push` 默认不走系统代理，需要显式指定：
+  ```bash
+  git -c http.proxy=http://127.0.0.1:7892 -c https.proxy=http://127.0.0.1:7892 push <url> <ref>
+  ```
+- **打 tag 发版要一个一个推**：一次性 `git push origin v0.3.0 v0.3.1 v0.3.2` 在 2026-11 出现过
+  "tag 建好了但 Actions 没收到 push、没触发 Release 工作流"的情况；逐个推送 + 去 Actions 确认有运行才稳妥。

@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: CHANGELOG structure
+        run: node scripts/check-changelog.mjs
+
       - name: Unit tests (pure functions)
         run: node scripts/test.mjs
 

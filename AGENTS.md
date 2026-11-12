@@ -67,8 +67,10 @@
   **禁止**附 `.lcr` 课程包、课程正文页、课件截图——它们属课程内容，见红线 1。
 - 中间开发版本（同一个小版本内的多次提交）不必每次打 tag；但**功能/修复成组交付时就要发一个 release**，
   不要连续几代只推 main 不发版（2026-11 就发生过 0.3.0–0.3.4 全部未发布）。
-- 发版后核对：Release 页有 APK、`apksigner` 指纹等于 `docs/DEVICE-CHECKLIST.md` 记录值、包名符合
-  `com.lucubratio.reader.public`（正式）/ `.dev`（debug）。
+- **打 tag 之前必须 `npm run test:all` 全绿**（11 步）。CI 只跑其中一部分，
+  CHANGELOG 结构 / 本地守则这类检查只在这条命令里，跳过就会让红测试一路发出去（2026-11 的 0.3.4–0.3.6 就是这么漏的）。
+- 发版后核对：Release 页有 APK、`apksigner` 指纹与包名符合 [`docs/DEVICE-CHECKLIST.md`](docs/DEVICE-CHECKLIST.md) 的 §2.2，
+  并按同一文档 §4 在真机走一遍验收。
 
 ## 红线 2：不许编造课件里没有的内容
 
