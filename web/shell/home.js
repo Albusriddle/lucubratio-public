@@ -21,8 +21,9 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
   }
 
   function toast(msg) {
+    // 统一走 boot.js 里的全局实现：原生 Toast 优先，浏览器预览有 DOM 兜底
+    if (window.saToast) { window.saToast(msg); return; }
     if (window.AndroidSA && window.AndroidSA.toast) window.AndroidSA.toast(String(msg));
-    // 没有原生桥时静默（只在浏览器里预览壳页会出现）
   }
 
   function stamp() {

@@ -32,29 +32,30 @@
 # 1) 编译（零依赖，只需 Node 20+）
 node scripts/build.mjs
 
-# 2) 校验产物（锚点/图片/公式基线/自评单元数）
+# 2) 校验产物（锚点/图片/公式基线/自评单元数/DOM id/仓库卫生）
 node scripts/verify.mjs
 
-# 3) 纯函数单测 + 打包器自测
-npm test
-npm run test:library    # 课程库合并逻辑自测（内置 + 已导入）
-npm run check:changelog # CHANGELOG 结构守则（CI 与 test:all 都跑）
-npm run smoke           # 真机冒烟（需设备）
-npm run verify:device   # 真机页面体检（需设备 + debug 包）
-npm run test:all        # 全量 11 步：构建/校验/单测/课程库/包自测/空构建冒烟/多段合并/片段预检/题目自检×2/CHANGELOG 结构
-npm run test:package
+# 3) 测试
+npm test                 # 纯函数单测
+npm run test:package     # 打包器 + 校验器正负自测
+npm run test:library     # 课程库合并逻辑（内置 + 已导入）
+npm run check:changelog  # CHANGELOG 结构守则
+npm run test:all         # 全量 11 步（= 上面这些 + 构建/校验/片段预检/题目自检/空构建冒烟/多段合并）
 
-# 4)（可选）出一个"没有内置内容"的包：课程全靠导入
-npm run build:empty     # 出「无内置课程」的查看器包
-npm run check:pages     # 真机页面体检（需 ADB + debug 包）
+# 4) 真机检查（需设备；两者不同，按需跑）
+npm run smoke           # 数据层冒烟：进度/复习/备份/检索索引是否正常
+npm run verify:device   # 页面体检：内置课程能开、不存在的路径返 404 而不回落网络
+npm run check:pages     # 逐页体检：把 9 个壳页各开一遍，抓 JS 异常与控制台错误
+
+# 5)（可选）出一个"没有内置内容"的包：课程全靠导入
 npm run build:empty
 SKIP_WEB_BUILD=1 npm run build:debug   # 必须跳过 preBuild，否则会被常规构建覆盖
 
-# 5) 打成课程包（.lcr，可校验后分发）
+# 6) 打成课程包（.lcr，可校验后分发）
 npm run pack -- --id demo --title "示例课程" --version 0.1.0
 npm run verify:package -- dist/demo-0.1.0.lcr
 
-# 6) 出常规 APK（需要 JDK 17 + Android SDK 35）
+# 7) 出常规 APK（需要 JDK 17 + Android SDK 35）
 npm run build:debug
 ```
 
@@ -66,7 +67,7 @@ npm run build:debug
 content/os/          # 课程内容（源）：本仓库只有 2 页 demo，请替换成你自己的
 web/                 # 查看器：index / toc / me 三个壳页 + shell/ 脚本样式 + vendor/ 内置库
 web/img/             # 课件页截图（本地渲染，gitignored，不进仓库）
-scripts/             # 编译器 / 校验器 / 单测 / 冒烟 / 打包 / 测试汇总 / gradle 入口
+scripts/             # 编译器 / 校验器 / 单测 / 冒烟 / 打包 / gradle 入口 / chronology 守则（check-changelog）
 tools/               # 生成侧工具（抽取 / 写作 / 合稿 / 质量检查），见 tools/README.md
 android/             # Android WebView 壳（无网络权限，纯本地）
 docs/                # 内容规范 · 生成规范 · 课程包格式 · 导入 · 排障 · 路线图 · 真机验收清单

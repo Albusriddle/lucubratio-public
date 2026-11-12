@@ -4,6 +4,12 @@ import { loadLibrary, loadSearchIndex } from '/shell/library.js';
 import { deleteCourseData } from '/shell/store.js';
 
 const $ = (id) => document.getElementById(id);
+
+/** 非阻塞提示：本壳没有 WebChromeClient，window.alert 是空操作，统一走 boot.js 的 saToast */
+function notify(msg) {
+  if (window.saToast) { window.saToast(msg); return; }
+  console.warn('[toc]', msg);
+}
 const STORE_KEY = 'lucubratio.toc.expanded';
 
 function loadExpanded() {
@@ -74,7 +80,7 @@ async function deleteCourse(course) {
   if (!ok) return;
   const bridge = window.AndroidSA;
   if (!bridge || typeof bridge.deleteCourse !== 'function') {
-    window.alert('浏览器预览模式不会删除课程文件，请在 App 内操作');
+    notify('浏览器预览模式不会删除课程文件，请在 App 内操作');
     return;
   }
   try {
@@ -83,7 +89,7 @@ async function deleteCourse(course) {
     await deleteCourseData(course.id);
     location.reload();
   } catch (e) {
-    window.alert('删除失败：' + ((e && e.message) || e));
+    notify('删除失败：' + ((e && e.message) || e));
   }
 }
 

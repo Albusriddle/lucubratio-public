@@ -3,8 +3,10 @@ name: Release
 # 打 tag（v*）时构建 APK 并建 GitHub Release。
 #
 # 签名策略（自适应）：
-#   · 仓库配了 KEYSTORE_BASE64 等 Secrets → 出「正式签名」包（release）
-#   · 没配 → 退化为 debug 签名包，并在文件名与说明里明确标注（不会假装是正式包）
+#   · 四个 Secrets 全齐（KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD）
+#     → 出「正式签名」包（release）
+#   · 缺任意一项 → 退化为 debug 签名包，并在日志里**点名缺了哪几个**，
+#     文件名与说明也明确标注（不会假装是正式包）
 #
 # 签名材料 Secrets：KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
 
@@ -72,13 +74,31 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
-      # 有没有正式签名？没有就走 debug 包
+      # 有没有正式签名？四个 Secret 全齐才走正式包。
+      # 早期只检查 KEYSTORE_BASE64：另外三个缺失时会走「正式签名」分支、写出空口令的
+      # keystore.properties，然后以一个和签名毫不相关的错误挂掉——发版日极难排查。
       - name: Detect signing secrets
         id: sign
         env:
           KS: ${{ secrets.KEYSTORE_BASE64 }}
+          KP: ${{ secrets.KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.KEY_ALIAS }}
+          KW: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -n "$KS" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; else echo "has=false" >> "$GITHUB_OUTPUT"; fi
+          set -euo pipefail
+          missing=""
+          if [ -z "${KS:-}" ]; then missing="$missing KEYSTORE_BASE64"; fi
+          if [ -z "${KP:-}" ]; then missing="$missing KEYSTORE_PASSWORD"; fi
+          if [ -z "${KA:-}" ]; then missing="$missing KEY_ALIAS"; fi
+          if [ -z "${KW:-}" ]; then missing="$missing KEY_PASSWORD"; fi
+          if [ -z "$missing" ]; then
+            echo "has=true" >> "$GITHUB_OUTPUT"
+            echo "✓ 四个签名 Secrets 齐全 → 产出正式签名包"
+          else
+            echo "has=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=签名 Secrets 不全::缺少:${missing} —— 本次产出 debug 签名包（非正式包）"
+            echo "缺少:${missing}（本次产出 debug 签名包）"
+          fi
 
       - name: Restore signing keystore
         if: steps.sign.outputs.has == 'true'
@@ -108,7 +128,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Assemble debug APK (no signing secrets)
+      - name: Assemble debug APK (signing secrets incomplete)
         if: steps.sign.outputs.has != 'true'
         working-directory: android
         env:

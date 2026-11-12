@@ -59,7 +59,9 @@ export JAVA_HOME="C:\Users\Albus\.jdks\jbr-17.0.14"
 | `KEY_ALIAS` | `lucubratio-public` |
 | `KEY_PASSWORD` | key 口令 |
 
-四个都配好，`release.yml` 才会签出正式包并建 Release；缺任何一个它会退化成 debug 包并打印提示。
+四个**全部**配好，`release.yml` 才会签出正式包并建 Release；缺任意一项会退化成 debug 包，并在 Actions 日志里**点名缺了哪几个**（`::warning::` + 一行 `缺少:…`）。
+
+> 判定逻辑见 `release.yml` 的 `Detect signing secrets` 步骤：它逐个检查四个 Secret，不是只看 `KEYSTORE_BASE64`（早期只看一个，另三个缺失时会以一个与签名无关的错误挂掉）。
 
 ## 3. 出正式包
 

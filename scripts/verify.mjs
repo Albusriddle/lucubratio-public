@@ -284,6 +284,8 @@ const SHELL_FILES = [
   'vendor/mermaid.min.js',
   'shell/mermaid-init.js',
   'vendor/LICENSE-ts-fsrs',
+  'vendor/LICENSE-mermaid',
+  'vendor/README.md',
 ];
 let shellMissing = 0;
 for (const f of SHELL_FILES) {

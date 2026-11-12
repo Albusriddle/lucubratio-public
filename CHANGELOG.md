@@ -9,6 +9,33 @@
 
 （暂无）
 
+## [0.3.9] - 2026-11-13
+
+### 修复（提示机制 / 发版闸门 / 合规）
+
+- **统一全局提示 `window.saToast`**（放进 `boot.js`：三个壳页都加载且最先执行）
+  - `home.js` 的 `toast()` 改为委托它；浏览器预览也有 DOM 兜底（此前只走原生桥，无桥时静默）
+  - `toc.js` 的两处 `window.alert` 改为 `notify()` → `saToast`。**本壳没有 WebChromeClient，
+    `alert()` 在 App 内是空操作**，所以"浏览器预览不能删课"和"删除失败"这两条提示此前从未显示
+  - 顺带补上 `home.js` 里**调用了却从未定义**的 `window.saToast(...)`：导入成功/失败提示此前只进 `console.log`，
+    用户看不到（失败时尤其误导——课程没导入却毫无反馈）
+- **`release.yml` 检查全部四个签名 Secrets**（此前只看 `KEYSTORE_BASE64`）：
+  另三个缺失时会走"正式签名"分支、写出空口令的 `keystore.properties`，然后以一个与签名无关的错误挂掉。
+  现在缺任一项就退化为 debug 包，并在日志里 `::warning::` **点名缺了哪几个**
+- **壳资源清单补 `vendor/LICENSE-mermaid`、`vendor/README.md`**：
+  `LICENSE-ts-fsrs` 在清单里而 mermaid 的许可文件不在，删了也不会被 `verify` 发现（第三方许可合规）
+
+### 文档
+
+- **README 命令段重排**：去掉重复的 `build:empty`；把 `verify:device`（数据/404 体检）与
+  `check:pages`（逐页抓 JS 异常）分开描述——两者此前注释一模一样，无法判断该跑哪个
+- **README 目录结构**：`scripts/` 行点名 `check-changelog`（守则脚本）
+- **`CHANGELOG` 断链**：`DEVICE-CHECKLIST.md` → `docs/DEVICE-CHECKLIST.md`
+- **`DEVICE-CHECKLIST` §2.3**：改为与 `release.yml` 实现一致（缺任一项退化 + 点名），并指向判定步骤
+- **[`ROADMAP`](docs/ROADMAP.md) 补「阶段 4 · 0.3.x」**：0.3.1–0.3.8 的真实工作逐版记录；
+  D2（`/courses/` PathHandler + 导入入口）标为已完成；「设备验收结果」注明是 0.2.x 时期，
+  0.3.4–0.3.8 的版面改动**待在真机上复跑**
+
 ## [0.3.8] - 2026-11-13
 
 ### 修复（发版闸门与文档一致性）
@@ -19,7 +46,7 @@
   后者的 `padding-bottom` 优先级更高，`.toc-wrap` 里那句 `+24px` 从未生效
 - **`check-changelog.mjs` 缺文件时给友好提示**（原来直接抛 ENOENT 堆栈），并新增 `npm run check:changelog` 入口
 - **Secrets 单一来源**：`QUICKSTART.md` 不再重复列四个 Secrets 名字，改为指向
-  [`DEVICE-CHECKLIST.md`](DEVICE-CHECKLIST.md) §2.3（两处维护迟早漂移）
+  [`DEVICE-CHECKLIST.md`](docs/DEVICE-CHECKLIST.md) §2.3（两处维护迟早漂移）
 
 ### 文档
 

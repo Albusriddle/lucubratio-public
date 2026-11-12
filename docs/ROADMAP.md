@@ -16,7 +16,7 @@
 
 ## 设备验收结果（MuMu Android 15 模拟器，2026-11-08）
 
-用 `Lucubratio-dev-v0.2.0.apk` + `demo-0.2.1.lcr` 实测：
+用 `Lucubratio-dev-v0.2.0.apk` + `demo-0.2.1.lcr` 实测（**0.2.x 时期**；0.3.4–0.3.8 的版面改动尚未复跑，见下方「阶段 4」）：
 
 | 项 | 结果 |
 |---|---|
@@ -39,7 +39,7 @@
 | 天 | 做什么 | 通过标准 |
 |---|---|---|
 | D1 ✅ | **已完成**：`scripts/pack.mjs`（零依赖 zip 写入 + 路径重写）、`scripts/verify-package.mjs`（11 项校验，含检索索引一致性）、`scripts/test-package.mjs`（15 项正/负面自测） | 示例包 ~18KB，校验 11/11 通过；Zip Slip / 外部脚本 / 缺页 / 未知格式 全部被拒 |
-| D2 | App 端加 `/courses/` 的 `PathHandler`（映射 `filesDir`）+ 一个硬编码导入入口 | 导入后能打开 `courses/<id>/content/os/xx.html`，壳层样式与 Mermaid 正常 |
+| D2 ✅ | **已完成**（0.1.x 起）：`UserCoursesHandler` 把 `/courses/` 映射到 `filesDir/courses/`，导入入口走 SAF（`CourseImporter`） | 导入后能打开 `courses/<id>/content/os/xx.html`，壳层样式与 Mermaid 正常 |
 | D3 | **清空内置课程**，只靠导入包跑 | 首页/阅读/自评/搜索/统计/重启后仍在 —— 全通 |
 
 > 这一步不写 UI、不做校验器。目的只有一个：证明"静态站点可以整体搬到 filesDir 并被查看器正常使用"。
@@ -78,7 +78,25 @@
 - [ ] 规则去硬编码：`QUESTION_RULES` 改为由 `manifest.json` 声明（`questions: [{level, pattern}]`）
 - [ ] 模板仓库：`lucubratio-template`，给不写代码的人一个"把课件丢进去就能出包"的最小入口
 
+## 阶段 4 · 0.3.x 阅读体验与发版闸门（已完成，2026-11-11 → 11-13）
+
+| 版本 | 内容 |
+|---|---|
+| 0.3.1 | APK 不再夹带课件截图（改为按引用回填）；恢复「删除课程」入口（P4 搬页后一度丢失）；切页动效覆盖首页；壳页资源加 `?v=` |
+| 0.3.2 | 底栏样式自包含（4 个次级页面此前 SVG 撑满屏）；损坏课程仍可见可删；构建期 `data-ppt` 断言；`wrapTables` 跳过 `<pre>` |
+| 0.3.3 | 正式包名改为 `com.lucubratio.reader.public`（与私有自用版共存不冲突） |
+| 0.3.4 | 阅读体验五连改（吸顶章标题、宽屏顶栏/遮罩、侧栏过滤自评题等） |
+| 0.3.5 | 目录页删除确认按钮改为红色「删除」 |
+| 0.3.6 | 目录/侧栏 5 项：底栏遮挡、标题换行、弹窗居中、侧栏截断、虚假跳转 |
+| 0.3.7 | `scripts/check-changelog.mjs` 抽成独立守则（CI 与 `test:all` 共用）；新增 [`DEVICE-CHECKLIST.md`](DEVICE-CHECKLIST.md) |
+| 0.3.8 | `release.yml` 补 CHANGELOG / 空构建检查（0.3.4–0.3.6 曾从该缺口漏出）；Secrets 单一来源 |
+
+> 真机验收：0.3.4–0.3.8 的版面改动**待按 `DEVICE-CHECKLIST.md` §4 复跑**（本轮审阅时设备不在线）。
+> 建议下次发版前跑一次，并把结果回填到上面的「设备验收结果」小节。
+
 ## 阶段 3 · 生态化（按需）
+
+> 下列均为 0.4+ 候选，**尚未开始**；按优先级从上到下。
 
 - [ ] 课程版本与更新提示、孤儿卡迁移向导
 - [ ] 质量徽章：`verify-package` 通过 + 抽检通过 → 标记为"校验通过"
