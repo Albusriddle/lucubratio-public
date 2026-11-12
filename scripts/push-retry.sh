@@ -108,7 +108,10 @@ if [ -z "$LOCAL_SHA" ]; then
 fi
 
 remote_sha() {
-  git "${GIT_AUTH[@]}" ls-remote "$URL" "refs/heads/$REF" 2>/dev/null | awk '{print $1}' | head -1
+  # 同时查分支与 tag：只查 refs/heads 时，推 tag 会永远"远端不可达"（v0.3.9 首发踩过，
+  # 白等 8 次重试还报失败，其实 tag 早就推上去了）。
+  git "${GIT_AUTH[@]}" ls-remote "$URL" "refs/heads/$REF" "refs/tags/$REF" 2>/dev/null \
+    | awk '{print $1}' | head -1
 }
 
 i=0
@@ -124,10 +127,6 @@ while [ "$i" -lt "$ATTEMPTS" ]; do
 
   R="$(remote_sha)"
   if [ -n "$R" ]; then
-    if [ "$R" != "$LOCAL_SHA" ]; then
-      T="$(git "${GIT_AUTH[@]}" ls-remote "$URL" "refs/tags/$REF" 2>/dev/null | awk '{print $1}' | head -1)"
-      [ -n "${T:-}" ] && R="$T"
-    fi
     if [ "$R" = "$LOCAL_SHA" ]; then
       echo "✓ 远端已一致：$REF = ${LOCAL_SHA:0:7}"
       exit 0
