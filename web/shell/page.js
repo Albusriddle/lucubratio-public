@@ -8,6 +8,10 @@ import { init as initStore, loadProgress, saveProgress, getCardsByCid, assess } 
 import { fmtDue } from './time.js';
 
 (function () {
+  // 浏览器在 history.back() 时会"恢复"上次滚动位置——抽屉靠 pushState/back 集成返回键，
+  // 于是点完小节再关抽屉，位置会被打回跳转前（虚假跳转）。交给本文件自己的阅读位置逻辑处理。
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
   'use strict';
 
   var body = document.body;

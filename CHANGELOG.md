@@ -9,6 +9,35 @@
 
 （暂无）
 
+## [0.3.6] - 2026-11-12
+
+### 修复（目录页与侧栏）
+
+- **底栏不再压住最后一项**：底栏高度不再写死 72px，`tabbar.js` 挂载后量 `offsetHeight` 写入
+  `--sa-tabbar-h`，页面底部内边距按它算（换机型 / 改字体 / 横竖屏都跟得上）
+- **目录大页标题两行截断**：`white-space:nowrap` 改两行 clamp + `word-break`，
+  `.toc-main` 改 `align-items:stretch`（原来按内容撑宽，导致文字冲出屏幕、整页可横向滑动）
+- **跳转弹窗钉在视口正中**：`dialog{position:fixed;inset:0;margin:auto;max-height:82vh}`，
+  即使页面出现横向偏移也不会偏到一边
+- **课程页侧栏标题两行截断**：`.sa-toc-main` / `.sa-toc-leaf` 由单行省略号改为两行 clamp，
+  「…（p11、p13、p14）」这类区分信息不再被吃掉
+
+### 修复（虚假跳转）
+
+点小节后关掉侧栏，浏览位置会退回跳转前。两条独立成因都已处理：
+
+- `body.sa-nav-open{overflow:hidden}` 让抽屉打开时文档不可滚动，`smoothTo()` 的 `window.scrollTo` 无效
+  → 改为只锁横向（`overflow-x:hidden`），正文可以在抽屉后面真正滚动
+- 抽屉用 `history.pushState` / `history.back()` 集成返回键，浏览器**在历史回退时恢复滚动位置**
+  → 设置 `history.scrollRestoration = 'manual'`，阅读位置交回本文件的 `savePosition()` 管理
+- 遮罩加 `overscroll-behavior: contain`，减少背景惯性滚动
+
+验收：竖屏（360 / 393 CSS px）与横屏（780 CSS px）各测一遍，5 项全部通过。
+
+
+
+（暂无）
+
 ## [0.3.5] - 2026-11-12
 
 ### 修复

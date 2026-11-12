@@ -7,7 +7,7 @@
 function injectStyle() {
   if (document.getElementById('sa-tabbar-style')) return;
   var css = [
-    'body.has-tabbar{padding-bottom:calc(72px + env(safe-area-inset-bottom))}',
+    'body.has-tabbar{padding-bottom:calc(var(--sa-tabbar-h, 72px) + 16px + env(safe-area-inset-bottom))}',
     '.sa-tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:stretch;',
     'background:rgba(23,28,36,.94);backdrop-filter:saturate(160%) blur(12px);',
     'border-top:1px solid rgba(255,255,255,.08);padding-bottom:env(safe-area-inset-bottom);z-index:900}',
@@ -53,11 +53,23 @@ function injectStyle() {
     nav.appendChild(a);
   });
 
+  /** 把底栏真实高度写进 --sa-tabbar-h：
+      页面底部内边距靠它算，写死 72px 在系统字体放大 / 横屏时会不够，最后几行会被压住。 */
+  function syncHeight() {
+    var bar = document.querySelector('.sa-tabbar');
+    if (!bar) return;
+    var h = Math.round(bar.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty('--sa-tabbar-h', h + 'px');
+  }
+
   function mount() {
     if (document.querySelector('.sa-tabbar')) return;
     injectStyle();
     document.body.appendChild(nav);
     document.body.classList.add('has-tabbar');
+    syncHeight();
+    window.addEventListener('resize', syncHeight);
+    window.addEventListener('orientationchange', function () { setTimeout(syncHeight, 120); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
