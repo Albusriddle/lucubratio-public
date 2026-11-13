@@ -12,7 +12,8 @@
 - 把 `.lcr` 课程包 `git add` / 提交 / 推送
 - 上传到 GitHub Releases、Actions artifacts、Gist
 - 附加到 issue / PR / 评论 / 任何远程可读的地方
-- 把课程正文页（`content/os/` 下非 demo 页）、课程图片、学案、作业解答放进 git
+- **公开仓库里**把课程正文页（`content/os/` 下非 demo 页）、课程图片、学案、作业解答放进 git
+  （私有仓库例外，见下表：私有仓库**应该**跟踪自己的课程页与截图）
 
 **为什么**：课程内容由第三方课件（教材/授课 PPT）衍生，仓库是**公开项目**，发出去等于二次分发课件。
 
@@ -116,7 +117,13 @@
 
 ## 自查清单（每次交付前）
 
-- [ ] `node scripts/verify.mjs` 通过（含仓库卫生红线）
-- [ ] `git ls-files | grep -E '\.lcr$'` 为空
-- [ ] `git ls-files content/os/ | grep -v _demo_` 为空
+两仓库通用：
+
+- [ ] `node scripts/verify.mjs` 通过（仓库卫生按 `package.json` 的 `verifyPolicy.trackedContent` 判定策略）
+- [ ] `git ls-files | grep -E '\.lcr$'` 为空（**两个仓库都不许入库**）
 - [ ] 交付的包只在本地目录，没有出现在任何远程
+
+仅公开仓库：
+
+- [ ] `git ls-files content/os/ | grep -v _demo_` 为空（私有仓库反之：课程页**应该**在库里，
+      其 `verifyPolicy.trackedContent` 为 `private`，`verify` 会显示"允许跟踪 N 页 + M 张截图"）
