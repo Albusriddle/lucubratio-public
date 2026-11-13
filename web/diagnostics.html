@@ -306,8 +306,8 @@
     $('report').textContent = report.join('\n');
   }
 
-  $('btnReload').addEventListener('click', function () { window.saReload ? window.saReload() : location.reload(); });
-  $('btnProbe').addEventListener('click', function () { window.saLeave ? window.saLeave('/') : (location.href = '/'); });
+  $('btnReload').addEventListener('click', function () { window.saReload ? window.saReload() : location.reload(); });   // sa-nav-fallback
+  $('btnProbe').addEventListener('click', function () { window.saLeave ? window.saLeave('/') : (location.href = '/'); });   // sa-nav-fallback
   fetch('/manifest.json').then(function(r){return r.json();}).then(function(m){ var el=$('ver'); if(el) el.textContent='v'+m.appVersion; }).catch(function(){});
 
   runChecks()

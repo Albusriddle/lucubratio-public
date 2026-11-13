@@ -19,6 +19,37 @@
   但表格里私有仓库是允许的，自相矛盾）；自查清单拆成「两仓库通用」与「仅公开仓库」两组
   （原来那条 `content/os/ | grep -v _demo_` 空检查会让私有仓库永远"不达标"）
 
+## [0.3.12] - 2026-11-13
+
+### 修复
+
+- **支持 View Transitions 的设备上，三个过渡入口全部未定义**：`boot.js` 里 `if (canVT) return;`
+  把 `saLeave` / `saReload` / `saCloseDialog` 一起跳过了，于是目录跳转、导入后刷新、诊断页跳转
+  全部退回裸 `location.href`（瞬切），弹窗关闭也没有动画——只有链接点击还有 VT。
+  结果就是**模拟器（WebView 110）动效完整、真机（≥111）反而更少**。
+  现在三个入口**永远定义**，能力分流放在内部（有 VT 用 VT，没有用幕布）。桩注入 `startViewTransition`
+  复测：三者均为 `function`，幕布也正常创建
+- **`prefers-reduced-motion` 只在页面加载时读一次**：改为每次调用实时 `matchMedia`。
+  实测运行时打开"移除动画"后，点击 → 跳转只花 **5ms**（不再等 130ms 幕布）
+- **首屏 160ms 内 splash 被幕布盖住**：幕布 `z-index` 从 9990 降到 **1900**
+  （splash 是 2000、图片查看器 1200、顶栏 950、遮罩 880），首屏动画不再被吃掉一截
+
+### 新增（静态守则，已批准的检查）
+
+- **`scripts/check-nav.mjs`**：禁止裸 `location.href =` / `location.reload(`
+  - 唯一允许的实现处是 `shell/boot.js`；确需兜底的行必须带注释标记 `sa-nav-fallback`
+  - 接入 `npm run test:all`（现为 **12 步**）、`ci.yml`、`release.yml` 与 `npm run check:nav`
+  - 负向验证：往 `stats.html` 塞一行裸跳转 → 立即被拦下并给出行号与改法
+
+### 文档
+
+- **QUICKSTART**：切页过渡的指向由 `tabbar.js/nav.js` 改为 `boot.js`（幕布 + `saLeave`）+
+  `nav.js`（点击拦截）+ `home.css`（弹窗动画）——上一版会让人改错文件
+- **README**：功能清单补「页面切换过渡（淡出→黑→淡入）与弹窗动画」
+- **ROADMAP**：阶段 4 表补 0.3.9 / 0.3.10 / 0.3.11 三行（此前停在 0.3.8）
+- **DEVICE-CHECKLIST**：§4.4 新增 3 个动效验收项（切页有过渡 / 弹窗有动画 / 移除动画时变瞬时）；
+  §6 验收记录补 0.3.10、0.3.11 两条（含 screencast 亮度曲线）
+
 ## [0.3.11] - 2026-11-13
 
 ### 新增（全站过渡动效）

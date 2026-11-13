@@ -38,6 +38,9 @@ jobs:
       - name: Verify web bundle
         run: node scripts/verify.mjs
 
+      - name: Navigation guard (禁止裸 location 跳转)
+        run: node scripts/check-nav.mjs
+
       - name: CHANGELOG structure
         run: node scripts/check-changelog.mjs
 

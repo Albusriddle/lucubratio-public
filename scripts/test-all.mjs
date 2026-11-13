@@ -54,6 +54,7 @@ const steps = [
       const merged = fs.readFileSync(out, 'utf8');
       if (!merged.includes('id="检测 2"')) throw new Error('merge-pages 没有把重复题号重编号');
     } },
+  { name: '导航守则（禁止裸 location 跳转）', custom: () => { run(['scripts/check-nav.mjs']); } },
   // —— 本地守则：CHANGELOG 结构（实现见 scripts/check-changelog.mjs，CI 也调它）——
   ['CHANGELOG 结构', ['scripts/check-changelog.mjs']],
 ];

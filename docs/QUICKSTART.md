@@ -69,7 +69,10 @@ npm run build:debug      # 需要 JDK 17 + Android SDK 35
 |---|---|
 | 首页内容与交互 | `web/index.html` + `web/shell/home.js` |
 | 首页/我的页样式（布局、卡片、数据行） | `web/shell/home.css` |
-| 底栏三 tab 与切页动效 | `web/shell/tabbar.js`、`web/shell/nav.js` |
+| 底栏三 tab | `web/shell/tabbar.js` |
+| 切页过渡（幕布淡出→黑→淡入） | `web/shell/boot.js`（`saLeave`/`saReload` + `#sa-curtain`） |
+| 链接点击拦截（决定用 VT 还是幕布） | `web/shell/nav.js` |
+| 弹窗开/关动画 | `web/shell/home.css`（`sa-dlg-in`）+ `boot.js` 的 `saCloseDialog` |
 | 目录页（三级树、展开记忆、**删除已导入课程**） | `web/toc.html` + `web/shell/toc.js` |
 | 我的页（设置、备份、存储） | `web/me.html`（逻辑复用 `home.js`） |
 | 阅读页行为（顶栏/抽屉/断点续读/自评条/解析折叠） | `web/shell/page.js` |

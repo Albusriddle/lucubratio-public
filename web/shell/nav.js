@@ -11,8 +11,6 @@
 //   <a href="…" data-nav="tab">     → tab 切换（淡入淡出）
 (function () {
   var root = document.documentElement;
-  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var canVT = typeof document.startViewTransition === 'function';
 
   function kindOf(a) {
     var k = (a.getAttribute('data-nav') || '').trim();
@@ -23,15 +21,10 @@
 
   function navigate(url, kind) {
     root.setAttribute('data-nav-kind', kind);
-    // 有 VT 用 VT（更细腻，且能按方向滑动）；没有就交给 boot.js 的幕布淡出
-    if (canVT && !reduce) {
-      try {
-        document.startViewTransition(function () { location.href = url; });
-        return;
-      } catch (e) { /* 落到幕布 */ }
-    }
+    // 统一交给 boot.js：有能力就用 View Transition，没有就用幕布；
+    // 这里不再自己判断，避免两套动效叠加。
     if (window.saLeave) { window.saLeave(url); return; }
-    location.href = url;
+    location.href = url;   // sa-nav-fallback（boot.js 没加载时才走到）
   }
 
   document.addEventListener('click', function (e) {

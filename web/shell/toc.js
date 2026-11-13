@@ -70,7 +70,7 @@ async function jump(file, anchor, label, sub) {
   const url = file + (anchor ? '#' + anchor : '');
   document.documentElement.setAttribute('data-nav-kind', 'forward');
   if (window.saLeave) window.saLeave(url);
-  else location.href = url;
+  else location.href = url;   // sa-nav-fallback
 }
 
 /** 删除一门导入课程（原生删文件 + 本地清数据） */
@@ -92,7 +92,7 @@ async function deleteCourse(course) {
     if (!res.ok) throw new Error(res.message || '删除失败');
     await deleteCourseData(course.id);
     if (window.saReload) window.saReload();
-    else location.reload();
+    else location.reload();   // sa-nav-fallback
   } catch (e) {
     notify('删除失败：' + ((e && e.message) || e));
   }
