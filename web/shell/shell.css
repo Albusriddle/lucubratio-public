@@ -27,6 +27,13 @@ pre {
   max-width: 100%;
   height: auto;
 }
+
+/* Mermaid 默认 useMaxWidth 会把窄图按容器宽度等比放大（4 个节点的竖排图会被拉到整屏、
+   字号变成几十 px）。这里改成「按自身尺寸显示，超宽才缩」 */
+.mermaid svg {
+  width: auto !important;
+  height: auto !important;
+}
 /* 表格：只有它允许横滑（build 会统一包一层 .table-wrap） */
 .table-wrap {
   max-width: 100%;

@@ -63,6 +63,7 @@ const steps = [
     } },
   { name: '导航守则（禁止裸 location 跳转）', custom: () => { run(['scripts/check-nav.mjs']); } },
   // —— 本地守则：CHANGELOG 结构（实现见 scripts/check-changelog.mjs，CI 也调它）——
+  ['复核门禁（红线 3）', ['scripts/check-gates.mjs', '.work/reviews']],
   ['CHANGELOG 结构', ['scripts/check-changelog.mjs']],
 ];
 
