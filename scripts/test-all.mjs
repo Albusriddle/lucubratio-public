@@ -20,10 +20,17 @@ const DIM = (s) => `\x1b[2m${s}\x1b[0m`;
 /** 跑一个子命令，失败即抛（供 custom 步骤复用） */
 const run = (args) => execFileSync(NODE, args, { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' });
 
-const contentPages = fs
-  .readdirSync(path.join(ROOT, 'content/os'))
-  .filter((f) => f.endsWith('.html'))
-  .map((f) => path.join('content/os', f));
+// 多课程：content/<group>/ 逐个发现（不再写死 content/os）
+const contentDirs = fs
+  .readdirSync(path.join(ROOT, 'content'), { withFileTypes: true })
+  .filter((d) => d.isDirectory())
+  .map((d) => d.name);
+const contentPages = contentDirs.flatMap((g) =>
+  fs
+    .readdirSync(path.join(ROOT, 'content', g))
+    .filter((f) => f.endsWith('.html'))
+    .map((f) => path.join('content', g, f))
+);
 
 /** 依序执行；任一失败即停 */
 const steps = [

@@ -28,7 +28,8 @@ ls <课件.pdf>
 ## 1. 抽取（脚本，不靠模型）
 
 ```bash
-python tools/pdf-extract.py <课件.pdf> --out .work/<课程id> --render
+python tools/pdf-extract.py <课件.pdf> --out .work/<课程id> --render   # PDF（可选 --render 出图）
+python tools/pptx-extract.py <课件.pptx> --deck <讲次> --out .work/<课程id>   # PPTX（自动导出内嵌图）
 # 想更严格地标出"文字很少但关键信息在图里"的页：加 --low-text 24
 # （默认 --low-text 200 已经会标记低文字页，report.low_text_pages 一定有内容）
 ```

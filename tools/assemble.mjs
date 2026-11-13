@@ -1,8 +1,11 @@
-// 把若干 HTML 片段组装成一个内容页（content/os/<slug>.html）
+// 把若干 HTML 片段组装成一个内容页（content/<group>/<slug>.html）
 //
 // 用法：
-//   node tools/assemble.mjs <slug> <标题> <片段1.html> [片段2.html …]
+//   node tools/assemble.mjs <slug> <标题> <片段1.html> [片段2.html …] [--group os|net|…]
 //   node tools/assemble.mjs 03_os_进程 "进程与调度" /tmp/s1.html /tmp/s2.html
+//   node tools/assemble.mjs 02_ch2_应用层 "应用层" .work/drafts/ch2.final.html --group net
+//
+// 多课程：`--group` 决定输出到 content/<group>/，默认 os（向后兼容）。
 //
 // 片段里只写正文（h2/h3/p/table/…），本脚本负责套上标准头（样式 + viewport），
 // 壳层注入（data-cid / data-file / data-cver / 目录 / 自评标记）由 build.mjs 完成，这里不做。
@@ -12,7 +15,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT_DIR = path.join(ROOT, 'content/os');
+const DEFAULT_GROUP = 'os';
+const groupOf = () => {
+  const i = process.argv.indexOf('--group');
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : DEFAULT_GROUP;
+};
 
 const HEAD = (title) => `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -46,9 +53,12 @@ function escapeHtml(s) {
 }
 
 function main() {
-  const [slug, title, ...frags] = process.argv.slice(2);
+  const args = process.argv.slice(2).filter((a, i, arr) => a !== '--group' && arr[i - 1] !== '--group');
+  const [slug, title, ...frags] = args;
+  const GROUP = groupOf();
+  const OUT_DIR = path.join(ROOT, 'content', GROUP);
   if (!slug || !title || frags.length === 0) {
-    console.error('用法: node tools/assemble.mjs <slug> <标题> <片段1.html> [片段2 …]');
+    console.error('用法: node tools/assemble.mjs <slug> <标题> <片段1.html> [片段2 …] [--group os|net|…]');
     process.exit(1);
   }
   if (!/^\d{2}_[\w\u4e00-\u9fa5-]+(\.html)?$/.test(slug)) {
@@ -84,7 +94,7 @@ function main() {
   const num = name.match(/^(\d+)/);
   if (num) {
     console.log(`  提示：若要它成为自评单元，在 scripts/build.mjs 的 QUESTION_RULES 里加`);
-    console.log(`        'os-${num[1]}': { level: 3, test: /^检测\\s*\\d+/ },`);
+    console.log(`        '${GROUP}-${num[1]}': { level: 3, test: /^检测\\s*\\d+/ },`);
   }
 }
 
