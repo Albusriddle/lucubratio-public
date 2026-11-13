@@ -53,7 +53,12 @@ function confirmAsk(label, sub, kicker, opts) {
     no.addEventListener('click', onNo);
     dlg.addEventListener('cancel', onNo);
     if (typeof dlg.showModal === 'function') dlg.showModal();
-    else done(window.confirm(label + '\n' + (sub || '')));
+    else {
+      // 兜底：本壳没有 WebChromeClient，window.confirm 恒为 false，
+      // 直接调用等于"点了没反应"——这里明确取消并提示，避免静默失败。
+      done(false);
+      notify('当前环境不支持确认弹窗，操作已取消');
+    }
   });
 }
 

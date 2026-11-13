@@ -182,6 +182,8 @@
   set('v-ls', lsOK ? '可用' : '不可用', lsOK ? 'ok' : 'bad');
   check('localStorage', lsOK, lsOK ? '可用' : '不可用');
 
+  /* 注意：IndexedDB 自检结束后会调用 cleanupProbeDB()（定义见文末） */
+
   /* ---------- IndexedDB ---------- */
   var DB_NAME = 'lucubratio-probe';
   var STORE = 'kv';
@@ -218,21 +220,34 @@
       set('v-idb', '可用 (v' + db.version + ')', 'ok');
       check('IndexedDB', true, '可打开, version=' + db.version);
 
+      // 读写往返：只用一个探针键验证可写可读，随后整库删除（见 cleanupProbeDB）
       return tx(db, 'readwrite', function (store) {
-        return store.get('boot');
-      }).then(function (prev) {
-        bootCount = (prev || 0) + 1;
+        return store.put(1, 'probe');
+      }).then(function () {
+        return tx(db, 'readonly', function (store) { return store.get('probe'); });
+      }).then(function (v) {
+        check('IndexedDB 读写往返', v === 1, '读到 ' + v);
+        // 启动次数改记在 localStorage：探针库用完即删，不能拿它当持久化证据
+        try {
+          bootCount = (parseInt(localStorage.getItem('sa:boot') || '0', 10) || 0) + 1;
+          localStorage.setItem('sa:boot', String(bootCount));
+        } catch (e) { bootCount = 1; }
         set('v-boot', String(bootCount), bootCount > 1 ? 'ok' : 'warn');
         report.push('[INFO] bootCount = ' + bootCount + (bootCount > 1
           ? ' (持久化正常，重启后仍在累加)' : ' (首次启动，请关闭 App 后再开一次)'));
-        return tx(db, 'readwrite', function (store) {
-          return store.put(bootCount, 'boot');
-        });
-      }).then(function () {
-        return tx(db, 'readonly', function (store) { return store.get('boot'); });
-      }).then(function (v) {
-        check('IndexedDB 读写往返', v === bootCount, '读到 ' + v);
         db.close();
+        // 先试一次（多半会 blocked：本页的连接刚关、事务还没完全释放）
+        return new Promise(function (r) { setTimeout(r, 120); })
+          .then(function () { return cleanupProbeDB(); })
+          .then(function (gone) {
+            if (gone) return;
+            // 真正的机会在"离开本页"时：那时本页所有连接都已销毁
+            report.push('[INFO] 探针库将在离开本页时清理');
+            window.addEventListener('pagehide', function () { cleanupProbeDB(); });
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'hidden') cleanupProbeDB();
+            });
+          });
       });
     }).catch(function (err) {
       idbOK = false;
@@ -303,6 +318,22 @@
       finalize();
     });
 })();
+
+  /* 探针库用完即删：它只是用来验证 IndexedDB 可用，没有理由在设备上留一辈子 */
+  /* 删除探针库：close() 是异步的，立刻 delete 常被 onblocked 挡回，所以带重试 */
+  function cleanupProbeDB(attempt) {
+    attempt = attempt || 0;
+    return new Promise(function (resolve) {
+      var req;
+      try { req = indexedDB.deleteDatabase(DB_NAME); } catch (e) { return resolve(false); }
+      req.onsuccess = function () { resolve(true); };
+      req.onerror = function () { resolve(false); };
+      req.onblocked = function () {
+        if (attempt >= 5) return resolve(false);
+        setTimeout(function () { cleanupProbeDB(attempt + 1).then(resolve); }, 150 * (attempt + 1));
+      };
+    });
+  }
 </script>
 <script src="/shell/nav.js"></script>
 <script src="/shell/tabbar.js"></script>

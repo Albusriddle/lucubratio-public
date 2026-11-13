@@ -13,6 +13,44 @@
   此前只查分支，推 tag 时会一直报"远端不可达"并重试 8 次（v0.3.9 首发就这样白等约 2 分钟，
   实际 tag 早已推上去）。顺带删掉后面那段"heads 不匹配再查 tags"的补丁逻辑。
 
+## [0.3.10] - 2026-11-13
+
+### 修复（真机验收发现的问题）
+
+- **首页第三个按钮被 CSS 重置字号**：`.quick button{font:inherit}` 把上面那条
+  `font-size:13.5px;font-weight:600` 一起冲掉了，实测按钮是 16px/400、链接是 13.5px/600，
+  于是「＋ 导入课程包」在 393px 竖屏下换行成两行。改为只继承字族（`font-family:inherit`）
+- **demo 页的解析不合规，折叠功能在示例上永不出现**：两页 demo 共 3 处写的是
+  `<p><strong>题解</strong></p><ul>…</ul>`，而规范（AGENTS.md 约定 1 / CONTENT-SPEC）要求
+  `<blockquote><strong>解析</strong>：X 对。…</blockquote>`；已按原文改写成规范结构
+- **`self-check-quizzes` 对「没有解析块」只报警告**：demo 因此一路放行到 CI。现在
+  「有检测题但没有 `<blockquote>` 解析块」直接算失败（历史内容可加 `--allow-nonblockquote` 暂放）
+- **`verify` 的「自评标题与标记数不一致」不给指引**：新增一行提示，直接指出
+  「在 scripts/build.mjs 的 QUESTION_RULES 里为 <cid> 加一条 { level: 3, test: /^检测\s*\d+/ }」，
+  并说明规则是按页 cid 配置的
+- **`web/diagnostics.html` 的探针库残留**：环境自检会建 `lucubratio-probe` 却从不删除，
+  设备上会永久留一个空库。现在两层清理：① 自检结束先试一次 `deleteDatabase`（同一文档里常被
+  `blocked`，失败时记 INFO）；② `boot.js` 在**每个页面启动时**顺手删一次——那时没有任何连接占用，
+  实测离开自检页后库即消失。启动计数改记 `localStorage`，持久化检查不再依赖这个临时库
+- **`toc.js` 的确认弹窗兜底静默失败**：兜底路径原本调用 `window.confirm`（本壳没有
+  WebChromeClient，恒返回 false），表现为"点了删除没反应"。改为显式取消 + `saToast` 提示
+
+### 文档
+
+- **CONTENT-SPEC §5 重写**：原表格列的是私有仓库的 cid（`os-11…os-22`，本仓库不存在），
+  改成「每页一条规则」的通用说明 + 本仓库真实配置（`os-01`/`os-02`）+ 新页怎么加
+- **术语统一**：`AGENTS-SPEC` / `CONTENT-SPEC` 里的「详细题解」统一为「解析」，并说明
+  「旧稿的『题解』是同一概念，但壳层只折叠以『解析』开头的引用块」
+- **ROADMAP**：`0.3.4–0.3.10` 的版面改动已在 2026-11-13 用 MuMu（Android 15）复跑，结论写回
+- **[`DEVICE-CHECKLIST`](docs/DEVICE-CHECKLIST.md) 新增 §6 验收记录**：日期/版本/设备/结论/发现的问题，
+  以后每次发版在此追加一行
+
+### 已知遗留
+
+- **私有仓库的 9 个课程页同样是「题解 + ul」写法**（0 个规范解析块）——也就是说
+  「解析折叠」在实际课程上从未生效。两条路线待定：① 把内容机械迁移成 `blockquote`；
+  ② 让壳层兼容「题解」写法。本轮先修公开侧与检查工具
+
 ## [0.3.9] - 2026-11-13
 
 ### 修复（提示机制 / 发版闸门 / 合规）

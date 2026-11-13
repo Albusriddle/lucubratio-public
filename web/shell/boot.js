@@ -62,3 +62,13 @@
     } catch (e) { /* 连 DOM 都不行就算了，不能因为提示把主流程搞崩 */ }
   };
 })();
+
+/* 清理「环境自检」的探针库（lucubratio-probe）
+   为什么放在 boot：诊断页要建这个库来验证 IndexedDB 可用，而在诊断页里删除总被 blocked
+   （同一文档的连接尚未释放）。页面启动时没有任何连接占用它，删起来最可靠——
+   所以只要离开诊断页（或下次启动 App）就会自动清掉。 */
+(function () {
+  try {
+    if (window.indexedDB && indexedDB.deleteDatabase) indexedDB.deleteDatabase('lucubratio-probe');
+  } catch (e) { /* 忽略 */ }
+})();

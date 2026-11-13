@@ -18,10 +18,11 @@ import fs from 'node:fs';
 const args = process.argv.slice(2);
 const verbose = args.includes('--verbose');
 const ALLOW_NO_CITE = args.includes('--allow-no-cite');
+const ALLOW_NONBQ = args.includes('--allow-nonblockquote');
 const file = args.find((a) => !a.startsWith('--'));
 
 if (!file) {
-  console.error('用法: node tools/self-check-quizzes.mjs <页面.html> [--verbose]');
+  console.error('用法: node tools/self-check-quizzes.mjs <页面.html> [--verbose] [--allow-no-cite] [--allow-nonblockquote]');
   process.exit(1);
 }
 if (!fs.existsSync(file)) {
@@ -98,7 +99,10 @@ for (const q of quizzes) {
   // 解析区：<blockquote> ... </blockquote>
   const bq = body.match(/<blockquote>([\s\S]*?)<\/blockquote>/);
   const expl = bq ? strip(bq[1]) : '';
-  if (!expl) structure.push('没有找到解析块（<blockquote>），无法自动校验');
+  if (!expl) {
+    const msg = '缺少解析块：解析必须写成 <blockquote><strong>解析</strong>：X 对。……（页码）——壳层靠它折叠；历史内容可加 --allow-nonblockquote 暂放';
+    if (ALLOW_NONBQ) structure.push(msg); else problems.push(msg);
+  }
 
   let ans = null;
   let ansHow = '';

@@ -201,7 +201,12 @@ if (manifest) {
       const tagged = (html.match(/data-qid="[^"]*#/g) || []).length;
       if (heads !== tagged) mismatch.push(`${it.id}: 标题 ${heads} / 标记 ${tagged}`);
     }
-    if (mismatch.length) bad(`自评标题与标记数不一致：${mismatch.join('；')}`);
+    if (mismatch.length) {
+      const hint = mismatch.map((m) => m.split(':')[0]).join('、');
+      bad(`自评标题与标记数不一致：${mismatch.join('；')}`);
+      bad(`→ 若这是新页面：在 scripts/build.mjs 的 QUESTION_RULES 里为 ${hint} 加一条 ` +
+          `{ level: 3, test: /^检测\\s*\\d+/ }`);
+    }
     else ok('自评标题数与被标记数一致');
   }
 

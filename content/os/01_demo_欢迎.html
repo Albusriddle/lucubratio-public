@@ -67,13 +67,7 @@
 
 <h3 id="检测 1">检测 1（10 分）本仓库的「流水线」主要负责什么？（　　）</h3>
 <p>A. 提供课程内容 B. 把源 HTML 编译成可运行站点（注入壳、公式、自评标记、检索索引） C. 提供在线课程市场 D. 存储用户的复习记录</p>
-<p><strong>题解</strong>：</p>
-<ul>
-  <li>A 错。仓库刻意不含课程内容。</li>
-  <li><strong>B 对。</strong><code>scripts/build.mjs</code> 做的就是这件事：注入壳层资源、把公式转成 MathML、给命中规则的标题打 <code>data-qid</code>、生成检索索引与 manifest。</li>
-  <li>C 错。这里不做分发平台。</li>
-  <li>D 错。复习记录由查看器的 IndexedDB + FSRS 负责，与流水线无关。</li>
-</ul>
+<blockquote><strong>解析</strong>：B 对。<code>scripts/build.mjs</code> 负责注入壳层资源、把公式转成 MathML、给命中规则的标题打 <code>data-qid</code>、生成检索索引与 manifest。A 错，仓库刻意不含课程内容；C 错，这里不做分发平台；D 错，复习记录由查看器的 IndexedDB + FSRS 负责，与流水线无关。（依据：<code>scripts/build.mjs</code> 与 README「快速开始」）</blockquote>
 
 </body>
 </html>

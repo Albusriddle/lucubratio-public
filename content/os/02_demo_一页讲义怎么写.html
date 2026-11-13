@@ -59,23 +59,11 @@
 
 <h3 id="检测 1">检测 1（10 分）为什么本流水线要求用 Mermaid 而不是 ASCII 字符画？（　　）</h3>
 <p>A. 因为字符画文件更大 B. 因为手机端没有中文等宽字体，汉字与字母宽度不成整数比，字符画必然错位 C. 因为 Mermaid 渲染更快 D. 因为字符画不能缩放</p>
-<p><strong>题解</strong>：</p>
-<ul>
-  <li>A 错。体积不是主要考虑。</li>
-  <li><strong>B 对。</strong>汉字宽度约为英文字母的 1.67 倍，而字符画假定"一个汉字 = 两个字母宽"，边框与竖线必然对不齐；换字号、换字体都救不回来。</li>
-  <li>C 错。Mermaid 反而要加载 5MB 的渲染库（还是懒加载）。</li>
-  <li>D 错。字符画也能缩放，只是缩放了依旧错位。</li>
-</ul>
+<blockquote><strong>解析</strong>：B 对。汉字宽度约为英文字母的 1.67 倍，而字符画假定"一个汉字 = 两个字母宽"，边框与竖线必然对不齐，换字号换字体都救不回来。A 错，体积不是主要考虑；C 错，Mermaid 反而要加载 5MB 渲染库（还做了懒加载）；D 错，字符画也能缩放，只是缩放了依旧错位。（依据：<code>web/shell/mermaid-init.js</code> 的按需加载与 <code>build.mjs</code> 的字符画拦截）</blockquote>
 
 <h3 id="检测 2">检测 2（10 分）想让某个标题成为"可自评单元"，需要满足什么？（　　）</h3>
 <p>A. 随便什么标题都行 B. 标题文本命中 <code>QUESTION_RULES</code> 里该页 cid 配置的正则 C. 标题里必须包含「题」字 D. 必须在页末单独列出来</p>
-<p><strong>题解</strong>：</p>
-<ul>
-  <li>A 错。不做启发式猜测，必须显式配置。</li>
-  <li><strong>B 对。</strong>构建期按 cid 查规则，命中才给标题加一个 <code>data-qid</code> 属性（值是 <code>cid#标题id</code>），运行时据此插入自评条。</li>
-  <li>C 错。「题」字不是必要条件，正则怎么写都行（本仓库默认用「检测 N」）。</li>
-  <li>D 错。位置无关，只看标题文本。</li>
-</ul>
+<blockquote><strong>解析</strong>：B 对。构建期按页面 cid 查 <code>QUESTION_RULES</code>，标题文本命中该页正则才加 <code>data-qid</code>（值为 <code>cid#标题id</code>），运行时据此插入自评条。A 错，不做启发式猜测，必须显式配置；C 错，「题」字不是必要条件，正则怎么写都行（默认用「检测 N」）；D 错，位置无关，只看标题文本。（依据：<code>scripts/build.mjs</code> 的 <code>QUESTION_RULES</code>）</blockquote>
 
 </body>
 </html>

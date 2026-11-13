@@ -43,7 +43,8 @@
     font-size:13.5px;font-weight:600;
   }
   .quick a:active, .quick button:active{background:var(--soft)}
-  .quick button{font:inherit;cursor:pointer}
+  /* 只继承字族：font:inherit 会把上面的 13.5px/600 一起重置成 16px/400，导致第三个按钮换行 */
+  .quick button{font-family:inherit;cursor:pointer}
 
   .due{
     display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;
