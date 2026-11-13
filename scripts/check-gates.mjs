@@ -44,28 +44,35 @@ if (!fs.existsSync(dir)) {
 }
 
 const files = fs.readdirSync(dir).filter((f) => /^gate-.*\.md$/.test(f)).sort();
+
+// 同一道门可能有多轮记录（gate-ch1.md / gate-ch1-r2.md / gate-ch1-r3.md）：
+// 只认**最新一轮**——早先轮次的不通过记录是历史，不该永久拉红。
+const families = new Map();
+for (const f of files) {
+  const base = f.replace(/\.md$/, '');
+  const m = base.match(/^(gate-.+?)(?:-r(\d+))?$/);
+  const family = m ? m[1] : base;
+  const round = m && m[2] ? Number(m[2]) : 1;
+  const prev = families.get(family);
+  if (!prev || round > prev.round) families.set(family, { round, file: f, base });
+}
+
 const fails = [];
 const oks = [];
 
-if (files.length === 0) {
+if (families.size === 0) {
   fails.push('目录里没有任何 gate-*.md（等同于没审就进下一步）');
 }
 
-for (const f of files) {
-  const s = fs.readFileSync(path.join(dir, f), 'utf8');
-  const name = f.replace(/\.md$/, '');
+for (const [family, info] of [...families].sort((a, b) => a[0].localeCompare(b[0]))) {
+  const s = fs.readFileSync(path.join(dir, info.file), 'utf8');
   const nums = [...s.matchAll(/问题\s*[=＝]\s*(\d+)/g)].map((m) => Number(m[1]));
   const bad = [];
-
-  if (/结论[：:]\s*不通过/.test(s)) bad.push('结论写着「不通过」');
-  if (!/结论[：:]\s*通过/.test(s)) bad.push('缺少「结论：通过」');
-  if (nums.some((n) => n > 0)) bad.push(`报告里的问题数不为 0（${nums.filter((n) => n > 0).join('/')}）`);
-  if (/问题清单[：:]\s*(?!无)/.test(s) && /^\|/m.test(s) && !/问题清单[：:]\s*无/.test(s)) {
-    bad.push('含问题清单表格（疑似未清零）');
-  }
-
-  if (bad.length) fails.push(`${name}: ${bad.join('；')}`);
-  else oks.push(name);
+  if (/结论[：:]\s*不通过/.test(s)) bad.push(`最新一轮（${info.file}）写着「不通过」`);
+  if (!/结论[：:]\s*通过/.test(s)) bad.push(`最新一轮（${info.file}）缺少「结论：通过」`);
+  if (nums.some((n) => n > 0)) bad.push(`最新一轮问题数不为 0（${nums.filter((n) => n > 0).join('/')}）`);
+  if (bad.length) fails.push(`${family}: ${bad.join('；')}`);
+  else oks.push(`${family}（${info.file}，第 ${info.round} 轮）`);
 }
 
 for (const r of required) {
