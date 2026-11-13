@@ -30,6 +30,7 @@ ls <课件.pdf>
 ```bash
 python tools/pdf-extract.py <课件.pdf> --out .work/<课程id> --render   # PDF（可选 --render 出图）
 python tools/pptx-extract.py <课件.pptx> --deck <讲次> --out .work/<课程id>   # PPTX（自动导出内嵌图）
+python tools/docx-extract.py <实验指导书.docx> --deck lab1 --out .work/<课程id>/lab1  # DOCX（实验材料/指导书）
 # 想更严格地标出"文字很少但关键信息在图里"的页：加 --low-text 24
 # （默认 --low-text 200 已经会标记低文字页，report.low_text_pages 一定有内容）
 ```

@@ -39,7 +39,7 @@ const steps = [
   ['单元测试', ['scripts/test.mjs']],
   ['课程库自测', ['scripts/test-library.mjs']],
   ['打包/校验自测', ['scripts/test-package.mjs']],
-  ['片段预检（内容页）', ['tools/lint-fragment.mjs', ...contentPages, '--page', '--allow-no-cite']],
+  ['片段预检（内容页）', ['tools/lint-fragment.mjs', ...contentPages, '--page', '--section-cite', '--allow-no-cite']],
   ...contentPages.map((p) => [`题目自检 ${path.basename(p)}`, ['tools/self-check-quizzes.mjs', p, '--allow-no-cite']]),
   // —— 与 ci.yml 对齐的两步（原本只写在 CI 里）——
   { name: '空构建冒烟（build --empty → verify → 恢复构建）', custom: () => {

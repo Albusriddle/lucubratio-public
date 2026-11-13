@@ -18,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2);
-const dir = args.find((a) => !a.startsWith('--')) || '.work/reviews';
+let dir = args.find((a) => !a.startsWith('--')) || '.work/reviews';
 const requireIdx = args.indexOf('--require');
 let required = requireIdx >= 0 ? args.slice(requireIdx + 1) : [];
 
@@ -34,6 +34,20 @@ if (!dir) {
   console.error('用法: node scripts/check-gates.mjs <reviews 目录> [--require gate-xxx …]');
   process.exit(2);
 }
+// 课程可能把复核放在 .work/<课程>/reviews（如 .work/net/reviews）：
+// 调用方给的是默认路径而它不存在时，自动探测唯一的 .work/*/reviews。
+if (!fs.existsSync(dir) && fs.existsSync('.work')) {
+  const cands = fs
+    .readdirSync('.work', { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => path.posix.join('.work', d.name, 'reviews'))
+    .filter((p) => fs.existsSync(p));
+  if (cands.length === 1) {
+    dir = cands[0];
+    console.log(`· 自动使用复核目录：${dir}`);
+  }
+}
+
 if (!fs.existsSync(dir)) {
   if (required.length) {
     console.error(`✗ 复核目录不存在：${dir}（但 package.json 里声明了 gateChecks）`);

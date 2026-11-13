@@ -19,6 +19,8 @@ import fs from 'node:fs';
 
 // 示例页没有课件来源，可用 --allow-no-cite 跳过「页码引用」检查
 const ALLOW_NO_CITE = process.argv.includes('--allow-no-cite');
+// 实验指导书 / 实验讲义没有页码，只能按小节名引注（如「（eBPF 讲义「知识点3：eBPF架构」）」）
+const SECTION_CITE = process.argv.includes('--section-cite');
 // --page：目标是「完整内容页」而不是「待组装的片段」，跳过外壳检查（doctype/style）
 const IS_PAGE = process.argv.includes('--page');
 
@@ -79,7 +81,12 @@ function lint(file) {
   else if (quizzes > 8) warns.push(`自评单元 ${quizzes} 道偏多（单页建议 ≤8，按分段配额控制）`);
 
   // 页码引用：接受「课件 p12」「（p12）」「课件第 12 页」三种写法
-  const cites = [...src.matchAll(/(?:课件\s*)?p\s*\d{1,3}\b|第\s*\d{1,3}\s*页/g)].length;
+  const pageCites = [...src.matchAll(/(?:课件\s*)?p\s*\d{1,3}\b|第\s*\d{1,3}\s*页/g)].length;
+  // 小节名引注：形如（…讲义「知识点3：eBPF架构」）/（…指导书「实验三 控制平面实验（Mininet）」）
+  const sectionCites = SECTION_CITE
+    ? [...src.matchAll(/[（(][^（）()]{0,24}?[「][^」]{2,40}[」][^（）()]{0,6}?[）)]/g)].length
+    : 0;
+  const cites = pageCites + sectionCites;
   if (cites === 0 && !ALLOW_NO_CITE) problems.push('整段没有页码引用（每条事实/解析都要能指到课件页码）');
   else if (cites < quizzes) warns.push(`页码引用 ${cites} 处，少于检测题数 ${quizzes}（解析里每题都应有页码）`);
 
