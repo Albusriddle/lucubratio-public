@@ -90,6 +90,19 @@
   function decorate(el) {
     var svg = el.querySelector('svg');
     if (!svg) return;
+    // 按 viewBox 给 SVG 定「自然尺寸」，再用 max-width 限宽。
+    // 为什么：mermaid 默认 useMaxWidth 会把窄图按容器等比放大（4 节点竖排图被拉到整屏、
+    // 字号几十 px）；而单纯 CSS width:auto 对无固有尺寸的 SVG 又会退化成 100%，等于没修。
+    try {
+      var vb = svg.viewBox && svg.viewBox.baseVal;
+      if (vb && vb.width > 0) {
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.style.width = vb.width + 'px';
+        svg.style.height = 'auto';
+        svg.style.maxWidth = '100%';
+      }
+    } catch (e) { /* 老 WebView 没有 viewBox.baseVal 时保持原样 */ }
     svg.setAttribute('role', 'img');
     var fig = el.closest ? el.closest('figure') : null;
     var cap = fig ? fig.querySelector('figcaption') : null;

@@ -28,12 +28,20 @@ pre {
   height: auto;
 }
 
-/* Mermaid 默认 useMaxWidth 会把窄图按容器宽度等比放大（4 个节点的竖排图会被拉到整屏、
-   字号变成几十 px）。这里改成「按自身尺寸显示，超宽才缩」 */
-.mermaid svg {
-  width: auto !important;
-  height: auto !important;
+/* Mermaid 的自然尺寸由 web/shell/mermaid-init.js 的 decorate() 按 viewBox 写内联 style；
+   这里不要写 width:auto !important —— 它会反过来压住 JS 设的像素宽度，窄图又被拉满。 */
+
+/* Mermaid 图在窄屏/竖排时会很高：给容器限高并允许滚动，避免一张图占满整屏。
+   （尺寸的根因是 mermaid 按容器宽渲染，短期用「限高 + 可滚 + 放大按钮」更稳） */
+.mermaid {
+  max-height: 520px;
+  overflow: auto;
 }
+.mermaid svg {
+  max-height: 480px;
+  width: auto;
+}
+
 /* 表格：只有它允许横滑（build 会统一包一层 .table-wrap） */
 .table-wrap {
   max-width: 100%;

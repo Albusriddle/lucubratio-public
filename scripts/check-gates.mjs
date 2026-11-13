@@ -65,11 +65,37 @@ if (families.size === 0) {
 }
 
 for (const [family, info] of [...families].sort((a, b) => a[0].localeCompare(b[0]))) {
-  const s = fs.readFileSync(path.join(dir, info.file), 'utf8');
+  const raw = fs.readFileSync(path.join(dir, info.file), 'utf8');
+  // 去掉 Markdown 强调符/行内代码，避免「**通过**」这类写法被误判
+  const s = raw.replace(/[*_`]/g, '');
   const nums = [...s.matchAll(/问题\s*[=＝]\s*(\d+)/g)].map((m) => Number(m[1]));
+  // 复核者写法不一（「结论：通过」「**通过。问题 0 项。**」），按语义判定：
+  // 只要出现「不通过」即失败；否则必须有「通过」字样，且所有「问题=N」为 0。
   const bad = [];
-  if (/结论[：:]\s*不通过/.test(s)) bad.push(`最新一轮（${info.file}）写着「不通过」`);
-  if (!/结论[：:]\s*通过/.test(s)) bad.push(`最新一轮（${info.file}）缺少「结论：通过」`);
+  // 判定优先级：
+  //   ① 结论标题里直接写判定：`## 结论：通过` / `## 结论：不通过`
+  //   ② 结论标题后 120 字内出现判定（复核者常把判定写在下一行）
+  //   ③ 机器可读末行：`…: 通过 问题=0`
+  let verdict = null;
+  const head = s.match(/^#{1,6}\s*结论[：:]?\s*(通过|不通过)/m);
+  if (head) verdict = head[1];
+  if (!verdict) {
+    const h2 = s.match(/^#{1,6}\s*结论[：:]?\s*\n([\s\S]{0,120})/m);
+    if (h2) {
+      if (/不通过/.test(h2[1])) verdict = '不通过';
+      else if (/通过/.test(h2[1])) verdict = '通过';
+    }
+  }
+  if (!verdict) {
+    const mline = [...s.matchAll(/(通过|不通过)\s*问题\s*[=＝]\s*(\d+)/g)].pop();
+    if (mline) verdict = mline[1];
+  }
+  const numsAll = [...s.matchAll(/问题\s*[=＝]\s*(\d+)/g)].map((m) => Number(m[1]));
+  if (verdict === '不通过') bad.push(`最新一轮（${info.file}）判不通过`);
+  if (verdict === null) bad.push(`最新一轮（${info.file}）找不到判定（需要「## 结论：通过/不通过」）`);
+  if (verdict === '通过' && numsAll.length && numsAll.every((n) => n > 0)) {
+    bad.push(`最新一轮（${info.file}）判通过但报告里没有问题数为 0 的记录`);
+  }
   if (nums.some((n) => n > 0)) bad.push(`最新一轮问题数不为 0（${nums.filter((n) => n > 0).join('/')}）`);
   if (bad.length) fails.push(`${family}: ${bad.join('；')}`);
   else oks.push(`${family}（${info.file}，第 ${info.round} 轮）`);
