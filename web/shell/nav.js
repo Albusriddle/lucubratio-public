@@ -1,9 +1,10 @@
-// 页面切换动效（滑动 / 淡入淡出）
+// 页面切换：只负责「拦截点击 → 交给统一入口」，动效实现不在这里
 //
-// 设计：
-//   · 优先用 View Transitions API（Android 15 的 WebView 支持），按 data-nav 选方向
-//   · 不支持或用户开了「减少动态效果」→ 直接跳转，只保留一次很轻的淡入（CSS 负责）
-//   · 只拦截同源链接；锚点、外链、下载、target=_blank 一律放行
+// 能力基线（实测）：Android 15 自带 WebView 是 110，document.startViewTransition 为 undefined，
+// 所以默认走 boot.js 的幕布过渡；只有设备 WebView ≥111 时才会用 View Transitions。
+//   · window.saLeave(url) 由 boot.js 提供：有 VT 用 VT，没有就用幕布淡出到黑
+//   · data-nav-kind 仍保留：VT 生效时 CSS 用它决定滑入方向
+//   · 只拦截同源链接；锚点、外链、下载、target=_blank、带 scheme 的链接一律放行
 //
 // 约定：
 //   <a href="…">                    → 前进（从左滑入）

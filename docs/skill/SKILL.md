@@ -29,6 +29,8 @@ ls <课件.pdf>
 
 ```bash
 python tools/pdf-extract.py <课件.pdf> --out .work/<课程id> --render
+# 想更严格地标出"文字很少但关键信息在图里"的页：加 --low-text 24
+# （默认 --low-text 200 已经会标记低文字页，report.low_text_pages 一定有内容）
 ```
 
 产出：
@@ -109,6 +111,17 @@ node tools/assemble.mjs <序号>_<标签> "<页面标题>" .work/<id>/<段>.fina
 - 脚本会检查 h2/h3 是否都有 `id`（缺了会警告）并打印 `QUESTION_RULES` 提示
 - 页面骨架用 [page-template.md](page-template.md)
 
+**落盘前必做：给新页面加自评规则。** 规则在 `scripts/build.mjs` 的 `QUESTION_RULES` 里，
+**按页 cid 配置**（cid = `os-` + 文件名前两位，如 `05_vm1.html` → `os-05`）：
+
+```js
+'os-05': { level: 3, test: /^检测\s*\d+/ },
+```
+
+不加会怎样：`build` 不给标题打 `data-qid` → 页面上**没有自评条**（错题进不了 FSRS），
+并且 `verify` 直接失败：`自评标题与标记数不一致：os-05: 标题 6 / 标记 0`
+（报错里会打印应当补的那一行，照抄即可）。
+
 ## 4. 出题
 
 > **解析默认折叠**：查看器会把每道题的 `<blockquote><strong>解析</strong>…` 折起来，
@@ -142,13 +155,18 @@ node tools/mark-ppt.mjs --file .work/pages/05_vm1.html --report .work/vm1/report
 ## 5. 校验（不许跳过）
 
 ```bash
-node scripts/build.mjs        # 编译（注入壳层、公式、自评标记、索引）
-node scripts/verify.mjs       # 锚点/图片/公式基线/自评数/Markdown 残留
+node scripts/build.mjs                     # 编译（注入壳层、公式、自评标记、索引）
+node scripts/verify.mjs                    # 锚点/图片/公式基线/自评数/Markdown 残留/DOM id/仓库卫生
+node tools/self-check-quizzes.mjs <页面>   # 题目自检：答案唯一、干扰项全覆盖、解析块+页码 ★硬门
 node scripts/pack.mjs --id <课程id> --title "<课程名>" --version 1.0.0
-node scripts/verify-package.mjs dist/<课程id>-1.0.0.lcr
+node scripts/verify-package.mjs dist/<课程id>-1.0.0.lcr   # 包校验（12 项）
 ```
 
-四步任一失败 → 回到对应步骤修，**不要**用注释/删内容的方式绕过。
+五步任一失败 → 回到对应步骤修，**不要**用注释/删内容的方式绕过。
+
+> `self-check-quizzes` 是**硬门**：有「检测 N」标题却没有 `<blockquote><strong>解析</strong>…`
+> 解析块时**直接失败**（不是警告）。历史内容可加 `--allow-nonblockquote` 暂放，
+> 新内容不要用这个开关。只缺页码时可加 `--allow-no-cite`（仍会在 CI 里留警告）。
 
 ## 6. 交付
 
@@ -172,6 +190,8 @@ node scripts/verify-package.mjs dist/<课程id>-1.0.0.lcr
    缺图会直接构建失败。一页只标一次，插在"首次转述该页"的段落之后。
 9. **课程包禁止上传 GitHub**：`.lcr` 及其内容（正文页、图片、学案）一律不进 git、不进 Releases、
    不贴进 issue/PR。课程内容只保留在本地工作区与用户指定位置（详见 `AGENTS.md`）
+10. **新页面必须配自评规则**：在 `scripts/build.mjs` 的 `QUESTION_RULES` 里为它的 cid 加一条
+    `{ level: 3, test: /^检测\s*\d+/ }`。不加则构建不打自评标记、`verify` 直接失败
 
 ## 常见坑
 

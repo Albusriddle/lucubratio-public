@@ -40,7 +40,8 @@ npm test                 # 纯函数单测
 npm run test:package     # 打包器 + 校验器正负自测
 npm run test:library     # 课程库合并逻辑（内置 + 已导入）
 npm run check:changelog  # CHANGELOG 结构守则
-npm run test:all         # 全量 11 步（= 上面这些 + 构建/校验/片段预检/题目自检/空构建冒烟/多段合并）
+npm run check:nav        # 导航守则：除 shell/boot.js 外禁止裸 location 跳转（CI 与 test:all 都跑）
+npm run test:all         # 全量 12 步（= 上面这些 + 构建/校验/片段预检/题目自检/空构建冒烟/多段合并/导航守则）
 
 # 4) 真机检查（需设备；两者不同，按需跑）
 npm run smoke           # 数据层冒烟：进度/复习/备份/检索索引是否正常

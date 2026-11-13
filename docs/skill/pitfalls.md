@@ -12,6 +12,8 @@
 | `✗ 自评单元数与各页合计不一致` | `QUESTION_RULES` 里没有该页规则，或标题不是「检测 N」 | 加规则：`'os-XX': { level: 3, test: /^检测\s*\d+/ }` |
 | `✗ 页面引用了不存在的图片` | 图片写 `.png` 但资产是 `.webp` | 一律用 `.webp` |
 | `✗ 产物超预算（>24MB）` | 图片没压 | WebP quality≈82；必要时降 DPI 到 130 |
+| `✗ 缺少解析块：解析必须写成 <blockquote><strong>解析</strong>…` | 检测题的解析写成了 `<p><strong>题解</strong>>`+`<ul>`，或整段没写解析 | 改成单个 `<blockquote><strong>解析</strong>：X 对。…（页码）</blockquote>`，紧跟第 4 个选项。历史内容可临时加 `--allow-nonblockquote`，新内容不要用 |
+| `DOM id 可疑（静态分析）：xxx.html: home.js 使用 #yyy` | 页面缺该 id，或脚本里靠 `setText('id')` 写入而页面没这个元素 | 先跑 `npm run check:pages`（真机逐页抓异常）确认；真缺就给页面补元素，能跑通则忽略（静态分析看不见"调用点守卫"） |
 
 ## 打包 / 导入
 
@@ -23,6 +25,7 @@
 | `E_APP_TOO_OLD` | 包的 `appMin` 高于 App 版本 | 降低 `--appMin` 或升级 App |
 | 导入成功但首页没变化 | 页面没下拉刷新 | 导入后会自动刷新；若卡住，杀进程重开 |
 | 导入后点课程页 404 | `pack` 后手工删过文件 | 重新 `build` → `pack`，一次性做完 |
+| `✗ 包内有 N 张未被页面引用的图片` | 页面里没有 `/img/…` 引用，却把图片塞进了包 | `pack` 现在只打"被页面引用"的图：删掉多余图片，或在正文里用 `<figure class="sa-ppt" data-ppt="…">` 正确引用后在 `build` 阶段回填 |
 
 ## 生成阶段（不是脚本报错，但会毁掉质量）
 

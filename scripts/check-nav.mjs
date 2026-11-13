@@ -28,8 +28,13 @@ let scanned = 0;
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, e.name);
-    if (e.isDirectory()) { walk(full); continue; }
+    if (e.isDirectory()) {
+      if (e.name === 'vendor' || e.name === '_dev') continue;   // 第三方库不参与守则
+      walk(full);
+      continue;
+    }
     if (!/\.(js|html)$/.test(e.name)) continue;
+    if (/\.min\.js$/.test(e.name)) continue;                    // 压缩库同理
     if (full.endsWith(SKIP)) continue;
     scanned++;
     const lines = fs.readFileSync(full, 'utf8').split('\n');

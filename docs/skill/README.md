@@ -15,8 +15,12 @@
 
 ```bash
 mkdir -p ~/.dsh/skills/lucubratio-course
-cp docs/skill/*.md ~/.dsh/skills/lucubratio-course/
+cd docs/skill
+cp SKILL.md prompts.md page-template.md pitfalls.md merge-playbook.md quality-gate.md \
+   ~/.dsh/skills/lucubratio-course/
 ```
+
+> 只拷这 6 个文件；本 README 是仓库里的说明，不属于技能本体（技能目录里不应有它）。
 
 > 技能目录里的 `SKILL.md` 需要 YAML frontmatter（`name` / `description`），仓库里这份保留了它，可直接拷。
 

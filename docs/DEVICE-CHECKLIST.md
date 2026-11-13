@@ -132,6 +132,6 @@ git -c http.proxy=http://127.0.0.1:7892 push <url> v<版本>   # 单个推，别
 
 | 日期 | 版本 | 设备 | 结论 | 发现的问题 |
 |---|---|---|---|---|
-| 2026-11-13 | 0.3.10（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 11 步、`check-pages` 9/9、`smoke` 18 项） | 修复 0.3.9 验收发现的 8 项；新增 §4.4 动效验收项 |
+| 2026-11-13 | 0.3.10（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 11 步（当时；现为 12 步）、`check-pages` 9/9、`smoke` 18 项） | 修复 0.3.9 验收发现的 8 项；新增 §4.4 动效验收项 |
 | 2026-11-13 | 0.3.11（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（screencast 亮度曲线：首页→目录 `21→10→0.3→13→21`；返回 `21→0.2→12→18→21`） | 已知限制：返回手势的"离开帧"由浏览器接管（瞬黑 + 淡入） |
 | 2026-11-13 | 0.3.9（debug） | MuMu 模拟器 · Android 15 · 1080×2340@440dpi · 440dpi | ✅ 通过（`smoke` 18/18、`check-pages` 9/9；§4 各项均达标） | 8 项：首页按钮被 CSS 重置字号而换行、demo 解析不合规致折叠不可见、`verify` 报错不指路、`lucubratio-probe` 库残留、ROADMAP 复跑措辞过时、`QUESTION_RULES` 描述不准、术语混用、`toc.js` 兜底静默 → 均已在 **0.3.10** 修复 |

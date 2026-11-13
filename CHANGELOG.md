@@ -19,6 +19,31 @@
   但表格里私有仓库是允许的，自相矛盾）；自查清单拆成「两仓库通用」与「仅公开仓库」两组
   （原来那条 `content/os/ | grep -v _demo_` 空检查会让私有仓库永远"不达标"）
 
+## [0.3.13] - 2026-11-13
+
+### 文档（生成技能与仓库实现对齐）
+
+- **`SKILL.md §5 校验` 补上题目自检**：`build → verify → self-check-quizzes → pack → verify-package`
+  五步；并注明 `self-check-quizzes` 是**硬门**（有「检测 N」却没解析块即失败；
+  `--allow-nonblockquote` 只给历史内容用）
+- **`SKILL.md §3` 增加「落盘前必须配自评规则」**：按页 cid 在 `QUESTION_RULES` 加
+  `'os-XX': { level: 3, test: /^检测\s*\d+/ }`；否则 build 不打 `data-qid`、`verify` 直接失败。
+  同时写入「硬规则」第 10 条
+- **`SKILL.md §1`**：抽取命令补 `--low-text` 说明（默认 200 已会标出低文字有图页）
+- **`pitfalls.md` 补 3 类新错误**：`缺少解析块`（self-check 硬失败）、
+  `包内有 N 张未被页面引用的图片`（verify-package 第 12 项）、`DOM id 可疑`（verify 警告）
+- **`prompts.md`** 检查清单加「解析首句必须是 X 对」（`self-check-quizzes` 的答案判定依赖它）
+- **`docs/skill/README.md`** 安装命令改为显式拷贝 6 个文件（原来 `cp *.md` 会把 README 也塞进技能目录）
+- **README / AGENTS.md**：`test:all` 步数 11 → **12**（新增导航守则）；README 命令表补 `npm run check:nav`
+- **ROADMAP** 阶段 4 补 0.3.12；**DEVICE-CHECKLIST** 的历史记录标注「当时 11 步」，避免与新口径混淆
+
+### 修复
+
+- **`check-nav.mjs` 跳过 `vendor/` 与 `*.min.js`**：此前每次都要整读 5.4MB 的 `mermaid.min.js`；
+  升级 mermaid 版本时一旦库内部出现 `location.href` 就会误报（扫描文件数 27 → 25）
+- **`web/shell/nav.js` 头部注释修正**：原文写「Android 15 的 WebView 支持 View Transitions」，
+  实测 WebView 110 **不支持**；并说明 `data-nav-kind` 只在 VT 生效时用于决定滑入方向
+
 ## [0.3.12] - 2026-11-13
 
 ### 修复
