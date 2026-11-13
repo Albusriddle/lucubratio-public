@@ -66,18 +66,14 @@
 
 <div class="box" id="box">
   <span class="ico">🔍</span>
-  <input id="q" type="search" placeholder="搜考点、术语、题目…（如 fork / MLFQ / 僵尸）"
+  <input id="q" type="search" placeholder="搜考点、术语、题目…"
          autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
   <button class="clear" id="clear" aria-label="清空">✕</button>
 </div>
 
 <div class="hint" id="hint"></div>
 <div class="results" id="results"></div>
-<div class="tips" id="tips" hidden>
-  <b>试试这些：</b><br>
-  <a href="?q=fork">fork</a> · <a href="?q=MLFQ">MLFQ</a> · <a href="?q=僵尸">僵尸</a> ·
-  <a href="?q=周转时间">周转时间</a> · <a href="?q=彩票">彩票</a>
-</div>
+<div class="tips" id="tips" hidden></div>
 
 <script type="module" src="/shell/search.js"></script>
 <script src="/shell/nav.js"></script>

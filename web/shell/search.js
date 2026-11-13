@@ -18,6 +18,41 @@ import { loadSearchIndex } from './library.js';
   var loading = null;
   var timer = null;
 
+  /* 示例词：从当前索引的小节标题里按词频取 5 个
+     为什么动态生成：写死的示例只能服务一门课（曾写死 fork/MLFQ/僵尸，换到计算机网络课就是误导） */
+  function buildTips(j) {
+    var box = $('tips');
+    if (!box) return;
+    var heads = (j && j.sections ? j.sections : [])
+      .map(function (s) { return s.h || ''; })
+      .filter(Boolean);
+    var freq = {};
+    function add(t) {
+      t = (t || '').trim();
+      if (t.length < 2 || t.length > 8) return;
+      freq[t] = (freq[t] || 0) + 1;
+    }
+    heads.forEach(function (h) {
+      (h.match(/[A-Za-z][A-Za-z0-9.\-]{1,}/g) || []).forEach(add);
+      (h.match(/[\u4e00-\u9fa5]{2,10}/g) || []).forEach(function (seg) {
+        var max = Math.min(4, seg.length);
+        for (var n = 2; n <= max; n++) {
+          for (var i = 0; i + n <= seg.length; i++) add(seg.slice(i, i + n));
+        }
+      });
+    });
+    var stop = /^(的|了|是|在|和|与|或|我们|可以|这个|一个|什么|怎么|为什么|以及|还有|其他|第一|第二|小结)$/;
+    var words = Object.keys(freq)
+      .filter(function (w) { return freq[w] >= 2 && !/^\d+$/.test(w) && !stop.test(w); })
+      .sort(function (a, b) { return freq[b] - freq[a] || b.length - a.length; })
+      .slice(0, 5);
+    if (!words.length) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = '<b>试试这些：</b><br>' + words.map(function (w) {
+      return '<a href="?q=' + encodeURIComponent(w) + '">' + w + '</a>';
+    }).join(' · ');
+  }
+
   function loadIndex() {
     if (index) return Promise.resolve(index);
     if (loading) return loading;
@@ -25,6 +60,7 @@ import { loadSearchIndex } from './library.js';
     loading = loadSearchIndex()
       .then(function (j) {
         index = j;
+        buildTips(j);
         return j;
       })
       .catch(function (e) {
