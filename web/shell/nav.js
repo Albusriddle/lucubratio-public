@@ -23,15 +23,15 @@
 
   function navigate(url, kind) {
     root.setAttribute('data-nav-kind', kind);
-    if (!canVT || reduce) {
-      location.href = url;
-      return;
+    // 有 VT 用 VT（更细腻，且能按方向滑动）；没有就交给 boot.js 的幕布淡出
+    if (canVT && !reduce) {
+      try {
+        document.startViewTransition(function () { location.href = url; });
+        return;
+      } catch (e) { /* 落到幕布 */ }
     }
-    try {
-      document.startViewTransition(function () { location.href = url; });
-    } catch (e) {
-      location.href = url;
-    }
+    if (window.saLeave) { window.saLeave(url); return; }
+    location.href = url;
   }
 
   document.addEventListener('click', function (e) {

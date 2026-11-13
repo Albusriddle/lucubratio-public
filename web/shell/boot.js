@@ -72,3 +72,109 @@
     if (window.indexedDB && indexedDB.deleteDatabase) indexedDB.deleteDatabase('lucubratio-probe');
   } catch (e) { /* 忽略 */ }
 })();
+
+/* ============================================================
+   页面切换过渡（幕布淡出 → 淡入）+ 弹窗关闭动画
+   ------------------------------------------------------------
+   为什么不用 View Transitions：本机 Android 15 的 WebView 是 110，
+   document.startViewTransition 为 undefined（跨文档 VT 更要 Chromium 126+），
+   所以走"自己画幕布"这条在 WebView 90+ 都能用的路。
+   如果将来 WebView 支持 VT，这里会自动让位（见 canVT 分支），不会双重动效。
+   ============================================================ */
+(function () {
+  'use strict';
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var canVT = typeof document.startViewTransition === 'function';
+  if (canVT) return;                     // 有 VT 就交给 nav.js 的 VT 分支
+
+  var ID = 'sa-curtain';
+  var CSS = '#' + ID + '{position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.94);' +
+    'opacity:1;pointer-events:none;transition:opacity .12s linear;will-change:opacity}' +
+    '#' + ID + '.is-in{opacity:1;pointer-events:auto}' +
+    '#' + ID + '.is-out{opacity:0;pointer-events:none}' +
+    '@media (prefers-reduced-motion: reduce){#' + ID + '{transition:none}}';
+
+  // 同步插入（在 <head> 里执行）：首帧就是黑的，消掉两页之间的白闪
+  try {
+    if (!document.getElementById(ID + '-css')) {
+      var st = document.createElement('style');
+      st.id = ID + '-css';
+      st.textContent = CSS;
+      (document.head || document.documentElement).appendChild(st);
+    }
+    if (!document.getElementById(ID)) {
+      var el = document.createElement('div');
+      el.id = ID;
+      el.className = 'is-in';
+      el.setAttribute('aria-hidden', 'true');
+      document.documentElement.appendChild(el);
+    }
+  } catch (e) { /* 极端情况下没有样式也不影响功能 */ }
+
+  function curtain() { return document.getElementById(ID); }
+
+  var leaving = false;
+
+  /** 淡入完成：去掉黑幕（内容已在首帧之下就位） */
+  function reveal() {
+    if (leaving) return;            // 已经在离开流程里，别把幕布又改回透明（会让过渡提前结束）
+    var c = curtain();
+    if (!c) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        c.classList.add('is-out');
+        c.classList.remove('is-in');
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', reveal);
+  else reveal();
+
+  function leave(fn) {
+    if (leaving) return;                 // 300ms 内的重复点击直接忽略（防双跳）
+    leaving = true;
+    var c = curtain();
+    if (reduce || !c) { fn(); return; }
+    c.classList.remove('is-out');
+    c.classList.add('is-in');            // 淡出到黑
+    var done = false;
+    // 跳之前**强制黑透**：本机合成分层慢（120ms 过渡常常只跑到 ~0.5），
+    // 若不强制，画面会在半黑状态被切走，看起来像"闪了一下"。
+    var go = function () {
+      if (done) return; done = true;
+      try { c.style.opacity = '1'; } catch (e) {}
+      setTimeout(fn, 24);                // 留一帧让浏览器把纯黑画出来
+    };
+    c.addEventListener('transitionend', function h(e) {
+      if (e.propertyName !== 'opacity') return;
+      if (parseFloat(getComputedStyle(c).opacity) < 0.98) return;
+      c.removeEventListener('transitionend', h);
+      go();
+    });
+    setTimeout(go, 130);                 // 略长于 .12s 过渡；到点无论跑到哪都强制黑透
+  }
+
+  /** 统一跳转入口：所有程序化导航都应走这里 */
+  window.saLeave = function (url) { leave(function () { location.href = url; }); };
+  /** 统一刷新入口 */
+  window.saReload = function () { leave(function () { location.reload(); }); };
+
+  // 返回键 / 返回手势 / 关页面：拦不住"出"，但可以把幕布先置黑，视觉上仍是同一种过渡
+  window.addEventListener('pagehide', function () {
+    var c = curtain();
+    if (c && !reduce) { c.classList.remove('is-out'); c.classList.add('is-in'); }
+  });
+  // bfcache 恢复（返回上一页命中缓存）：必须清掉黑幕，否则停在全黑
+  window.addEventListener('pageshow', function (e) { if (e.persisted) { leaving = false; reveal(); } });
+
+  /** 弹窗关闭动画：本机不支持 transition-behavior:allow-discrete，只能先演再关 */
+  window.saCloseDialog = function (dlg) {
+    if (!dlg || !dlg.open) { try { if (dlg) dlg.close(); } catch (e) {} return; }
+    if (reduce) { dlg.close(); return; }
+    dlg.classList.add('is-closing');
+    setTimeout(function () {
+      try { dlg.close(); } catch (e) {}
+      dlg.classList.remove('is-closing');
+    }, 130);
+  };
+})();

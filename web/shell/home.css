@@ -181,3 +181,15 @@
 .sa-quote-line::before { content: "「"; }
 .sa-quote-line::after { content: "」"; }
 
+
+/* ---------- 弹窗过渡（打开走动画；关闭由 boot.js 的 saCloseDialog 驱动） ----------
+   注意：本文件是 toc.html 真正加载的样式表（toc 不引 shell.css），所以放这里。 */
+@keyframes sa-dlg-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes sa-bd-in  { from { opacity: 0; } to { opacity: 1; } }
+dialog[open] { animation: sa-dlg-in .16s cubic-bezier(.2, 0, 0, 1); }
+dialog[open]::backdrop { animation: sa-bd-in .16s linear; }
+dialog.is-closing { opacity: 0; transform: scale(.96); transition: opacity .12s linear, transform .12s linear; }
+@media (prefers-reduced-motion: reduce) {
+  dialog[open], dialog[open]::backdrop { animation: none; }
+  dialog.is-closing { transition: none; }
+}

@@ -151,7 +151,7 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
       var snap = JSON.parse(text);
       var s = await importSnapshot(snap, { mode: 'replace' });
       toast('导入成功：进度 ' + (s.progress || 0) + ' 条，错题 ' + (s.attempts || 0) + ' 条');
-      setTimeout(function () { location.reload(); }, 900);
+      setTimeout(function () { window.saReload ? window.saReload() : location.reload(); }, 900);
     } catch (e) {
       toast('导入失败：' + (e && e.message));
     }
@@ -234,7 +234,9 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
     await renderStats();
 
     var diagBtn = document.getElementById('btn-diag');
-    if (diagBtn) diagBtn.addEventListener('click', function () { location.href = '/diagnostics.html'; });
+    if (diagBtn) diagBtn.addEventListener('click', function () {
+      if (window.saLeave) window.saLeave('/diagnostics.html'); else location.href = '/diagnostics.html';
+    });
 
     if (document.getElementById('btn-export')) $('btn-export').addEventListener('click', doExport);
     if (document.getElementById('btn-import')) $('btn-import').addEventListener('click', doImport);
@@ -260,7 +262,7 @@ window.__saOnCourseImport = function (res) {
       if (window.saToast) window.saToast(msg);
       else console.log(msg);
       // 课程库渲染在 Step 5 完成；这里先刷新页面让新课程生效
-      setTimeout(function () { location.reload(); }, 600);
+      setTimeout(function () { window.saReload ? window.saReload() : location.reload(); }, 600);
     } else {
       var bad = '导入失败：' + ((res && res.message) || '未知错误');
       if (window.saToast) window.saToast(bad);

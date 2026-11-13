@@ -43,7 +43,9 @@ function confirmAsk(label, sub, kicker, opts) {
       yes.removeEventListener('click', onYes);
       no.removeEventListener('click', onNo);
       dlg.removeEventListener('cancel', onNo);
-      if (dlg.open) dlg.close();
+      // 关闭也带动画（本机不支持 allow-discrete，交给 boot.js 先演后关）
+      if (window.saCloseDialog) window.saCloseDialog(dlg);
+      else if (dlg.open) dlg.close();
       resolve(v);
     }
     function onYes() { done(true); }
@@ -66,12 +68,9 @@ async function jump(file, anchor, label, sub) {
   const ok = await confirmAsk(label, sub, '跳转到');
   if (!ok) return;
   const url = file + (anchor ? '#' + anchor : '');
-  if (typeof document.startViewTransition === 'function') {
-    document.documentElement.setAttribute('data-nav-kind', 'forward');
-    document.startViewTransition(() => { location.href = url; });
-  } else {
-    location.href = url;
-  }
+  document.documentElement.setAttribute('data-nav-kind', 'forward');
+  if (window.saLeave) window.saLeave(url);
+  else location.href = url;
 }
 
 /** 删除一门导入课程（原生删文件 + 本地清数据） */
@@ -92,7 +91,8 @@ async function deleteCourse(course) {
     const res = JSON.parse(bridge.deleteCourse(course.id) || '{}');
     if (!res.ok) throw new Error(res.message || '删除失败');
     await deleteCourseData(course.id);
-    location.reload();
+    if (window.saReload) window.saReload();
+    else location.reload();
   } catch (e) {
     notify('删除失败：' + ((e && e.message) || e));
   }
