@@ -116,7 +116,8 @@ for (const [family, info] of [...families].sort((a, b) => a[0].localeCompare(b[0
 }
 
 for (const r of required) {
-  const hit = files.some((f) => f.replace(/\.md$/, '') === r || f.startsWith(r));
+  // 严格相等：先剥掉 -rN 轮次后缀，再比家族名（避免 gate-ch1 误匹配 gate-ch10）
+  const hit = files.some((f) => f.replace(/\.md$/, '').replace(/-r\d+$/, '') === r);
   if (!hit) fails.push(`缺少必需门禁记录：${r}`);
 }
 

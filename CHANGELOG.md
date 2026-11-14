@@ -19,6 +19,26 @@
   但表格里私有仓库是允许的，自相矛盾）；自查清单拆成「两仓库通用」与「仅公开仓库」两组
   （原来那条 `content/os/ | grep -v _demo_` 空检查会让私有仓库永远"不达标"）
 
+## [0.3.16] - 2026-11-14
+
+### 修复（第十一轮审阅 8 项）
+
+- **搜索示例词质量**（0.3.14 引入的回归）：按词频 n-gram 切词会产出「本仓库的」「错点」这类碎片。
+  改为**按标点切完整词段**：只收 2–4 字中文或 ≥2 字母英文、英文按小写去重、过滤结构词，
+  需出现 ≥2 次且凑满 3 个才显示，否则整块隐藏。实测：公开 demo → 隐藏；计算机网络包 → `TCP/DNS/UDP/ARP/Packet`。
+- **示例词未转义**：拼 `innerHTML` 前走 `escapeHtml()`，与文件其余渲染一致。
+- **清空搜索框露出空提示块**：空 token 分支改为 `tips.hidden = !tips.innerHTML.trim()`。
+- **统计页链接对比度**：`#1f6feb`（深色 4.08:1 / 浅色 4.48:1，均低于 AA）改为 `var(--accent2)` + 加粗
+  （深色主题下为 `#6fb6ff`，8.83:1）。
+- **`check-gates` 必需门禁严格匹配**：`startsWith` 会让 `gate-ch1` 误配 `gate-ch10`，改为剥 `-rN` 后严格相等；
+  已用「只有 gate-ch10」的用例验证会正确失败。
+
+### 文档与技能
+
+- `README.md` / `AGENTS.md`：`test:all` 步数 12 → **13**；`DEVICE-CHECKLIST` 历史注同步。
+- `docs/ROADMAP.md` 补 0.3.14 / 0.3.15 两行；`DEVICE-CHECKLIST §6` 补两条真机验收记录。
+- `docs/skill/quality-gate.md` 补 `check-gates` 用法；`SKILL.md` 补 `lint-fragment --section-cite`（无页码材料）。
+
 ## [0.3.15] - 2026-11-14
 
 ### 修复（复习入口缺失）

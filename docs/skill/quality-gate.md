@@ -2,7 +2,7 @@
 
 > **铁律**：任何一道复核门禁只要发现问题，就判这道门不通过；修完之后**必须重走同一道门禁**，
 > 直到零问题。禁止「修完直接下一步」。机械门禁（`verify` / `test:all` / `lint-fragment` /
-> `self-check-quizzes` / `verify-package`）同理：改完要重新跑，不能拿改动前的绿灯充数。
+> `self-check-quizzes` / `verify-package` / `check-gates`）同理：改完要重新跑，不能拿改动前的绿灯充数。
 
 # 质量门：双盲生成 + 复核
 

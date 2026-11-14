@@ -18,38 +18,45 @@ import { loadSearchIndex } from './library.js';
   var loading = null;
   var timer = null;
 
-  /* 示例词：从当前索引的小节标题里按词频取 5 个
-     为什么动态生成：写死的示例只能服务一门课（曾写死 fork/MLFQ/僵尸，换到计算机网络课就是误导） */
+  /* 示例词：从当前索引的小节标题里取「完整词段」按词频选 5 个
+     为什么这么做：写死的示例只能服务一门课；而按 n-gram 滑窗又会切出「错点」「本仓库的」
+     这类碎片（0.3.14 的教训）。这里的规则是：标题按标点切段 → 去编号 → 只收 2–4 字中文
+     或 ≥2 字母英文 → 过滤结构词 → 需出现 ≥2 次；凑不满 3 个就整块隐藏，宁可不给也不给废话。 */
+  var TIP_STOP = {};
+  ('检测 易错点 选择题 填空题 计算题 简答题 满分 分钟 清单 约为 格式 关于 本仓库 自评单元 ' +
+   '本章讲什么 正文展开 随堂检测 实验步骤清单 自测方式 怎么用这张卡 必背结论 小结 总结 本节 习题 练习')
+    .split(' ').forEach(function (w) { TIP_STOP[w] = 1; });
+
   function buildTips(j) {
     var box = $('tips');
     if (!box) return;
-    var heads = (j && j.sections ? j.sections : [])
-      .map(function (s) { return s.h || ''; })
-      .filter(Boolean);
-    var freq = {};
-    function add(t) {
-      t = (t || '').trim();
-      if (t.length < 2 || t.length > 8) return;
-      freq[t] = (freq[t] || 0) + 1;
-    }
-    heads.forEach(function (h) {
-      (h.match(/[A-Za-z][A-Za-z0-9.\-]{1,}/g) || []).forEach(add);
-      (h.match(/[\u4e00-\u9fa5]{2,10}/g) || []).forEach(function (seg) {
-        var max = Math.min(4, seg.length);
-        for (var n = 2; n <= max; n++) {
-          for (var i = 0; i + n <= seg.length; i++) add(seg.slice(i, i + n));
-        }
+    var freq = {}, order = [];
+    (j && j.sections ? j.sections : []).forEach(function (sec) {
+      var h = String((sec && sec.h) || '').replace(/^\s*[\d一二三四五六七八九十]+([.\-、]\d*)*\s*/, '');
+      h.split(/[\s，,。.、；;：:（）()\[\]【】「」“”"'’/·\-—]+/).forEach(function (seg) {
+        seg = seg.trim();
+        if (!seg || TIP_STOP[seg]) return;
+        if (seg.length < 2 || seg.length > 6) return;
+        var isEn = /^[A-Za-z][A-Za-z0-9.\-]+$/.test(seg);
+        var isZh = /^[\u4e00-\u9fa5]{2,4}$/.test(seg);
+        if (!isEn && !isZh) return;
+        var key = isEn ? seg.toLowerCase() : seg;   // 英文去重不区分大小写，显示保留首次形态
+        if (!freq[key]) { freq[key] = { n: 0, s: seg }; order.push(key); }
+        freq[key].n += 1;
       });
     });
-    var stop = /^(的|了|是|在|和|与|或|我们|可以|这个|一个|什么|怎么|为什么|以及|还有|其他|第一|第二|小结)$/;
-    var words = Object.keys(freq)
-      .filter(function (w) { return freq[w] >= 2 && !/^\d+$/.test(w) && !stop.test(w); })
-      .sort(function (a, b) { return freq[b] - freq[a] || b.length - a.length; })
-      .slice(0, 5);
-    if (!words.length) { box.hidden = true; return; }
+    var words = order
+      .filter(function (k) { return freq[k].n >= 2; })
+      .sort(function (a, b) {
+        return freq[b].n - freq[a].n || freq[a].s.length - freq[b].s.length;
+      })
+      .slice(0, 5)
+      .map(function (k) { return freq[k].s; });
+    if (words.length < 3) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
     box.innerHTML = '<b>试试这些：</b><br>' + words.map(function (w) {
-      return '<a href="?q=' + encodeURIComponent(w) + '">' + w + '</a>';
+      var text = typeof escapeHtml === 'function' ? escapeHtml(w) : w;   // 标题来自内容包，一律按文本插入
+      return '<a href="?q=' + encodeURIComponent(w) + '">' + text + '</a>';
     }).join(' · ');
   }
 
@@ -128,7 +135,8 @@ import { loadSearchIndex } from './library.js';
     if (!tokens.length) {
       box.innerHTML = '';
       $('hint').textContent = '';
-      tips.hidden = false;
+      // 只有当示例块真的有内容时才显示（buildTips 可能因「没有合适词」把它清空并隐藏）
+      tips.hidden = !tips.innerHTML.trim();
       return;
     }
     tips.hidden = true;
