@@ -250,6 +250,11 @@
   }
 
   function sizeFromSvg(svg) {
+    // 优先用渲染时记录的自然尺寸：页面里可能为了不占满屏幕把图等比缩小过，
+    // 放大查看必须回到原始大小，否则「放大」等于放大缩略图。
+    var dw = Number((svg.dataset && svg.dataset.nw) || 0);
+    var dh = Number((svg.dataset && svg.dataset.nh) || 0);
+    if (dw > 4 && dh > 4) return { w: Math.round(dw), h: Math.round(dh) };
     var r = svg.getBoundingClientRect();
     var vb = svg.viewBox && svg.viewBox.baseVal;
     var w = (r && r.width > 4) ? r.width : (vb && vb.width ? vb.width : 0);

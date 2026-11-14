@@ -90,17 +90,26 @@
   function decorate(el) {
     var svg = el.querySelector('svg');
     if (!svg) return;
-    // 按 viewBox 给 SVG 定「自然尺寸」，再用 max-width 限宽。
-    // 为什么：mermaid 默认 useMaxWidth 会把窄图按容器等比放大（4 节点竖排图被拉到整屏、
-    // 字号几十 px）；而单纯 CSS width:auto 对无固有尺寸的 SVG 又会退化成 100%，等于没修。
+    // 按 viewBox 定「自然尺寸」，再按容器宽 + 高度上限等比缩放。
+    // 为什么：
+    //   1) mermaid 默认 useMaxWidth 会把窄图按容器等比放大（4 节点竖排图被拉到整屏）；
+    //   2) 单纯 CSS width:auto 对无固有尺寸的 SVG 会退化成 100%，等于没修；
+    //   3) 很高的图（多节点流程）如果只限高 + 滚动，学生要在一屏里滚着看，不如整体缩小——
+    //      右下角还有 ⤢ 放大查看，缩略图只需保持"看得清结构"。
+    // 自然尺寸同时写进 data-nw/nh，供 diagram-viewer 打开时还原原始大小。
     try {
       var vb = svg.viewBox && svg.viewBox.baseVal;
       if (vb && vb.width > 0) {
+        var maxW = el.clientWidth || 720;   // 容器可用宽（渲染回调里已有 layout）
+        var maxH = 520;                     // 与 shell.css 的 .mermaid 限高一致
+        var k = Math.min(1, maxW / vb.width, maxH / vb.height);
         svg.removeAttribute('width');
         svg.removeAttribute('height');
-        svg.style.width = vb.width + 'px';
-        svg.style.height = 'auto';
+        svg.style.width = (vb.width * k) + 'px';
+        svg.style.height = (vb.height * k) + 'px';
         svg.style.maxWidth = '100%';
+        svg.dataset.nw = String(Math.round(vb.width));
+        svg.dataset.nh = String(Math.round(vb.height));
       }
     } catch (e) { /* 老 WebView 没有 viewBox.baseVal 时保持原样 */ }
     svg.setAttribute('role', 'img');
