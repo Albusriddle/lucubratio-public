@@ -171,6 +171,9 @@ import { loadSearchIndex } from './library.js';
     if (q) box.classList.add('has-value'); else box.classList.remove('has-value');
 
     if (!q) {
+      // 空查询也要预热索引：示例词（buildTips）挂在 loadIndex 的成功回调里，
+      // 不预热的话「刚进页面」永远看不到示例词，只有打过字再清空才出现。
+      loadIndex().catch(function () {});
       render([], []);
       return;
     }
