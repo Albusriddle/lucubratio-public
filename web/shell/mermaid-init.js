@@ -101,7 +101,9 @@
       var vb = svg.viewBox && svg.viewBox.baseVal;
       if (vb && vb.width > 0) {
         var maxW = el.clientWidth || 720;   // 容器可用宽（渲染回调里已有 layout）
-        var maxH = 520;                     // 与 shell.css 的 .mermaid 限高一致
+        // 上限取「520 与视口高 68% 的较小值」：横屏视口只有 ~369px，
+        // 写死 520 会让图几乎占满一屏、仍看不到全貌；竖屏则仍按 520 封顶。
+        var maxH = Math.min(520, Math.round((window.innerHeight || 720) * 0.68));
         var k = Math.min(1, maxW / vb.width, maxH / vb.height);
         svg.removeAttribute('width');
         svg.removeAttribute('height');
@@ -142,6 +144,18 @@
   function isRendered(el) {
     return el.getAttribute('data-rendered') === '1';
   }
+
+  /* 旋转/改变窗口后重算尺寸：decorate() 只按当时的视口算过，
+     横竖屏切换不重算的话会停留在旧上限上。 */
+  var resizeTimer = null;
+  function refitAll() {
+    var done = document.querySelectorAll('.mermaid[data-rendered="1"]');
+    for (var i = 0; i < done.length; i++) decorate(done[i]);
+  }
+  window.addEventListener('resize', function () {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(refitAll, 180);   // resize 重定尺
+  });
 
   function setup() {
     nodes = Array.prototype.slice.call(document.querySelectorAll('.mermaid'));

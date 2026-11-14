@@ -34,7 +34,8 @@ pre {
 /* Mermaid 图在窄屏/竖排时会很高：给容器限高并允许滚动，避免一张图占满整屏。
    （尺寸的根因是 mermaid 按容器宽渲染，短期用「限高 + 可滚 + 放大按钮」更稳） */
 .mermaid {
-  max-height: 520px;
+  /* 上限与 mermaid-init.js 的 maxH 保持一致：小屏（横屏 369px 高）不能让图占满整屏 */
+  max-height: min(520px, 68vh);
   overflow: auto;
 }
 .mermaid svg {
