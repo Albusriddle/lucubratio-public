@@ -7,6 +7,44 @@
 
 ## [Unreleased]
 
+## [0.3.24] - 2026-11-14
+
+### 修复（返回键：图片放大层/抽屉会"退出课程"）
+
+**现象**：打开课件截图放大后按返回（手势或按键），直接离开课程回到目录，而不是只关图片。
+
+**根因（两个实测坑，都在本机 WebView 110 上复现）**：
+
+1. `webView.goBack()` 对**应用内 `location.href` 跳转**是**空操作**：
+   `copyBackForwardList()` 显示 `idx=1/2`，调 `goBack()` 后 1 秒 URL 仍不变；
+   而同一个状态下 JS 的 `history.back()` 能正常跨文档回退（实测 idx 1→0）。
+2. `webView.canGoBack()` 在同样状态下**误报 `false`**（与 `getCurrentIndex()` 矛盾），
+   所以原来的 `if (canGoBack) goBack()` 既判断错、动作也无效。
+
+**修法**：
+
+- `MainActivity.onBackPressed` 改为三级：① 先 `evaluateJavascript` 问网页
+  `window.__saOnBack()`（返回布尔）→ 消费了就结束；② 否则用 `history.back()`（JS，可靠）；
+  ③ 都没有才走"再按一次退出"
+- `boot.js` 新增返回键桥：`saOnBack(fn)` 注册 / `__saOnBack()` 供 Java 调用
+- `diagram-viewer.js`（图片/图表放大层）与 `page.js`（目录抽屉）在打开时注册、关闭时注销
+- 历史判断改用 `copyBackForwardList().getCurrentIndex() > 0`（`canGoBack()` 不可信）
+
+> 注意：`__saOnBack` 必须返回**布尔**——曾返回 `'0'/'1'` 字符串，而 `'0'` 在 JS 里是真值，
+> Java 侧 `(fn && fn()) ? '1' : '0'` 就永远得到 `'1'`，返回键被全部吞掉（已修）。
+
+### 验证（真机 MuMu / Android 15 / WebView 110）
+
+| 操作 | 结果 |
+|---|---|
+| 开图 → 返回 | 只关图片，URL 仍是 `/content/...` ✅ |
+| 再返回 | 回到封面 `/` ✅ |
+| 开抽屉 → 返回 | 只关抽屉，URL 不变 ✅ |
+| 再返回 | 回到封面 ✅ |
+| 无覆盖层时返回 | 正常回上一页；在封面则"再按一次退出" ✅ |
+
+`test:all` 13 步、`check-pages` 9/9、`smoke` 18 项 全绿。
+
 ## [0.3.23] - 2026-11-14
 
 ### 规范与工具（承接上一批未发版改动）

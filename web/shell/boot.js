@@ -201,3 +201,38 @@
     }, 130);
   };
 })();
+
+/* ============================================================
+   原生返回键桥（MainActivity.onBackPressed → window.__saOnBack）
+   ------------------------------------------------------------
+   为什么不能只靠 pushState：实测本机 WebView 的 goBack() **不认 pushState 条目**
+   ——压了一条历史后按返回，直接回到上一个文档（等于退出课程），popstate 都不触发。
+   所以覆盖层（图片/图表放大、目录抽屉）必须由 Java 先问 JS 能不能消费。
+   浏览器预览没有 Java，退回 pushState + popstate（浏览器是认的）。
+   ============================================================ */
+(function () {
+  'use strict';
+  var stack = [];
+  window.__saBackStack = stack;
+
+  /** 注册「返回键先关我」，返回注销函数 */
+  window.saOnBack = function (fn) {
+    stack.push(fn);
+    return function () {
+      var i = stack.indexOf(fn);
+      if (i >= 0) stack.splice(i, 1);
+    };
+  };
+
+  /** 供 Java 调用：true = 已被网页消费，false = 交给原逻辑
+      注意必须返回 **布尔**：曾经返回 '0'/'1' 字符串，而 '0' 在 JS 里是真值，
+      Java 侧的 `(fn && fn()) ? '1' : '0'` 就永远得到 '1'，返回键被全吞。 */
+  window.__saBackCalls = 0;   // 诊断用：Java 每问一次 +1
+  window.__saOnBack = function () {
+    window.__saBackCalls++;
+    if (!stack.length) return false;
+    var fn = stack[stack.length - 1];
+    try { fn(); } catch (e) { /* 关不掉也不能把返回键吞掉 */ }
+    return true;
+  };
+})();

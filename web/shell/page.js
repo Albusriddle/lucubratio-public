@@ -200,6 +200,7 @@ import { fmtDue } from './time.js';
   var sidebar = document.getElementById('sidebar');
   if (!sidebar) sidebar = buildDrawer();
   var navPushed = false;
+  var navUnreg = null;   // 返回键桥注销函数
 
   function openNav() {
     body.classList.add('sa-nav-open');
@@ -207,6 +208,8 @@ import { fmtDue } from './time.js';
     if (!navPushed) {
       try { history.pushState({ saNav: 1 }, ''); navPushed = true; } catch (e) { /* ignore */ }
     }
+    // 原生返回键：先关抽屉（WebView 的 goBack 不认 pushState，必须走 JS 桥）
+    if (!navUnreg && window.saOnBack) navUnreg = window.saOnBack(function () { closeNav(false); });
     focusCurrentChapter(sidebar);
   }
 
@@ -214,6 +217,7 @@ import { fmtDue } from './time.js';
     var wasOpen = body.classList.contains('sa-nav-open');
     body.classList.remove('sa-nav-open');
     if (!wasOpen) return;
+    if (navUnreg) { navUnreg(); navUnreg = null; }
     if (navPushed) {
       navPushed = false;
       if (!viaHistory) {

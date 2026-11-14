@@ -18,6 +18,9 @@
   var RATIO = 1.5;  // 每按一次放大/缩小 1.5 倍
 
   var overlay = null;
+  // 返回键集成：打开查看器时压一条历史，返回键先关查看器（与抽屉同一套机制）
+  var viewerPushed = false;
+  var unregBack = null;   // 返回键桥的注销函数
   var stage = null;
   var content = null;
   var zoomLabel = null;
@@ -268,6 +271,13 @@
 
   function open(source, title) {
     build();
+    if (!unregBack && window.saOnBack) {
+      unregBack = window.saOnBack(function () { close(false); });
+    }
+    if (!viewerPushed) {
+      // 一条历史 = 一次「返回键只关查看器」。失败（如沙箱禁用）也不影响放大功能
+      try { history.pushState({ saViewer: 1 }, ''); viewerPushed = true; } catch (e) { /* ignore */ }
+    }
     content.innerHTML = '';
     content.style.transform = 'none';
     initialCap = 1;
@@ -363,14 +373,44 @@
     content.innerHTML = '<div class="sa-viewer-tip">这个图表暂时无法放大，请在页面内横向滑动查看。</div>';
   }
 
-  function close() {
-    if (!overlay) return;
+  function close(viaHistory) {
+    // close 也被直接注册成事件监听器（✕ 按钮），此时第一个参数是 event，
+    // 必须归一化成 boolean，否则会被误判为"从历史返回"，跳过 history.back()
+    if (viaHistory && typeof viaHistory === 'object') viaHistory = false;
+    if (!overlay || overlay.hidden) return;
     overlay.hidden = true;
     content.innerHTML = '';
     content.style.transform = 'none';
     initialCap = 1;
     document.body.style.overflow = '';
+    if (unregBack) { unregBack(); unregBack = null; }
+    if (viewerPushed) {
+      viewerPushed = false;
+      // 点 ✕ / 点遮罩 / ESC 关闭时，把自己压的那条历史退掉，避免条累积；
+      // 返回键关闭时（viaHistory）已经退过了，不能再 back 一次，否则会连退两页。
+      if (!viaHistory) {
+        try { history.back(); } catch (e) { /* ignore */ }
+      }
+    }
   }
+
+  /* 返回键 / 返回手势：popstate 时若查看器还开着，只关查看器，不离开课程。
+     注意 popstate 的 e.state 是"目标条目"的状态，不能拿它判断，必须看 DOM 现状。 */
+  window.addEventListener('popstate', function () {
+    if (overlay && !overlay.hidden) close(true);
+  });
+
+  /* ESC 也能关（桌面/外接键盘场景），与点 ✕ 同一条路径 */
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    // 缩放输入框自己处理 ESC（取消输入），不要顺带把整层关掉
+    var t = e.target;
+    if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    if (overlay && !overlay.hidden) {
+      e.preventDefault();
+      close(false);
+    }
+  });
 
   function titleOf(el) {
     var fig = el.closest ? el.closest('figure') : null;

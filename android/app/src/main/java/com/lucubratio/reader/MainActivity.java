@@ -14,6 +14,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebView;
 import android.widget.Toast;
 
@@ -395,13 +396,39 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * 返回键：优先网页历史，其次两次返回退出。
+     * 返回键：先问网页能不能消费（图片/图表放大层、目录抽屉），再回退历史，最后两次返回退出。
+     *
+     * 两个实测坑（本机 WebView 110）：
+     *  1) webView.goBack() 对「应用内 location.href 跳转」是**空操作**：idx=1/2 时调 goBack()，
+     *     1 秒后 URL 仍不变；而 JS 的 history.back() 能正常跨文档回退（实测 idx 1→0）。
+     *  2) webView.canGoBack() 在同一状态下返回 false（与 copyBackForwardList().getCurrentIndex() 矛盾），
+     *     所以历史判断改用 getCurrentIndex()。
      * TODO(P7): targetSdk 升到 36 前迁移到 OnBackPressedDispatcher（manifest 已显式关闭预测返回）。
      */
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
+        if (webView == null) {
+            fallbackBack();
+            return;
+        }
+        webView.evaluateJavascript("(window.__saOnBack && window.__saOnBack()) ? '1' : '0'", value -> {
+            boolean consumed = value != null && value.contains("1");
+            if (!consumed) fallbackBack();
+        });
+    }
+
+    /** 历史里是否还有上一页（不用 canGoBack：本机它会误报 false） */
+    private boolean canGoBackReliable() {
+        if (webView == null) return false;
+        WebBackForwardList bfl = webView.copyBackForwardList();
+        return bfl != null && bfl.getCurrentIndex() > 0;
+    }
+
+    /** 网页没有消费返回键时的原逻辑 */
+    private void fallbackBack() {
+        if (canGoBackReliable()) {
+            // 必须走 JS：webView.goBack() 对应用内跳转是空操作（见方法注释）
+            webView.evaluateJavascript("history.back()", null);
             return;
         }
         long now = System.currentTimeMillis();
