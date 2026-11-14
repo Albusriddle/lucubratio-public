@@ -34,9 +34,19 @@ pre {
 /* Mermaid 尺寸由 mermaid-init.js 的 decorate() 负责（按 viewBox × k 定尺，k 受容器宽与 68vh 限制）。
    这里只给容器留一个兜底上限；不要在 svg 上写 max-height/width —— 会与 JS 的内联尺寸打架。 */
 .mermaid {
-  /* 上限与 mermaid-init.js 的 maxH 保持一致：小屏（横屏 369px 高）不能让图占满整屏 */
+  /* 一屏内看全：容器与 SVG 都用同一个高度上限（min(520px, 68vh)）。
+     横屏手机视口只有 ~369px 高，写死 520 会让图占满整屏。 */
   max-height: min(520px, 68vh);
-  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+/* 关键：mermaid 会给 svg 写 inline width:100%，必须用 !important 才压得住；
+   再配 width/height:auto，浏览器会按 SVG 的固有比例（viewBox）等比缩到 max-height。 */
+.mermaid svg {
+  width: auto !important;
+  height: auto !important;
+  max-height: min(520px, 68vh) !important;
+  max-width: 100% !important;
 }
 
 /* 表格：只有它允许横滑（build 会统一包一层 .table-wrap） */

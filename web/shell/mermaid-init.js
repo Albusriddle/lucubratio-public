@@ -87,47 +87,17 @@
     return libPromise;
   }
 
-  /* 图的高度上限：与 shell.css 的 .mermaid{max-height:min(520px,68vh)} 同口径。
-     为什么不用 window.innerHeight：WebView（尤其 edge-to-edge 的 targetSdk 35）里它和
-     CSS 的 vh 不一定一致，实测按 innerHeight 算出来的上限仍让图占满一屏。
-     这里放一个 68vh 的隐藏探针，用同一条 CSS 管线量真实像素高度。 */
-  function heightCap() {
-    var px = 0;
-    try {
-      var probe = document.createElement('div');
-      probe.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:68vh;pointer-events:none';
-      (document.body || document.documentElement).appendChild(probe);
-      px = probe.clientHeight || 0;
-      if (probe.parentNode) probe.parentNode.removeChild(probe);
-    } catch (e) { px = 0; }
-    if (!px) px = Math.round((window.innerHeight || 720) * 0.68);
-    return Math.min(520, px);
-  }
-
   function decorate(el) {
     var svg = el.querySelector('svg');
     if (!svg) return;
-    // 按 viewBox 定「自然尺寸」，再按容器宽 + 高度上限等比缩放。
-    // 为什么：
-    //   1) mermaid 默认 useMaxWidth 会把窄图按容器等比放大（4 节点竖排图被拉到整屏）；
-    //   2) 单纯 CSS width:auto 对无固有尺寸的 SVG 会退化成 100%，等于没修；
-    //   3) 很高的图（多节点流程）如果只限高 + 滚动，学生要在一屏里滚着看，不如整体缩小——
-    //      右下角还有 ⤢ 放大查看，缩略图只需保持"看得清结构"。
-    // 自然尺寸同时写进 data-nw/nh，供 diagram-viewer 打开时还原原始大小。
+    // 尺寸交给 CSS（见 shell.css 的 .mermaid svg 规则）：按 viewBox 固有比例缩到高度上限。
+    // 为什么不在 JS 里算：mermaid 的 viewBox 本身就是按容器宽渲染出来的，
+    // 「相对 viewBox 缩放」等于没缩（真机验证过两轮）。这里只记录原始尺寸给放大查看器。
     try {
       var vb = svg.viewBox && svg.viewBox.baseVal;
       if (vb && vb.width > 0) {
-        var maxW = el.clientWidth || 720;   // 容器可用宽（渲染回调里已有 layout）
-        var maxH = heightCap();
-        var k = Math.min(1, maxW / vb.width, maxH / vb.height);
-        svg.removeAttribute('width');
-        svg.removeAttribute('height');
-        svg.style.width = (vb.width * k) + 'px';
-        svg.style.height = (vb.height * k) + 'px';
-        svg.style.maxWidth = '100%';
         svg.dataset.nw = String(Math.round(vb.width));
         svg.dataset.nh = String(Math.round(vb.height));
-        svg.dataset.k = k.toFixed(3);      // 便于排查「为什么图这么大/这么小」
       }
     } catch (e) { /* 老 WebView 没有 viewBox.baseVal 时保持原样 */ }
     svg.setAttribute('role', 'img');
@@ -160,18 +130,6 @@
   function isRendered(el) {
     return el.getAttribute('data-rendered') === '1';
   }
-
-  /* 旋转/改变窗口后重算尺寸：decorate() 只按当时的视口算过，
-     横竖屏切换不重算的话会停留在旧上限上。 */
-  var resizeTimer = null;
-  function refitAll() {
-    var done = document.querySelectorAll('.mermaid[data-rendered="1"]');
-    for (var i = 0; i < done.length; i++) decorate(done[i]);
-  }
-  window.addEventListener('resize', function () {
-    if (resizeTimer) clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(refitAll, 180);   // resize 重定尺
-  });
 
   function setup() {
     nodes = Array.prototype.slice.call(document.querySelectorAll('.mermaid'));

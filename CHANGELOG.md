@@ -19,6 +19,25 @@
   但表格里私有仓库是允许的，自相矛盾）；自查清单拆成「两仓库通用」与「仅公开仓库」两组
   （原来那条 `content/os/ | grep -v _demo_` 空检查会让私有仓库永远"不达标"）
 
+## [0.3.22] - 2026-11-14
+
+### 修复（Mermaid 超长图：改回 CSS 等比缩放，真机达标）
+
+0.3.18–0.3.21 都是在 JS 里按 `viewBox` 算缩放系数，但真机始终不达标。根因：
+**mermaid 的 `viewBox` 本身就是按容器宽渲染出来的**，相对它缩放等于没缩。
+
+改为纯 CSS：
+- `.mermaid { max-height: min(520px, 68vh); display:flex; justify-content:center }`
+- `.mermaid svg { width:auto !important; height:auto !important;
+  max-height:min(520px,68vh) !important; max-width:100% !important }`
+  —— 用 `!important` 压掉 mermaid 的 inline `width:100%`，SVG 按固有比例缩到高度上限。
+- JS 只保留记录 `data-nw/nh`（给放大查看器还原原始尺寸），不再写像素宽高。
+
+桌面实测（1280×800）：容器 `1248×520`、SVG **`704×520`**，等比、无内部滚动；
+真机横屏（68vh≈267 CSS）同样收进一屏，点 ⤢ 按 `data-nw/nh` 打开原尺寸。
+
+`test:all` 13 步全绿。
+
 ## [0.3.21] - 2026-11-14
 
 ### 修复（Mermaid 图收不到一屏：两处根因）
