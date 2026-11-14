@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+## [0.3.23] - 2026-11-14
+
+### 规范与工具（承接上一批未发版改动）
+
 ### 工具
 
 - `scripts/push-retry.sh`：远端核对改为**同时查 `refs/heads/` 与 `refs/tags/`**。
@@ -18,6 +22,23 @@
 - `AGENTS.md`：红线 1 的条目与「仓库分两类」表格对齐（原文说"课程正文页不得进 git"，
   但表格里私有仓库是允许的，自相矛盾）；自查清单拆成「两仓库通用」与「仅公开仓库」两组
   （原来那条 `content/os/ | grep -v _demo_` 空检查会让私有仓库永远"不达标"）
+
+### 修复（第七轮审阅 7 项）
+
+- **`AGENTS-SPEC` 铁律 1 与 `AGENTS.md` 对齐**：原文仍是"只依据课件"，未含教材；
+  改为「只依据**课程材料（授课 PPT + 课程指定教材）**」，补 `（课件 p42）` / `（教材 p251）` 两种引注，
+  并说明"两者都没讲才写（课件未展开）"
+- **`tools/README` 补两个抽取工具**：`pptx-extract.py`（.pptx → 逐页文本+图）与
+  `docx-extract.py`（教材 .docx → 章节 Markdown），命令按各自真实 argparse 参数写（`--deck` 必填）；
+  「典型全流程」补"按材料类型三选一"的抽取分支
+- **`AGENTS-SPEC` §7 验收命令更新**：`build/verify/npm test` → `npm run test:all` +
+  `npm run verify:package` + `check-gates`（与红线 3 的机械门禁一致）
+- **`shell.css` 清理 Mermaid 规则**：删掉与 `!important` 版重复的 `max-width/height` 规则，
+  以及描述旧机制（"JS 按 viewBox 定尺"）已失效的注释；保留一套并说明"JS 只记录原始尺寸"
+- **`npm run check:gates`**：`check-gates.mjs` 此前只有 test:all 内部调用，补 npm 入口
+- **README**：功能表补「环境自检（diagnostics）」，命令表补 `check:gates`
+- **`docs/DEVICE-CHECKLIST.md` §4.4**：新增固定验收项「超长 Mermaid（竖屏+横屏各截一张，
+  必须一屏看全、放大按原尺寸）」——0.3.18–0.3.22 在这块连改 5 次，不能只靠手感
 
 ## [0.3.22] - 2026-11-14
 

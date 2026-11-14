@@ -22,26 +22,15 @@ pre {
   white-space: pre;
   -webkit-overflow-scrolling: touch;
 }
-/* Mermaid 图同样限宽 */
-.mermaid, .mermaid svg {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Mermaid 的自然尺寸由 web/shell/mermaid-init.js 的 decorate() 按 viewBox 写内联 style；
-   这里不要写 width:auto !important —— 它会反过来压住 JS 设的像素宽度，窄图又被拉满。 */
-
-/* Mermaid 尺寸由 mermaid-init.js 的 decorate() 负责（按 viewBox × k 定尺，k 受容器宽与 68vh 限制）。
-   这里只给容器留一个兜底上限；不要在 svg 上写 max-height/width —— 会与 JS 的内联尺寸打架。 */
+/* Mermaid：宽度只由这一处决定（JS 不设尺寸，只记录 viewBox 原始尺寸给放大查看器用）。
+   1) 容器限高 min(520px, 68vh)：横屏手机视口只有 ~369px 高，写死 520 会让图占满整屏；
+   2) svg 用 width/height:auto + max-height：浏览器按 viewBox 固有比例等比缩到上限。
+   注意 mermaid 渲染后会给 svg 写 inline `width:100%`，所以这里必须 `!important` 才压得住。 */
 .mermaid {
-  /* 一屏内看全：容器与 SVG 都用同一个高度上限（min(520px, 68vh)）。
-     横屏手机视口只有 ~369px 高，写死 520 会让图占满整屏。 */
   max-height: min(520px, 68vh);
   display: flex;
   justify-content: center;
 }
-/* 关键：mermaid 会给 svg 写 inline width:100%，必须用 !important 才压得住；
-   再配 width/height:auto，浏览器会按 SVG 的固有比例（viewBox）等比缩到 max-height。 */
 .mermaid svg {
   width: auto !important;
   height: auto !important;

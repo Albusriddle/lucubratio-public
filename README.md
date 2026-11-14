@@ -20,7 +20,7 @@
 |---|---|---|
 | **内容规范** | [`docs/CONTENT-SPEC.md`](docs/CONTENT-SPEC.md) | 一页内容该怎么写：标题/锚点、公式、Mermaid 图、表格、自评单元、图片 |
 | **编译器** | [`scripts/build.mjs`](scripts/build.mjs) | 源 HTML → 可运行站点：注入壳层、公式转 MathML、给命中规则的标题打自评标记、生成检索索引与 manifest |
-| **查看器** | [`web/`](web) + [`android/`](android) | 底栏三 tab（主页/目录/我的）、三级目录、离线阅读、断点续读、自评 → FSRS 复习、解析默认折叠、全文搜索、学习统计、课件页截图内嵌、目录页可删除已导入课程、页面切换过渡（淡出→黑→淡入）与弹窗动画 |
+| **查看器** | [`web/`](web) + [`android/`](android) | 底栏三 tab（主页/目录/我的）、三级目录、离线阅读、断点续读、自评 → FSRS 复习、解析默认折叠、全文搜索、学习统计、课件页截图内嵌、目录页可删除已导入课程、页面切换过渡（淡出→黑→淡入）与弹窗动画、环境自检（diagnostics） |
 
 生成侧还有一套规范：[`AGENTS.md`](AGENTS.md)（硬约束与红线）+ [`docs/AGENTS-SPEC.md`](docs/AGENTS-SPEC.md)（角色分工、逐页模板、复核流程）—— 规定了"双人独立产出 + 第三人复核"，用来保证 AI 生成的内容不出事实错误。
 
@@ -40,6 +40,7 @@ npm test                 # 纯函数单测
 npm run test:package     # 打包器 + 校验器正负自测
 npm run test:library     # 课程库合并逻辑（内置 + 已导入）
 npm run check:changelog  # CHANGELOG 结构守则
+npm run check:gates      # 复核门禁（红线 3）：检查 reviews 目录里的门禁记录是否全部通过
 npm run check:nav        # 导航守则：除 shell/boot.js 外禁止裸 location 跳转（CI 与 test:all 都跑）
 npm run test:all         # 全量 13 步（= 上面这些 + 构建/校验/片段预检/题目自检/空构建冒烟/多段合并/导航守则）
 

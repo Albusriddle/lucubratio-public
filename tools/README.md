@@ -14,6 +14,8 @@
 | `pdf-extract.py` | 课件 PDF → 逐页 Markdown + 图页截图 + `report.json`（无文字页/低文字有图页/建议分段） | Python 3.9+、`pymupdf`（可选 `pillow` 转 WebP） | `python tools/pdf-extract.py lecture.pdf --out .work/deck --render` |
 | `ppt-shots.mjs` | 按报告清单批量渲染课件页为 WebP（供正文 `sa-ppt` 引用） | Node、`pymupdf`（调用上面的报告） | `node tools/ppt-shots.mjs --deck deck --pdf lecture.pdf --all` |
 | `mark-ppt.mjs` | 给存量课程页机械预标 `<figure class="sa-ppt" data-ppt="…">` | Node | `node tools/mark-ppt.mjs --file page.html --pages 4,8 --dry` |
+| `pptx-extract.py` | 授课 PPT（`.pptx`）→ 逐页文本 + 图页导出；PPT 不是 PDF 时用它代替 `pdf-extract.py` | Python 3.9+、`python-pptx`（可选 `pillow`） | `python tools/pptx-extract.py deck.pptx --deck ch3 --out .work/ch3` |
+| `docx-extract.py` | 课程指定教材（`.docx`）→ 按章节的 Markdown（供「（教材 pNNN）」引注） | Python 3.9+、`python-docx`（可选 `pillow`） | `python tools/docx-extract.py book.docx --deck book --out .work/book` |
 
 ## 二、写作与合稿
 
@@ -43,7 +45,10 @@
 ## 四、典型全流程
 
 ```bash
-python tools/pdf-extract.py lecture.pdf --out .work/deck --render   # 1 抽取
+# 1 抽取（按材料类型三选一）
+python tools/pdf-extract.py  lecture.pdf --out .work/deck --render   #   PPT 已导出 PDF
+python tools/pptx-extract.py deck.pptx   --deck ch3 --out .work/ch3    #   直接给 .pptx
+python tools/docx-extract.py book.docx   --deck book --out .work/book   #   课程教材（引注写「教材 pNNN」）
 node tools/course-new.mjs 03 vCPU1 "vCPU-1 虚拟化"                    # 2 建骨架（或直接写片段）
 node tools/assemble.mjs 03_vcpu1 "vCPU-1 虚拟化" .work/s1.final.html   # 3 合稿
 node tools/lint-fragment.mjs content/os/03_vcpu1.html --page          # 4 预检

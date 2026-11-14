@@ -1,6 +1,6 @@
 {
   "name": "lucubratio-pipeline",
-  "version": "0.3.22",
+  "version": "0.3.23",
   "private": true,
   "description": "Lucubratio 流水线 + 查看器：把任意课程内容编译成可离线学习的内容包（不含任何课程素材）",
   "scripts": {
@@ -20,7 +20,8 @@
     "build:empty": "node scripts/build.mjs --empty",
     "check:pages": "node tools/check-pages.mjs",
     "check:changelog": "node scripts/check-changelog.mjs",
-    "check:nav": "node scripts/check-nav.mjs"
+    "check:nav": "node scripts/check-nav.mjs",
+    "check:gates": "node scripts/check-gates.mjs"
   },
   "engines": {
     "node": ">=20"
