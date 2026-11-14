@@ -57,6 +57,14 @@
   .due .due-n b{color:var(--accent);font-size:16px}
   .due .due-go{flex:0 0 auto;color:var(--accent);font-size:13px;font-weight:600}
   .due:active{background:#fdece8}
+  /* 无到期卡片时：同一入口降级成中性样式，避免「红色告警」的误导 */
+  .due.is-idle{
+    background:rgba(127,127,127,.08);border-color:rgba(127,127,127,.22);
+  }
+  .due.is-idle .due-k,
+  .due.is-idle .due-go{color:var(--muted,#7b8593)}
+  .due.is-idle .due-n{color:var(--muted,#7b8593)}
+  .due.is-idle:active{background:rgba(127,127,127,.14)}
 
   .orphan{
     display:flex;align-items:center;gap:10px;

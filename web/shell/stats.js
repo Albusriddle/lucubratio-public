@@ -69,9 +69,9 @@ import { initTheme } from './theme.js';
     var d = await statsDetail(84);
 
     $('streak').innerHTML = d.streak + '<span>天</span>';
-    $('sub').textContent = d.streak > 0
+    $('sub').innerHTML = d.streak > 0
       ? '保持住，累计 ' + d.reviewTotal + ' 次复习'
-      : '今天还没复习，去做一张卡片';
+      : '今天还没复习，<a href="/review.html">去做一张卡片</a>';
 
     $('reviews').innerHTML = d.reviewTotal + '<small>次</small>';
     $('acc').innerHTML = d.accuracy === null

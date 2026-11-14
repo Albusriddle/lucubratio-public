@@ -50,15 +50,28 @@ import { loadLibrary, libraryStats, buildCverMap } from './library.js';
 
   /* ---------------- 今日复习入口 ---------------- */
   async function renderDue() {
+    // 入口常显：复习页 review.html 自身有空态，入口不该因为「今天 0 张」就消失
+    // （真机验收曾出现：删掉课程后 dueCount=0，首页/底栏/统计页都没有任何路径能进复习页）
     if (!document.getElementById('due')) return;
+    var el = $('due');
     var n = 0;
     try { n = await dueCount(); } catch (e) { n = 0; }
-    var el = $('due');
+    var num = $('dueCount');
+    var note = el.querySelector('.due-n');
+    var go = el.querySelector('.due-go');
+    el.hidden = false;
     if (n > 0) {
-      $('dueCount').textContent = String(n);
-      el.hidden = false;
+      el.classList.remove('is-idle');
+      if (num) num.textContent = String(n);
+      if (note) note.hidden = false;
+      if (go) go.textContent = '开始 ›';
     } else {
-      el.hidden = true;
+      el.classList.add('is-idle');
+      if (num) num.textContent = '0';
+      if (note) {
+        note.hidden = true;   // 「0 张卡片到期」这句话在空态下没意义
+      }
+      if (go) go.textContent = '看看 ›';
     }
   }
 
