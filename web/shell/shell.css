@@ -31,16 +31,12 @@ pre {
 /* Mermaid 的自然尺寸由 web/shell/mermaid-init.js 的 decorate() 按 viewBox 写内联 style；
    这里不要写 width:auto !important —— 它会反过来压住 JS 设的像素宽度，窄图又被拉满。 */
 
-/* Mermaid 图在窄屏/竖排时会很高：给容器限高并允许滚动，避免一张图占满整屏。
-   （尺寸的根因是 mermaid 按容器宽渲染，短期用「限高 + 可滚 + 放大按钮」更稳） */
+/* Mermaid 尺寸由 mermaid-init.js 的 decorate() 负责（按 viewBox × k 定尺，k 受容器宽与 68vh 限制）。
+   这里只给容器留一个兜底上限；不要在 svg 上写 max-height/width —— 会与 JS 的内联尺寸打架。 */
 .mermaid {
   /* 上限与 mermaid-init.js 的 maxH 保持一致：小屏（横屏 369px 高）不能让图占满整屏 */
   max-height: min(520px, 68vh);
   overflow: auto;
-}
-.mermaid svg {
-  max-height: 480px;
-  width: auto;
 }
 
 /* 表格：只有它允许横滑（build 会统一包一层 .table-wrap） */

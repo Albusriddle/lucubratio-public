@@ -87,6 +87,23 @@
     return libPromise;
   }
 
+  /* 图的高度上限：与 shell.css 的 .mermaid{max-height:min(520px,68vh)} 同口径。
+     为什么不用 window.innerHeight：WebView（尤其 edge-to-edge 的 targetSdk 35）里它和
+     CSS 的 vh 不一定一致，实测按 innerHeight 算出来的上限仍让图占满一屏。
+     这里放一个 68vh 的隐藏探针，用同一条 CSS 管线量真实像素高度。 */
+  function heightCap() {
+    var px = 0;
+    try {
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:68vh;pointer-events:none';
+      (document.body || document.documentElement).appendChild(probe);
+      px = probe.clientHeight || 0;
+      if (probe.parentNode) probe.parentNode.removeChild(probe);
+    } catch (e) { px = 0; }
+    if (!px) px = Math.round((window.innerHeight || 720) * 0.68);
+    return Math.min(520, px);
+  }
+
   function decorate(el) {
     var svg = el.querySelector('svg');
     if (!svg) return;
@@ -101,9 +118,7 @@
       var vb = svg.viewBox && svg.viewBox.baseVal;
       if (vb && vb.width > 0) {
         var maxW = el.clientWidth || 720;   // 容器可用宽（渲染回调里已有 layout）
-        // 上限取「520 与视口高 68% 的较小值」：横屏视口只有 ~369px，
-        // 写死 520 会让图几乎占满一屏、仍看不到全貌；竖屏则仍按 520 封顶。
-        var maxH = Math.min(520, Math.round((window.innerHeight || 720) * 0.68));
+        var maxH = heightCap();
         var k = Math.min(1, maxW / vb.width, maxH / vb.height);
         svg.removeAttribute('width');
         svg.removeAttribute('height');
@@ -112,6 +127,7 @@
         svg.style.maxWidth = '100%';
         svg.dataset.nw = String(Math.round(vb.width));
         svg.dataset.nh = String(Math.round(vb.height));
+        svg.dataset.k = k.toFixed(3);      // 便于排查「为什么图这么大/这么小」
       }
     } catch (e) { /* 老 WebView 没有 viewBox.baseVal 时保持原样 */ }
     svg.setAttribute('role', 'img');

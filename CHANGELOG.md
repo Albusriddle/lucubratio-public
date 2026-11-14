@@ -19,6 +19,23 @@
   但表格里私有仓库是允许的，自相矛盾）；自查清单拆成「两仓库通用」与「仅公开仓库」两组
   （原来那条 `content/os/ | grep -v _demo_` 空检查会让私有仓库永远"不达标"）
 
+## [0.3.21] - 2026-11-14
+
+### 修复（Mermaid 图收不到一屏：两处根因）
+
+0.3.18 的等比缩小在真机上仍不达标，排查到两个叠加原因：
+
+1. **上限用 `window.innerHeight` 算不准**：WebView（targetSdk 35 / edge-to-edge）里它与 CSS `vh`
+   不一致，按它算出来的上限仍让图占满一屏。改为放一个 **68vh 的隐藏探针**量真实高度，
+   与 `shell.css` 的 `max-height: min(520px, 68vh)` 走同一条 CSS 管线。
+2. **残留 CSS 与 JS 打架**：`shell.css` 还留着 0.3.14 的实验规则
+   `.mermaid svg { max-height:480px; width:auto }`，把 JS 写的高度压掉、宽度又不受控。
+   已删除该规则，容器只留 `max-height` 兜底。
+
+另：SVG 上记录 `data-k`（缩放系数），便于以后直接在 DOM 里核查尺寸计算。
+
+`test:all` 13 步全绿。
+
 ## [0.3.19] - 2026-11-14
 
 ### 修复（Mermaid 上限改为视口自适应）
