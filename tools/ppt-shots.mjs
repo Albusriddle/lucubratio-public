@@ -14,6 +14,7 @@
 //
 //   # 一次跑全 9 门（读取 decks.json 约定）
 //   node tools/ppt-shots.mjs --all
+//   node tools/ppt-shots.mjs --all --full          # 整本渲染（每讲 1..N 页，供 PPT 侧栏用）
 //
 // 参数：--width 900 --quality 68
 // 产物：<out>/<deck>/pNNN.webp
@@ -86,14 +87,14 @@ const DECKS = JSON.parse(fs.existsSync(DECKS_FILE)
   ? fs.readFileSync(DECKS_FILE, 'utf8')
   : JSON.stringify({
   '01': { deck: 'intro', pdf: 'intro.pdf', work: 'intro1' },
-  '02': { deck: 'vcpu1', pdf: 'vcpu-1.pdf', work: 'vcpu1' },
-  '03': { deck: 'vcpu2', pdf: 'vcpu-2.pdf', work: 'vcpu2' },
-  '04': { deck: 'vcpu3', pdf: 'vcpu-3.pdf', work: 'vcpu3' },
-  '05': { deck: 'vm1', pdf: 'vm-1.pdf', work: 'vm1' },
-  '06': { deck: 'vm2', pdf: 'vm-2.pdf', work: 'vm2' },
-  '07': { deck: 'vm3', pdf: 'vm-3.pdf', work: 'vm3' },
-  '08': { deck: 'vm4', pdf: 'vm-4.pdf', work: 'vm4' },
-  '09': { deck: 'conc1', pdf: 'conc-1.pdf', work: 'conc1' },
+  '02': { deck: 'vcpu-1', pdf: 'vcpu-1.pdf', work: 'vcpu1' },
+  '03': { deck: 'vcpu-2', pdf: 'vcpu-2.pdf', work: 'vcpu2' },
+  '04': { deck: 'vcpu-3', pdf: 'vcpu-3.pdf', work: 'vcpu3' },
+  '05': { deck: 'vm-1', pdf: 'vm-1.pdf', work: 'vm1' },
+  '06': { deck: 'vm-2', pdf: 'vm-2.pdf', work: 'vm2' },
+  '07': { deck: 'vm-3', pdf: 'vm-3.pdf', work: 'vm3' },
+  '08': { deck: 'vm-4', pdf: 'vm-4.pdf', work: 'vm4' },
+  '09': { deck: 'conc-1', pdf: 'conc-1.pdf', work: 'conc1' },
   }));
 if (!fs.existsSync(DECKS_FILE)) {
   console.log(`· 未找到 ${DECKS_FILE}，使用内置 9 门示例表（可用 --decks 指定自己的）`);
@@ -114,12 +115,22 @@ if (flag('--all')) {
   let all = { written: 0, bytes: 0 };
   for (const [no, d] of Object.entries(DECKS)) {
     const reportPath = path.join('.work', d.work, 'report.json');
-    if (!fs.existsSync(reportPath)) {
+    // --full 不需要抽取报告：整本渲染只需要 PDF
+    if (!flag('--full') && !fs.existsSync(reportPath)) {
       console.log(`  ${d.deck.padEnd(7)} 跳过（缺 ${reportPath}）`);
       continue;
     }
-    const rep = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-    const pages = [...new Set([...(rep.empty_pages || []), ...(rep.low_text_pages || [])])];
+    // --full：整本渲染（侧栏要按页序浏览全部页）；否则只补"文字少/空页"那批
+    let pages;
+    if (flag('--full')) {
+      const doc = JSON.parse(execFileSync('python', ['-c',
+        'import pymupdf,sys,json; d=pymupdf.open(sys.argv[1]); print(json.dumps({"n": len(d)})); d.close()',
+        path.join(SRC_DIR, d.pdf)], { encoding: 'utf8' }).trim()).n;
+      pages = Array.from({ length: doc }, (_, i) => i + 1);
+    } else {
+      const rep = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+      pages = [...new Set([...(rep.empty_pages || []), ...(rep.low_text_pages || [])])];
+    }
     const pdf = path.join(SRC_DIR, d.pdf);
     if (!fs.existsSync(pdf)) {
       console.log(`  ${d.deck.padEnd(7)} 跳过（缺 ${pdf}）`);

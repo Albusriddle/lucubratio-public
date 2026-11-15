@@ -153,6 +153,43 @@ if (manifest) {
     else ok('页内锚点全部有效');
   }
 
+  // 3.6) PPT 侧栏索引：列出的页必须都在产物里，且产物里的页都要被索引（防漏渲/防陈旧）
+  {
+    const idxPath = path.join(OUT, 'img', 'index.json');
+    if (!fs.existsSync(idxPath)) {
+      ok('无 PPT 索引（本次产物没有课件截图）');
+    } else {
+      let idx = null;
+      try { idx = JSON.parse(fs.readFileSync(idxPath, 'utf8')); }
+      catch (e) { bad('img/index.json 不是合法 JSON：' + e.message); }
+      if (idx) {
+        const listed = new Set();
+        const dupes = [];
+        for (const d of idx.decks || []) {
+          for (const pg of d.pages || []) {
+            const rel = `img/${d.deck}/${pg.f}`;
+            if (listed.has(rel)) dupes.push(rel);
+            listed.add(rel);
+          }
+        }
+        const missing = [...listed].filter((r) => !fs.existsSync(path.join(OUT, r)));
+        if (missing.length) bad(`PPT 索引列了 ${missing.length} 张产物里没有的图：${missing.slice(0, 3).join(', ')}`);
+        else if (dupes.length) bad(`PPT 索引有重复条目：${dupes.slice(0, 3).join(', ')}`);
+        else {
+          let onDisk = 0;
+          for (const d of idx.decks || []) {
+            const dir = path.join(OUT, 'img', d.deck);
+            if (!fs.existsSync(dir)) continue;
+            for (const f of fs.readdirSync(dir)) if (/^p\d+\.webp$/i.test(f)) onDisk++;
+          }
+          const total = (idx.decks || []).reduce((n, d) => n + (d.pages || []).length, 0);
+          if (onDisk !== total) bad(`PPT 索引 ${total} 页，但产物里有 ${onDisk} 张页图（不一致）`);
+          else ok(`PPT 索引与页图一致（${idx.decks.length} 讲 / ${total} 页）`);
+        }
+      }
+    }
+  }
+
   // 图表：内容页用内联 mermaid；content/diagrams 是"字符画替换文件"（可选）。
   // 说明：以前这里拿"图表文件里的块数"和"页面内联块数"比大小，两边不相干 → 检查恒为真（假绿）。
   // 现在拆成两件真实的事：① 内联 mermaid 有基线；② 替换文件若存在，必须能对上某个真实 cid（防孤儿）。

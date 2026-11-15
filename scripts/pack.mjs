@@ -165,6 +165,18 @@ for (const { full } of pageFiles) {
   }
 }
 
+// 「PPT 侧栏」要能翻整本：index.json 里列的页同样算被引用（否则包里缺页，点开就裂图）
+const idxPath = path.join(imgDir, 'index.json');
+let pptIndex = null;
+if (fs.existsSync(idxPath)) {
+  pptIndex = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+  for (const d of pptIndex.decks || []) {
+    for (const p of d.pages || []) {
+      if (p && p.f) referencedImgs.add(d.deck + '/' + p.f);
+    }
+  }
+}
+
 let imgPacked = 0;
 let imgSkipped = 0;
 if (fs.existsSync(imgDir)) {
@@ -179,6 +191,9 @@ if (fs.existsSync(imgDir)) {
     }
   })(imgDir);
 }
+
+// 索引清单本身也要进包（侧栏靠它知道有哪几讲、每讲几页）
+if (pptIndex) push('img/index.json', fs.readFileSync(idxPath));
 
 // 引用了但产物里没有的图片：直接失败（否则包会在阅读时裂图）
 const missingImgs = [...referencedImgs].filter((rel) => !fs.existsSync(path.join(imgDir, rel)));

@@ -134,7 +134,9 @@ if (manifest && search && Array.isArray(manifest.groups)) {
    打包时如果无差别收集 img/，会把本机的课件截图塞进无关的包里（实测 2 页 demo 曾带 224 张、
    5.47MB）。这里反向核对：每张图都必须被某个页面的 src/href 引用。 */
 {
-  const imgs = entries.filter((e) => /^img\//.test(e.name)).map((e) => e.name);
+  const imgs = entries
+    .filter((e) => /^img\//.test(e.name) && /\.(webp|png|jpe?g|gif|svg)$/i.test(e.name))
+    .map((e) => e.name);
   if (imgs.length === 0) {
     ok('包内无图片（页面未引用任何 /img/ 资源）');
   } else {
@@ -145,9 +147,29 @@ if (manifest && search && Array.isArray(manifest.groups)) {
         referenced.add(decodeURIComponent(m[1]));
       }
     }
-    const orphan = imgs.filter((n) => ![...referenced].some((r) => r.endsWith(n.replace(/^img\//, ''))));
+    // 「PPT 侧栏」索引里列的页也算被引用（侧栏要能翻到未在正文插图的页）
+    const idxEntry = entries.find((e) => e.name === 'img/index.json');
+    const idxRefs = new Set();
+    if (idxEntry) {
+      try {
+        const idx = JSON.parse(idxEntry.data.toString('utf8'));
+        for (const d of idx.decks || []) {
+          for (const p of d.pages || []) if (p && p.f) idxRefs.add(d.deck + '/' + p.f);
+        }
+      } catch (e) { bad('img/index.json 不是合法 JSON：' + e.message); }
+    }
+    const orphan = imgs.filter((n) => {
+      const rel = n.replace(/^img\//, '');
+      return ![...referenced].some((r) => r.endsWith(rel)) && !idxRefs.has(rel);
+    });
     if (orphan.length) bad(`包内有 ${orphan.length} 张未被页面引用的图片（例：${orphan.slice(0, 3).join(', ')}）`);
-    else ok(`图片全部被引用（${imgs.length} 张）`);
+    else ok(`图片全部被引用（${imgs.length} 张${idxRefs.size ? '，含 PPT 索引 ' + idxRefs.size + ' 张' : ''}）`);
+    if (idxRefs.size) {
+      const packed = new Set(imgs.map((n) => n.replace(/^img\//, '')));
+      const miss = [...idxRefs].filter((r) => !packed.has(r));
+      if (miss.length) bad(`PPT 索引列了 ${miss.length} 张包里没有的图（例：${miss.slice(0, 3).join(', ')}）`);
+      else ok(`PPT 索引与包内图片一致（${idxRefs.size} 页）`);
+    }
   }
 }
 

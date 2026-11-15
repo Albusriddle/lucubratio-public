@@ -8,6 +8,31 @@ import vm from 'node:vm';
 import { asciiToSvg, repairDiagram } from './lib/ascii-svg.mjs';
 import { looksFormula, formulaToTex } from './lib/formula.mjs';
 
+/** 读 webp 头里的画布宽高（不引依赖：VP8/VP8L/VP8X 三种头各解析一下） */
+function webpSize(buf) {
+  try {
+    const tag = buf.toString('ascii', 12, 16);
+    if (tag === 'VP8X') {
+      return { w: 1 + buf.readUIntLE(24, 3), h: 1 + buf.readUIntLE(27, 3) };
+    }
+    if (tag === 'VP8 ') {
+      for (let i = 20; i < Math.min(buf.length - 9, 60); i++) {
+        if (buf[i] === 0x9d && buf[i + 1] === 0x01 && buf[i + 2] === 0x2a) {
+          return { w: buf.readUInt16LE(i + 3) & 0x3fff, h: buf.readUInt16LE(i + 5) & 0x3fff };
+        }
+      }
+    }
+    if (tag === 'VP8L') {
+      const b = buf.subarray(21, 26);
+      const w = 1 + (((b[1] & 0x3f) << 8) | b[0]);
+      const h = 1 + (((b[3] & 0x0f) << 10) | (b[2] << 2) | ((b[1] & 0xc0) >> 6));
+      return { w, h };
+    }
+  } catch (e) { /* 落回默认 */ }
+  return { w: 900, h: 675 };
+}
+
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 const CONTENT = path.join(ROOT, 'content');
 const WEB = path.join(ROOT, 'web');
@@ -531,10 +556,13 @@ function inject(html, { cid, file, cver, appver }) {
   // mermaid 那 5.3MB 不在这里同步加载：交给 mermaid-init 在
   // 「第一张图快进入视口」时再动态注入，含图页面首屏因此省下整包解析/编译。
   const needsExtras = /class="(mermaid|table-wrap|sa-check)/.test(s);
+  // 页面里有课件截图才加载「PPT 侧栏」（公开仓库的 demo 页没有 /img/ → 不注入）
+  const needsPptGallery = /\/img\//.test(s);
   const extras = needsExtras
     ? '<script src="/shell/ui-extras.js' + q + '"></script>\n' +
       '<script src="/shell/diagram-viewer.js' + q + '"></script>\n'
     : '';
+  const galleryScript = needsPptGallery ? '<script src="/shell/ppt-gallery.js' + q + '"></script>\n' : '';
   // 注意：这里不能注入内联 <script>——课程包的安全规则（verify-package / HtmlGuard）
   // 禁止内联脚本，而内联脚本也无法配合 CSP script-src 'self'。
   // 库路径改由 data-lib 属性传给 mermaid-init.js（它用 document.currentScript 读取）。
@@ -779,6 +807,66 @@ const searchJson = JSON.stringify({ v: 1, pages: searchPages, sections: searchSe
 fs.writeFileSync(path.join(OUT, 'search.json'), searchJson, 'utf8');
 
 log('');
+// ===== PPT 页索引（供阅读页「PPT 侧栏」按页序浏览全部页）=====
+// 数据来源：磁盘上的 web/img/<deck>/pNNN.webp；讲次/标题取自引用该 deck 的内容页（data-cid + <title>）。
+// 同时写两份：OUT/img/index.json（进 APK/Courses 产物）与源目录 web/img/index.json（供 pack.mjs 取用）。
+let pptIndexRels = new Set();
+{
+  const srcImgRoot = path.join(WEB, 'img');
+  let deckIndex = null;
+  if (fs.existsSync(srcImgRoot)) {
+    const meta = new Map();
+    (function walk(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) { walk(full); continue; }
+        if (!e.name.endsWith('.html')) continue;
+        const html = fs.readFileSync(full, 'utf8');
+        const cidM = html.match(/data-cid="[a-z]+-(\d+)"/);
+        const lecture = cidM ? cidM[1] : '';
+        const tM = html.match(/<title>([^<]+)<\/title>/i);
+        const title = tM ? tM[1].trim() : '';
+        for (const mm of html.matchAll(/\/img\/([^\/"?#]+)\//g)) {
+          if (!meta.has(mm[1])) meta.set(mm[1], { lecture, title });
+        }
+      }
+    })(OUT);
+
+    const decks = [];
+    for (const name of fs.readdirSync(srcImgRoot).sort()) {
+      const dir = path.join(srcImgRoot, name);
+      if (!fs.statSync(dir).isDirectory()) continue;
+      // 只收录"真的被内容页引用过"的讲次：公开仓库没有任何图片引用，
+      // 若按目录存在就建索引，会把本地残留的课件图当作资源回填进公开仓库产物（红线 1）。
+      if (!meta.has(name)) continue;
+      const pages = [];
+      const rels = [];
+      for (const f of fs.readdirSync(dir).sort()) {
+        const mm = f.match(/^p(\d+)\.webp$/i);
+        if (!mm) continue;
+        const size = webpSize(fs.readFileSync(path.join(dir, f)));
+        pages.push({ n: Number(mm[1]), w: size.w, h: size.h, f });
+        rels.push(name + '/' + f);
+      }
+      if (!pages.length) continue;
+      pages.sort((a, b) => a.n - b.n);
+      const mt = meta.get(name) || {};
+      decks.push({ deck: name, lecture: mt.lecture || '', title: mt.title || name, pages });
+      for (const r of rels) pptIndexRels.add(r);
+    }
+    decks.sort((a, b) => String(a.lecture || 'zz').localeCompare(String(b.lecture || 'zz')));
+    if (decks.length) {
+      deckIndex = { generated: new Date().toISOString(), decks };
+      const json = JSON.stringify(deckIndex);
+      fs.mkdirSync(path.join(OUT, 'img'), { recursive: true });
+      fs.writeFileSync(path.join(OUT, 'img/index.json'), json);
+      fs.writeFileSync(path.join(srcImgRoot, 'index.json'), json);
+      const totalPages = decks.reduce((n, d) => n + d.pages.length, 0);
+      log(`${KJ.dim}  PPT 索引：${decks.length} 讲 / ${totalPages} 页${KJ.reset}`);
+    }
+  }
+}
+
 // ===== 按引用回填图片 =====
 // 扫产物里所有 HTML 的 /img/ 引用，只把用到的图从源目录 web/img 拷进 OUT/img。
 // 公开仓库（无引用）→ 0 张；私有仓库（正文引用 303 张）→ 303 张，两边都对。
@@ -794,6 +882,8 @@ log('');
       for (const m of html.matchAll(/(?:src|href)="\/img\/([^"?#]+)/g)) used.add(decodeURIComponent(m[1]));
     }
   })(OUT);
+  // PPT 侧栏要能翻到整本，所以索引里列的页也必须回填（否则打开就裂图）
+  for (const rel of pptIndexRels) used.add(rel);
 
   const missing = [];
   let copied = 0;
