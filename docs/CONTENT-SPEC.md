@@ -207,15 +207,21 @@ npm test                   # 21 项纯函数测试
 | 字符画 | **禁止**（盒线字符 `─│┌` 与方块 `█▀` 都会被打回），一律改用 Mermaid |
 | 脚本 | 全篇只允许 `<script type="text/plain">` 这一种 `<script>`（Mermaid 源码容器）；其它任何 `<script>` 都会被 `pack`/导入拒绝 |
 
-### 课件页截图
+### 课件页截图（唯一写法）
 
-正文转述某页的图/表时，在该段之后写：
+正文转述某页的图/表时，在该段之后嵌入：
 
 ```html
-<figure class="sa-ppt" data-ppt="42"></figure>
+<figure class="slide-fig">
+  <img src="/img/vm-1/p042.webp" alt="课件 p42：空闲链表的块头" loading="lazy">
+  <figcaption>课件 p42 原图（块头为什么要存 size）</figcaption>
+</figure>
 ```
 
-构建期替换为 `<img loading="lazy">` + 图注；宽度自动适配手机，点击可放大。
+- `deck` 用讲次目录名（`vcpu-1` / `vm-1` …），页号三位补零
+- 一页只嵌一次；`alt` 写"课件 pN：这一页在讲什么"
+- `ppt-gallery.js` 会给图注追加「pN · 查看整本」，点它是整本 PPT 侧栏
+- **旧写法 `<figure class="sa-ppt" data-ppt="42"></figure>` 仅作兼容保留**（构建期展开），新内容不要用
 
 ### 检测题（自评单元）约定
 

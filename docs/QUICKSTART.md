@@ -76,7 +76,7 @@ npm run build:debug      # 需要 JDK 17 + Android SDK 35
 | 目录页（三级树、展开记忆、**删除已导入课程**） | `web/toc.html` + `web/shell/toc.js` |
 | 我的页（设置、备份、存储） | `web/me.html`（逻辑复用 `home.js`） |
 | 阅读页行为（顶栏/抽屉/断点续读/自评条/解析折叠） | `web/shell/page.js` |
-| 课件页截图（`sa-ppt` 标记 → 图片） | `scripts/build.mjs`（替换）+ `tools/ppt-shots.mjs`（生成） |
+| 课件页截图（`figure.slide-fig` → 图片 + `img/index.json`） | `scripts/build.mjs`（回填 + 建索引）+ `tools/ppt-shots.mjs --all --full`（整本渲染） |
 | 课程库合并逻辑 | `web/shell/library.js` |
 | 数据层 / 复习算法 | `web/shell/store.js`、`fsrs.js`、`db.js` |
 | 深色主题配色 | `web/shell/theme.css` |
@@ -111,7 +111,7 @@ cd my-app
 | 项 | 位置 | 说明 |
 |---|---|---|
 | 包名 | `android/app/build.gradle` 的 `namespace` + `applicationId` | 改成你自己的域名反写 |
-| 三个包名（别搞混） | `com.lucubratio.reader.public`（正式版）/ `com.lucubratio.reader.dev`（debug）/ `com.lucubratio.reader`（私有仓库的自用版，与本仓库无关） |
+| 包名（别搞混） | 本仓库：`com.lucubratio.reader.public`（release）/ `com.lucubratio.reader.dev`（debug）；私有仓库：`com.lucubratio.reader`（release）/ `com.lucubratio.reader.private`（debug）。两边 debug 包名**不同**，可以同时装 |
 | Java 包目录 | `android/app/src/main/java/com/lucubratio/reader/` | 跟着包名改目录与 `package` 行 |
 | 应用名 | `android/app/src/main/res/values/strings.xml` 的 `app_name` | 桌面显示名 |
 | 图标题 / 开屏 | `web/index.html` | 首页 `<h1>` 与开屏文案 |

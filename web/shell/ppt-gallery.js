@@ -278,7 +278,8 @@
   }
 
   function addChips() {
-    var figs = document.querySelectorAll('figure.slide-fig');
+    // 两种图注结构都加角标：slide-fig（现行写法）与 sa-ppt（旧式，构建期展开）
+    var figs = document.querySelectorAll('figure.slide-fig, figure.sa-ppt');
     for (var i = 0; i < figs.length; i++) {
       (function (fig) {
         if (fig.dataset.saPptChip) return;

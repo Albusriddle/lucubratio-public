@@ -135,6 +135,29 @@ for (const url of pages) {
   } else {
     console.log(`${GREEN('✓')} ${label}`);
   }
+
+  // 有课件截图的内容页会带 PPT 侧栏：打开 → 断言缩略图>0 → 关闭。
+  // 公开仓库的 demo 页没有图片，自动跳过（不该因此报失败）。
+  const hasGalleryBtn = await ev('!!document.querySelector(".sa-pptbtn")');
+  if (hasGalleryBtn) {
+    const g = await ev(`(async function () {
+      document.querySelector('.sa-pptbtn').click();
+      await new Promise(r => setTimeout(r, 1200));
+      const pnl = document.querySelector('.sa-pttg');
+      const n = document.querySelectorAll('.sa-pttg-item').length;
+      const open = !!(pnl && !pnl.hidden);      // 先判定，再关闭
+      const closeBtn = document.querySelector('.sa-pttg-x');
+      if (closeBtn) closeBtn.click();
+      await new Promise(r => setTimeout(r, 300));
+      return { open, n };
+    })()`);
+    if (!g || !g.open || !(g.n > 0)) {
+      bad++;
+      console.log(`  ${RED('✗')} PPT 侧栏：未打开或没有缩略图（n=${g && g.n}）`);
+    } else {
+      console.log(`  ${GREEN('✓')} PPT 侧栏：${g.n} 页缩略图，关闭正常`);
+    }
+  }
 }
 
 ws.close();

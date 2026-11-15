@@ -146,12 +146,16 @@ node tools/assemble.mjs <序号>_<标签> "<页面标题>" .work/<id>/<段>.fina
 把「正文里转述的那页课件」截出来嵌进正文，读者不用来回翻 PDF。
 
 ```bash
-node tools/ppt-shots.mjs --all --src "<课件目录>"     # 渲染 web/img/<deck>/pNNN.webp（宽 900 webp）
+node tools/ppt-shots.mjs --all --src "<课件目录>"        # 只补「空页/少字页」
+node tools/ppt-shots.mjs --all --full --src "<课件目录>" # 整本渲染（PPT 侧栏要用的就是这个）
 node tools/mark-ppt.mjs --file .work/pages/05_vm1.html --report .work/vm1/report.json   # 存量内容机械预标
 ```
 
-- 内容侧只写标记：`<figure class="sa-ppt" data-ppt="42"></figure>`（跨讲写 `05:42`）
-- 构建期替换成 `<img loading="lazy">` + 图注，点击可放大
+- 内容侧写：`<figure class="slide-fig"><img src="/img/<deck>/p042.webp" …><figcaption>…</figcaption></figure>`
+  （旧写法 `<figure class="sa-ppt" data-ppt="42">` 仍兼容，但**没有「查看整本」角标**，新内容别用）
+- 构建期把 `/img/…` 回填进产物并生成 `img/index.json`；点击可放大
+- **`--all` 不等于整本**：它只渲染报告里的空页/少字页。要让「PPT 侧栏」页数等于 PPT 实际页数，必须 `--all --full`
+- 课件有自定义讲次映射时，用 `--decks tools/decks.json` 指定（格式见 `tools/ppt-shots.mjs` 顶部注释）
 - **缺图会直接构建失败**（`web/img` 是 gitignored 的本地产物，换机器要重跑一次）
 
 ## 5. 校验（不许跳过）
@@ -186,10 +190,10 @@ node scripts/verify-package.mjs dist/<课程id>-1.0.0.lcr   # 包校验（12 项
 7. **解析块格式固定**：每道检测题必须以 `<blockquote><strong>解析</strong>：…</blockquote>` 结尾，
    紧跟第 4 个选项、中间不插别的元素。查看器会**默认把它折叠**，点「查看解析」才展开；
    不要在题干/选项里泄露答案，也不要自己写 `<details>` 或「查看解析」按钮（壳层会自动加）
-8. **课件页截图必须标位置**：正文转述了某页的图/表，就在那一**段之后**写一行
-   `<figure class="sa-ppt" data-ppt="42"></figure>`（讲次+页码：`data-ppt="05:42"`）。
-   构建期会换成真实 `<img>`（宽 900 的 webp、懒加载、点击可放大）；**不许自己写 `<img>`**，
-   缺图会直接构建失败。一页只标一次，插在"首次转述该页"的段落之后。
+8. **课件页截图必须标位置**：正文转述了某页的图/表，就在那一**段之后**嵌
+   `<figure class="slide-fig"><img src="/img/<deck>/pNNN.webp" loading="lazy" alt="课件 pN：…"><figcaption>课件 pN 原图（…）</figcaption></figure>`。
+   一页只嵌一次；构建期回填图并生成 `img/index.json`（PPT 侧栏据此列出整本页序）。
+   旧写法 `<figure class="sa-ppt" data-ppt="42">` 仍兼容但没有角标。缺图会直接构建失败。
 9. **课程包禁止上传 GitHub**：`.lcr` 及其内容（正文页、图片、学案）一律不进 git、不进 Releases、
    不贴进 issue/PR。课程内容只保留在本地工作区与用户指定位置（详见 `AGENTS.md`）
 10. **新页面必须配自评规则**：在 `scripts/build.mjs` 的 `QUESTION_RULES` 里为它的 cid 加一条

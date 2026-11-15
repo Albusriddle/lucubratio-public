@@ -185,6 +185,7 @@ if (fs.existsSync(imgDir)) {
       const full = path.join(dir, name);
       const rel = base ? base + '/' + name : name;
       if (fs.statSync(full).isDirectory()) { collectImgs(full, rel); continue; }
+      if (base === '' && name === 'index.json') continue;   // PPT 索引单独统计，不算"跳过未引用"
       if (!referencedImgs.has(rel)) { imgSkipped++; continue; }
       push('img/' + rel, fs.readFileSync(full));
       imgPacked++;

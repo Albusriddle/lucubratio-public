@@ -124,19 +124,28 @@
 - **不要**自己写 `<details>` 或「查看解析」按钮（壳层会自动加）
 - 「易错点」等其它 `<blockquote>` 不受影响（只有以「解析」开头的会被折叠）
 
-## 约定 1.5：课件页截图必须标位置
+## 约定 1.5：课件页截图必须标位置（唯一写法：`figure.slide-fig`）
 
-正文一旦**转述了某页的图或表**，就在那段之后写一行标记：
+正文一旦**转述了某页的图或表**，就在那段之后嵌入该页截图：
 
 ```html
 <p>…寄存器在中断时由硬件压入内核栈（课件 p13）。</p>
-<figure class="sa-ppt" data-ppt="13"></figure>
+<figure class="slide-fig">
+  <img src="/img/vcpu-2/p013.webp" alt="课件 p13：中断时的栈切换" loading="lazy">
+  <figcaption>课件 p13 原图（寄存器为什么必须由硬件保存）</figcaption>
+</figure>
 ```
 
-- 同讲页面写页码即可（`data-ppt="13"`）；跨讲引用写 `讲次:页码`（`data-ppt="05:42"`）
-- **一页只标一次**，放在"首次转述该页"的段落之后
-- 构建期替换成真实 `<img>`（宽 900 webp、懒加载、点击放大），**不要自己写 `<img>`**
-- 缺图 → 构建失败。图片由 `node tools/ppt-shots.mjs --all --src <课件目录>` 生成到 `web/img/<deck>/`（gitignored）
+- `deck` = 讲次目录名（`intro` / `vcpu-1` / `vm-1` / `conc-1` …），页号三位补零（`p013.webp`）
+- **一页只嵌一次**，放在"首次转述该页"的段落之后；`alt` 写"课件 pN：这一页在讲什么"
+- 三个使用方都按这个结构工作：
+  - `diagram-viewer.js`：点图放大（`.sa-ppt img`、`.slide-fig img` 都支持）
+  - `ppt-gallery.js`：图注追加「pN · 查看整本」角标（`.slide-fig` 与旧式 `.sa-ppt` 都认）
+  - `build.mjs`：把 `/img/…` 引用回填进产物并写 PPT 索引
+- **旧写法 `<figure class="sa-ppt" data-ppt="13"></figure>` 仍兼容**（构建期展开成同一结构），
+  但**新内容一律用 `slide-fig`**——旧写法不产生角标，且跨讲引用要写 `05:42`，容易写错
+- 缺图 → 构建失败。图片由 `node tools/ppt-shots.mjs --all --full --src <课件目录>` 生成到 `web/img/<deck>/`（gitignored）；
+  **只有 `--all --full` 才是整本**（不加 `--full` 只补空页/少字页，PPT 侧栏会缺页）
 
 ## 约定 2：双盲 + 复核
 

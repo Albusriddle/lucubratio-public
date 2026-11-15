@@ -851,6 +851,9 @@ html[data-nav-kind="tab"]::view-transition-old(root) { animation-name: sa-vt-fad
   body { animation: none !important; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
+  /* PPT 侧栏：面板滑入、全屏淡入都要跟着关掉（见「PPT 侧栏」段） */
+  .sa-pttg,
+  .sa-pttg-viewer { animation: none !important; }
 }
 
 
@@ -932,6 +935,8 @@ figure.sa-ppt figcaption {
 
 /* ================= PPT 侧栏（ppt-gallery.js） ================= */
 .sa-pptbtn { font-size: 15px; letter-spacing: -1px; }
+
+body.sa-pttg-open { overflow: hidden; }
 
 .sa-pptg-scrim {
   position: fixed; inset: 0; z-index: 1560;

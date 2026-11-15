@@ -43,7 +43,10 @@
 
 ```html
 <p>这一节的三条结论都来自同一张图：进程地址空间的六个段（课件 p11）。</p>
-<figure class="sa-ppt" data-ppt="11"></figure>
+<figure class="slide-fig">
+  <img src="/img/<deck>/p011.webp" alt="课件 p11：这一页在讲什么" loading="lazy">
+  <figcaption>课件 p11 原图（这张图用来证明什么）</figcaption>
+</figure>
 ```
 
 | 场景 | 写法 |

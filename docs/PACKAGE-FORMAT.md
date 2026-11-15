@@ -25,7 +25,11 @@ course.lcr
 │   └── os/
 │       ├── 01_xxx.html
 │       └── 02_yyy.html
-└── img/                 # 可选：页面引用的图片（页面里写 /courses/<id>/img/...）
+├── img/                 # 可选：页面引用的图片（页面里写 /courses/<id>/img/...）
+│   └── index.json       # 可选：PPT 页索引（讲次 → 页号/宽高/文件名）；有它才有「PPT 侧栏」
+
+> `img/index.json` 由 `build.mjs` 生成、`pack.mjs` 打进包。缺它不算坏包：只是阅读页没有「PPT 侧栏」入口，
+> 正文里的截图仍然正常显示。核验由 `verify-package` 的「索引 ↔ 包内图片一致」负责。
     └── deck/
         └── p001.webp
 ```

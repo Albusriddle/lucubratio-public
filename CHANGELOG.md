@@ -7,6 +7,33 @@
 
 ## [Unreleased]
 
+## [0.3.26] - 2026-11-15
+
+### 规范与工具（第十二轮审阅 12 项）
+
+**插图写法统一**
+- 唯一写法改为 `figure.slide-fig`（现有 303 处内容就是它）：`AGENTS.md` 约定 1.5、`CONTENT-SPEC`、`SKILL.md`（两处）、
+  `page-template.md` 全部改过来；旧式 `<figure class="sa-ppt" data-ppt>` 仍兼容，但注明「不产生角标、新内容别用」
+- `ppt-gallery.js` 的角标选择器改为 `figure.slide-fig, figure.sa-ppt`（旧页也有角标）
+
+**`--full` 说法补齐**
+- `SKILL.md` / `pitfalls.md` / `QUICKSTART.md`：明确 `--all` 只补「空页/少字页」，**整本必须 `--all --full`**，
+  否则 PPT 侧栏页数会少于课件实际页数
+
+**文档**
+- `README` 功能表补「PPT 原版截图侧栏」；`PACKAGE-FORMAT` 记录 `img/index.json`（缺它不算坏包，只是没侧栏）；
+  `DEVICE-CHECKLIST` §6 补 0.3.16–0.3.25 验收记录；`QUICKSTART` 澄清两仓 debug 包名不同
+
+**修复**
+- 侧栏打开时锁背景滚动（`body.sa-pttg-open`）；`.sa-pttg` / `.sa-pttg-viewer` 纳入 `prefers-reduced-motion`
+- `pack.mjs`：`img/index.json` 不再计入「跳过未引用图片」，日志不再误导
+- `check-pages.mjs` 新增 PPT 侧栏运行时检查（打开 → 断言缩略图 > 0 → 关闭；demo 页无图自动跳过）
+
+### 验证
+
+- 真机（MuMu/Android 15）：公开 9 页、私有 19 页运行时检查全通过；侧栏检查输出「52 页缩略图，关闭正常」
+- `test:all` 13 步全绿
+
 ## [0.3.25] - 2026-11-15
 
 ### 新增（PPT 原版截图侧栏：整本按页序随时可查）
