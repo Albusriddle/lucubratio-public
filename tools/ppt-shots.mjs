@@ -95,6 +95,8 @@ const DECKS = JSON.parse(fs.existsSync(DECKS_FILE)
   '07': { deck: 'vm-3', pdf: 'vm-3.pdf', work: 'vm3' },
   '08': { deck: 'vm-4', pdf: 'vm-4.pdf', work: 'vm4' },
   '09': { deck: 'conc-1', pdf: 'conc-1.pdf', work: 'conc1' },
+  '10': { deck: 'conc-2', pdf: 'conc-2.pdf', work: 'conc2' },
+  '11': { deck: 'conc-3', pdf: 'conc-3.pdf', work: 'conc3' },
   }));
 if (!fs.existsSync(DECKS_FILE)) {
   console.log(`· 未找到 ${DECKS_FILE}，使用内置 9 门示例表（可用 --decks 指定自己的）`);

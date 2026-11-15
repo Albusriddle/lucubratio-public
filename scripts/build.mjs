@@ -76,6 +76,7 @@ const QUESTION_RULES = {
   'os-10': { level: 3, test: /^检测\s*\d+/ },
   'os-11': { level: 3, test: /^检测\s*\d+/ },
   'os-12': { level: 3, test: /^检测\s*\d+/ },
+  'os-13': { level: 3, test: /^检测\s*\d+/ },   // conc-2 并发（二）
   'os-01': { level: 3, test: /^检测\s*\d+/ },
   'os-02': { level: 3, test: /^检测\s*\d+/ },
 };
@@ -149,8 +150,8 @@ function pickKicker(html) {
  *   · 缺图时构建直接失败，不会把死链发进包里
  */
 const DECK_BY_LECTURE = {
-  '01': 'intro', '02': 'vcpu1', '03': 'vcpu2', '04': 'vcpu3', '05': 'vm1',
-  '06': 'vm2', '07': 'vm3', '08': 'vm4', '09': 'conc1',
+  '01': 'intro', '02': 'vcpu-1', '03': 'vcpu-2', '04': 'vcpu-3', '05': 'vm-1',
+  '06': 'vm-2', '07': 'vm-3', '08': 'vm-4', '09': 'conc-1', '10': 'conc-2', '11': 'conc-3',
 };
 const PPT_IMG_ROOT = path.join(WEB, 'img');
 
