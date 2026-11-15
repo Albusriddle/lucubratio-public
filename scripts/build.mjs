@@ -77,6 +77,7 @@ const QUESTION_RULES = {
   'os-11': { level: 3, test: /^检测\s*\d+/ },
   'os-12': { level: 3, test: /^检测\s*\d+/ },
   'os-13': { level: 3, test: /^检测\s*\d+/ },   // conc-2 并发（二）
+  'os-14': { level: 3, test: /^检测\s*\d+/ },   // conc-3 并发（三）
   'os-01': { level: 3, test: /^检测\s*\d+/ },
   'os-02': { level: 3, test: /^检测\s*\d+/ },
 };

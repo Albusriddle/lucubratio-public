@@ -97,6 +97,11 @@ const DECKS = JSON.parse(fs.existsSync(DECKS_FILE)
   '09': { deck: 'conc-1', pdf: 'conc-1.pdf', work: 'conc1' },
   '10': { deck: 'conc-2', pdf: 'conc-2.pdf', work: 'conc2' },
   '11': { deck: 'conc-3', pdf: 'conc-3.pdf', work: 'conc3' },
+  'ex1': { deck: 'ex-vcpu-2', pdf: 'vcpu-2_调度课堂练习.pdf', work: 'exvcpu2' },
+  'ex2': { deck: 'ex-vcpu-3', pdf: 'vcpu-3_MLFQ课堂练习.pdf', work: 'exvcpu3' },
+  'ex3': { deck: 'ex-vm-2',   pdf: 'vm-2_分段与分页课堂练习.pdf', work: 'exvm2' },
+  'ex4': { deck: 'ex-vm-3',   pdf: 'vm-3_TLB与多级页表课堂练习.pdf', work: 'exvm3' },
+  'ex5': { deck: 'ex-vm-4',   pdf: 'vm-4_缺页与页面置换课堂练习.pdf', work: 'exvm4' },
   }));
 if (!fs.existsSync(DECKS_FILE)) {
   console.log(`· 未找到 ${DECKS_FILE}，使用内置 9 门示例表（可用 --decks 指定自己的）`);
