@@ -27,6 +27,37 @@
   依红线 1 **只在本地工作区与交付目录**，未进本仓库、未上传任何远程
 
 
+## [0.3.27] - 2026-11-16
+
+### 新增（文件管理器里点开 `.lcr` 直接导入）
+
+`.docx` 能弹 WPS，是因为系统 MIME 表认识 docx；`.lcr` 不在系统表里，文件管理器只会传
+`application/octet-stream` / `*/*` 之类。因此用 **「常见 MIME 变体 + pathPattern 匹配 `.lcr` 后缀」** 双重匹配：
+
+- **manifest**：4 组 `VIEW`（`octet-stream` / `zip` / `x-lcr` / `*/*`，均带 `pathPattern=".*\.lcr"`）
+  + 1 组 `SEND`（"分享到 Lucubratio"兜底）
+- **`CourseImporter.peek()`**：只读 zip 里的 `format.json` + `manifest.json`，给出标题/id/页数/题数/体积，
+  不解压、不落盘（真正导入仍走 `importZip` 的完整安全闸门）
+- **`MainActivity`**：
+  - `onCreate` + `onNewIntent`（singleTask）都接 Intent，冷启动与「已在前台」都能弹框
+  - URI 先落到 `cache/incoming/`（content URI 权限短暂、peek 与 import 要读两次、ZipFile 需随机访问）
+  - 原生 `AlertDialog`：标题 / id / 页数 / 题数 / 体积；同 id 时提示「将覆盖，旧卡片进待复核」
+  - 导入成功后沿用 `window.__saOnCourseImport` 刷新首页；取消/失败/异常都清理临时文件
+  - 启动时兜底清空 `cache/incoming`（进程被杀不会残留几十 MB 的包）
+- **边界**：坏包 → 「不是可用的课程包」；`file://` 读不到 → 明确提示；超过 200 MB → 拒绝
+
+### 验证（真机 MuMu / Android 15）
+
+| 场景 | 结果 |
+|---|---|
+| 文件管理器候选解析（content URI + `.lcr`） | 系统把 Lucubratio 列入候选 ✅ |
+| 冷启动点开 .lcr | 确认框《操作系统（个人课程）》14 页 · 166 题 · 20.7 MB → 导入后首页 2→16 篇 ✅ |
+| 已开 App 再点 | `onNewIntent` 弹新框，并提示「已有同 id 课程，将覆盖」 ✅ |
+| 取消 | 临时文件删除；连点两次不累积（2→2→1）✅ |
+| 坏包 / 分享入口 | 「不是可用的课程包」/ 分享同样弹框 ✅ |
+
+`test:all` 13 步、`check-pages` 9/9 全绿。
+
 ## [0.3.26] - 2026-11-15
 
 ### 规范与工具（第十二轮审阅 12 项）

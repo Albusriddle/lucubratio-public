@@ -154,3 +154,15 @@ cd my-app
 - 课程包格式：[`PACKAGE-FORMAT.md`](PACKAGE-FORMAT.md)
 - 打包/导入教程：[`IMPORT.md`](IMPORT.md)
 - 路线图：[`ROADMAP.md`](ROADMAP.md) ｜ 变更：[`../CHANGELOG.md`](../CHANGELOG.md)
+
+## 导入课程包的三种方式
+
+| 方式 | 操作 | 说明 |
+|---|---|---|
+| 文件管理器点开 | 在「文件」里点 `.lcr`，选 Lucubratio | 会先弹确认框（标题 / 页数 / 题数 / 体积），点「导入」才写入 |
+| 分享 | 长按 `.lcr` → 分享 → Lucubratio | 与上面同一个确认框 |
+| App 内 | 首页「＋ 导入课程包」 | 走系统文件选择器（SAF） |
+
+> 为什么 `.lcr` 没有像 `.docx` 那样稳定的「打开方式」图标：系统 MIME 表里没有 `.lcr`，
+> 不同文件管理器传的类型不一样。App 用「常见 MIME 变体 + 路径后缀 `.lcr`」双重匹配，
+> 多数文件管理器能弹选择器；个别用数字 id 的则需要走「分享」。

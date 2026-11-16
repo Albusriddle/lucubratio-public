@@ -25,6 +25,44 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- 文件管理器里点开 .lcr：.lcr 没有标准 MIME，只能同时靠
+                 「常见 MIME 变体」+「pathPattern 匹配 .lcr 后缀」两条腿。
+                 不同文件管理器传的 type 不一样（octet-stream / zip / 自造 x-lcr / */*），
+                 所以每种都声明一条；四条都带 pathPattern，误伤面只有「路径以 .lcr 结尾」。 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:host="*" android:mimeType="application/octet-stream" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="file" android:mimeType="application/octet-stream" android:pathPattern=".*\\.lcr" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:host="*" android:mimeType="application/zip" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="file" android:mimeType="application/zip" android:pathPattern=".*\\.lcr" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:host="*" android:mimeType="application/x-lcr" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="file" android:mimeType="application/x-lcr" android:pathPattern=".*\\.lcr" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.lcr" />
+            </intent-filter>
+
+            <!-- 兜底：长按文件 → 分享 → Lucubratio（不声明 */*，避免分享菜单里到处都是本 App） -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-lcr" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

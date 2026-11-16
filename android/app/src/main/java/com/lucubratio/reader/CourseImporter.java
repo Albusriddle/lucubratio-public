@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -334,6 +335,96 @@ public final class CourseImporter {
         if (fs != null) for (File c : fs) deleteRecursively(c);
         //noinspection ResultOfMethodCallIgnored
         f.delete();
+    }
+
+
+    /* ================= 轻量预检：给「文件管理器点开 .lcr」用 ================= */
+
+    /**
+     * 只读 zip 里的 format.json + manifest.json 做预检，不动磁盘、不解压。
+     * 用于「点开 .lcr → 先告诉用户这是什么包 → 用户确认后再真正导入」。
+     * 真正的安全闸门仍在 importZip()：这里只做“能不能读、是不是我们的包、要不要更新”。
+     */
+    public static final class Peek {
+        public final boolean ok;
+        public final String code;
+        public final String message;
+        public final String id;
+        public final String title;
+        public final String appMin;
+        public final int pages;
+        public final int questions;
+        public final long bytes;
+
+        private Peek(boolean ok, String code, String message, String id, String title,
+                     String appMin, int pages, int questions, long bytes) {
+            this.ok = ok; this.code = code; this.message = message;
+            this.id = id; this.title = title; this.appMin = appMin;
+            this.pages = pages; this.questions = questions; this.bytes = bytes;
+        }
+
+        static Peek fail(String code, String message) {
+            return new Peek(false, code, message, "", "", "", 0, 0, 0);
+        }
+    }
+
+    /** 预检一个 .lcr 文件（调用方负责在后台线程跑） */
+    public static Peek peek(File zipFile, String currentAppVersion) {
+        if (zipFile == null || !zipFile.isFile()) return Peek.fail("E_IO", "文件不存在");
+        long bytes = zipFile.length();
+        ZipFile zf = null;
+        try {
+            zf = new ZipFile(zipFile, StandardCharsets.UTF_8);
+            ZipEntry fmtEntry = zf.getEntry("format.json");
+            if (fmtEntry == null) return Peek.fail("E_FORMAT", "不是 Lucubratio 课程包（缺 format.json）");
+            JSONObject fmt;
+            try (InputStream in = zf.getInputStream(fmtEntry)) {
+                fmt = new JSONObject(new String(readAll(in), StandardCharsets.UTF_8));
+            }
+            if (!"lcr/1".equals(fmt.optString("format", ""))) {
+                return Peek.fail("E_FORMAT_VERSION", "不支持的包格式：" + fmt.optString("format", ""));
+            }
+            String id = fmt.optString("id", "");
+            if (!CourseStore.isValidId(id)) return Peek.fail("E_ID", "课程 id 不合法：" + id);
+            String appMin = fmt.optString("appMin", "0.0.0");
+            if (compareVersion(appMin, currentAppVersion) > 0) {
+                return Peek.fail("E_APP_TOO_OLD", "需要 App ≥ " + appMin + "（当前 " + currentAppVersion + "）");
+            }
+
+            int pages = 0;
+            ZipEntry manEntry = zf.getEntry("manifest.json");
+            if (manEntry != null) {
+                JSONObject man;
+                try (InputStream in = zf.getInputStream(manEntry)) {
+                    man = new JSONObject(new String(readAll(in), StandardCharsets.UTF_8));
+                }
+                String prefix = "/courses/" + id + "/";
+                JSONArray groups = man.optJSONArray("groups");
+                if (groups != null) {
+                    for (int gi = 0; gi < groups.length(); gi++) {
+                        JSONObject g = groups.optJSONObject(gi);
+                        if (g == null) continue;
+                        JSONArray items = g.optJSONArray("items");
+                        if (items == null) continue;
+                        for (int ii = 0; ii < items.length(); ii++) {
+                            JSONObject it = items.optJSONObject(ii);
+                            if (it == null) continue;
+                            String file = it.optString("file", "");
+                            if (!file.startsWith(prefix)) continue;
+                            if (zf.getEntry(file.substring(prefix.length())) != null) pages++;
+                        }
+                    }
+                }
+            }
+            if (pages == 0) return Peek.fail("E_MANIFEST", "课程包里没有任何页面");
+
+            return new Peek(true, "OK", "OK", id,
+                    fmt.optString("title", id), appMin, pages, fmt.optInt("questions", 0), bytes);
+        } catch (Exception e) {
+            return Peek.fail("E_IO", "读取失败：" + e.getMessage());
+        } finally {
+            if (zf != null) try { zf.close(); } catch (IOException ignored) { }
+        }
     }
 
     /* ---------------- 工具：读全部字节（给 Activity 用） ---------------- */
