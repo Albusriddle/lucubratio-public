@@ -153,6 +153,9 @@ git -c http.proxy=http://127.0.0.1:7892 push <url> v<版本>   # 单个推，别
 | 2026-11-13 | 0.3.12（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 12 步、`check-pages` 9/9） | 修复 VT 设备三入口未定义（桩注入验证）、reduce 实时读取、幕布 z-index 让位 splash；新增 `check-nav` 守则 |
 | 2026-11-13 | 0.3.13（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 12 步） | 技能/文档对齐（§5 五步校验、新页配 `QUESTION_RULES`、pitfalls3 类错误、prompts 首句要求）；`check-nav` 跳过 vendor |
 | 2026-11-14 | 0.3.14（release） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 13 步；真机：Mermaid 节点恢复自然尺寸；搜索页不再出现 `fork/MLFQ/僵尸`） | 修 Mermaid 窄图尺寸、搜索示例词改按索引生成 |
+| 2026-11-16 | 0.3.28（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（候选解析含 Lucubratio；冷启动点开 `.lcr` 弹确认框《操作系统（个人课程）》14 页·166 题·20.7 MB；导入后 2→16 篇；取消不残留；连点 2→2→1；坏包/分享均正常） | 新增「文件管理器点开 .lcr 直接导入」；`test:all` 13 步、`check-pages` 9/9 |
+| 2026-11-15 | 0.3.27（release） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 13 步；工具链：conc-2/conc-3 讲次、5 份练习 deck、`migrate-slide-fig` 迁移） | 工具与讲次扩展（无 App 行为变更） |
+| 2026-11-15 | 0.3.26（release） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 13 步；侧栏检查「52 页缩略图，关闭正常」） | 第十二轮审阅 12 项：写法统一、`--full` 说明、滚动锁、`check-pages` 侧栏检查 |
 | 2026-11-15 | 0.3.25（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（侧栏 52 页；点第 5 页 `5/52` → 下一页 `6/52`；跳页 42 → `42/52`；返回键①只关全屏 ②关侧栏且 URL 不变；图注角标 28 个） | 新增 PPT 原版截图侧栏；`test:all` 13 步、`verify-package` 13 项 |
 | 2026-11-14 | 0.3.24（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（开图→返回只关图 URL 不变；再返回回封面；开抽屉→返回只关抽屉；再返回回封面） | 返回键改为「原生返回先问 JS」；`history.back()` 替代 `goBack()`；`check-pages` 9/9、`smoke` 18 项 |
 | 2026-11-14 | 0.3.16–0.3.23（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（搜索示例词/对比度、Mermaid 超长图三轮修正后真机收进一屏、文档口径统一） | 逐版明细见 CHANGELOG；`test:all` 13 步 |

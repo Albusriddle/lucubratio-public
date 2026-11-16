@@ -155,7 +155,7 @@ const QUESTION_RULES = {
 | 表格列数 | ≤ 5 列；超过就改成"字段：值"的列表 |
 | 代码块 | 一行 ≤ 60 字符，超了手动折行 |
 | 公式 | 一行只放一条；两条并排会被拆（构建期会拆，但作者最好自己分行） |
-| 图片 | **允许**（课件纯图页作为"事实佐证"嵌入）。放在 `web/img/<deck>/pNNN.webp`，引用写 `/img/<deck>/pNNN.webp`；单张 ≤ 200KB，宽度 1000px。当前 303 张在用，另有 39 张备用图放在 `content/img-unused/`（不进 APK） |
+| 图片 | **允许**（课件纯图页作为"事实佐证"嵌入）。放在 `web/img/<deck>/pNNN.webp`，引用写 `/img/<deck>/pNNN.webp`；宽度 900px、webp q68（约 20–30 KB/页），单张上限 200KB。整本渲染用 `node tools/ppt-shots.mjs --all --full` |
 
 ---
 

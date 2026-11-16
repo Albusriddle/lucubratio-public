@@ -461,7 +461,8 @@
     for (var i = 0; i < diagrams.length; i++) addButton(diagrams[i]);
 
     // 课件截图：一律可点开放大（手机上看不清细节）
-    var shots = document.querySelectorAll('.sa-ppt img');
+    // 两种图注结构都要绑：slide-fig（现行写法，带 figcaption）与 sa-ppt（旧写法，构建期展开）
+    var shots = document.querySelectorAll('.slide-fig img, .sa-ppt img');
     for (var k = 0; k < shots.length; k++) {
       addButton(shots[k]);
       var link = shots[k].closest ? shots[k].closest('a.sa-ppt-open') : null;

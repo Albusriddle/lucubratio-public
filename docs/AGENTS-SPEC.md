@@ -169,7 +169,7 @@ F:/Android/dl/course/
 ## 7. 验收（Lead 每次合稿必跑）
 
 ```bash
-npm run test:all           # 13 步全量：构建/校验/单测/课程库/包自测/片段预检/题目自检/空构建/多段合并/导航守则/复核门禁…
+npm run test:all           # 全量（公开 13 步 / 私有 23 步）：构建/校验/单测/课程库/包自测/片段预检/题目自检/空构建/多段合并/导航守则/复核门禁…
 npm run verify:package     # 打好包后再校验包结构与安全规则
 node scripts/check-gates.mjs <该课程的 reviews 目录> --require <必需门禁…>   # 红线 3 的机械门禁
 ```
@@ -189,3 +189,17 @@ node scripts/check-gates.mjs <该课程的 reviews 目录> --require <必需门�
 - 单份稿直接定稿（跳过双人复核）
 - **把课程包或课程内容上传到 GitHub**（`.lcr`、正文页、图片、打包产物）——这是红线，不是建议
 - 把「解析」写进题干或选项、或用 `<details>` 自造折叠（查看器已默认折叠解析）
+
+## 工具一览（`tools/`）
+
+| 工具 | 用途 | 何时用 |
+|---|---|---|
+| `ppt-shots.mjs` | 把课件 PDF 渲染成 `web/img/<deck>/pNNN.webp` | `--all` 只补空页/少字页；**整本要 `--all --full`**（PPT 侧栏依赖） |
+| `mark-ppt.mjs` | 按抽取报告/页码机械预标截图位置（产出 `figure.slide-fig`） | 存量页补图；`--deck` 可显式指定讲次 |
+| `migrate-slide-fig.mjs` | 把旧式 `sa-ppt data-ppt` 迁成 `figure.slide-fig`（含 alt/figcaption） | 存量内容统一结构；`--pages .work/pages --write` |
+| `merge-pages.mjs` | 多段合并成整页（A/B 稿 → 成稿） | 合并阶段 |
+| `apply-patches.mjs` | 按复核报告机械改稿 | 复核后回写 |
+| `self-check-quizzes.mjs` | 题目的答案/选项/解析/页码自检 | 每页交付前（硬门禁） |
+| `lint-fragment.mjs` | 片段结构预检 | 写稿时随手跑 |
+| `pdf-extract.mjs` | 抽取课件逐页文本 | 新讲次开工 |
+| `ppt-shots.mjs --width/--quality` | 渲染尺寸与压缩质量 | 需要改清晰度时 |

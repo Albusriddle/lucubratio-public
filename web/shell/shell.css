@@ -1014,10 +1014,31 @@ body.sa-pttg-open { overflow: hidden; }
 
 /* 正文图注里的「p12 · 查看整本」角标 */
 .sa-ppt-chip {
-  margin-left: 8px; padding: 1px 8px;
+  display: inline-block;
+  margin: 6px 0 0; padding: 1px 8px;
   font-size: 12px; border-radius: 999px;
   color: var(--sa-accent, #5b9dd9);
   background: transparent;
   border: 1px solid var(--sa-accent, #5b9dd9);
+}
+
+/* ===== 正文截图（现行写法：figure.slide-fig，显式 <img> + figcaption） ===== */
+figure.slide-fig {
+  margin: 14px 0 18px;
+  padding: 0;
+}
+figure.slide-fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--sa-line, #232b37);
+  border-radius: 10px;
+  background: var(--sa-card, #171c24);
+}
+figure.slide-fig figcaption {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sa-dim, #8b96a5);
 }
 

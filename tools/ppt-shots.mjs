@@ -120,6 +120,7 @@ if (flag('--all')) {
     process.exit(2);
   }
   let all = { written: 0, bytes: 0 };
+  const skipped = [];
   for (const [no, d] of Object.entries(DECKS)) {
     const reportPath = path.join('.work', d.work, 'report.json');
     // --full 不需要抽取报告：整本渲染只需要 PDF
@@ -140,13 +141,14 @@ if (flag('--all')) {
     }
     const pdf = path.join(SRC_DIR, d.pdf);
     if (!fs.existsSync(pdf)) {
-      console.log(`  ${d.deck.padEnd(7)} 跳过（缺 ${pdf}）`);
+      skipped.push(d.deck);
       continue;
     }
     const r = runDeck(d.deck, pdf, pages);
     all.written += r.written;
     all.bytes += r.bytes;
   }
+  if (skipped.length) console.log(`  · 跳过 ${skipped.length} 讲（课件目录里没有对应 PDF）：${skipped.join(', ')}`);
   console.log(`\n合计 ${all.written} 张 / ${(all.bytes / 1048576).toFixed(2)} MB → ${OUT}/`);
   process.exit(0);
 }

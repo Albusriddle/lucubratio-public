@@ -51,8 +51,8 @@
 
 | 场景 | 写法 |
 |---|---|
-| 同讲页面 | `data-ppt="11"` |
-| 期中/复习页跨讲引用 | `data-ppt="05:11"`（讲次:页码） |
+| 同讲页面 | `<figure class="slide-fig"><img src="/img/<deck>/p011.webp" …><figcaption>课件 p11 原图</figcaption></figure>` |
+| 期中/复习页跨讲引用 | 同上，`src` 里换成对应讲次的 deck（如 `/img/vm-1/p011.webp`） |
 
 构建期替换为 `<img src="/img/<deck>/pNNN.webp" loading="lazy">` + `<figcaption>课件 pNN</figcaption>`，
 点击可全屏放大。**不要直接写 `<img>`**。

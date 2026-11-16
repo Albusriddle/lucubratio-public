@@ -298,8 +298,8 @@
           e.stopPropagation();
           openPanel(n);
         });
-        var cap = fig.querySelector('figcaption');
-        (cap || fig).appendChild(chip);
+        // 角标挂在 figure 上（不塞进 figcaption）：否则放大层的标题会把「p3 · 查看整本」一起带进去
+        fig.appendChild(chip);
       })(figs[i]);
     }
   }

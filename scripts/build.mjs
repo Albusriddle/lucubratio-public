@@ -557,7 +557,8 @@ function inject(html, { cid, file, cver, appver }) {
   const needsMermaid = s.indexOf('class="mermaid"') >= 0;
   // mermaid 那 5.3MB 不在这里同步加载：交给 mermaid-init 在
   // 「第一张图快进入视口」时再动态注入，含图页面首屏因此省下整包解析/编译。
-  const needsExtras = /class="(mermaid|table-wrap|sa-check)/.test(s);
+  // slide-fig 也要加载 viewer：正文截图要点得开放大（否则图是"死图"）
+  const needsExtras = /class="(mermaid|table-wrap|sa-check|slide-fig)/.test(s);
   // 页面里有课件截图才加载「PPT 侧栏」（公开仓库的 demo 页没有 /img/ → 不注入）
   const needsPptGallery = /\/img\//.test(s);
   const extras = needsExtras

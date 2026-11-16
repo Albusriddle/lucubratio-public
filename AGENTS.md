@@ -68,7 +68,7 @@
   **禁止**附 `.lcr` 课程包、课程正文页、课件截图——它们属课程内容，见红线 1。
 - 中间开发版本（同一个小版本内的多次提交）不必每次打 tag；但**功能/修复成组交付时就要发一个 release**，
   不要连续几代只推 main 不发版（2026-11 就发生过 0.3.0–0.3.4 全部未发布）。
-- **打 tag 之前必须 `npm run test:all` 全绿**（13 步）。CI 只跑其中一部分，
+- **打 tag 之前必须 `npm run test:all` 全绿**（公开仓 13 步 / 私有仓 23 步）。CI 只跑其中一部分，
   CHANGELOG 结构 / 本地守则这类检查只在这条命令里，跳过就会让红测试一路发出去（2026-11 的 0.3.4–0.3.6 就是这么漏的）。
 - 发版后核对：Release 页有 APK、`apksigner` 指纹与包名符合 [`docs/DEVICE-CHECKLIST.md`](docs/DEVICE-CHECKLIST.md) 的 §2.2，
   并按同一文档 §4 在真机走一遍验收。
@@ -142,8 +142,9 @@
   - `diagram-viewer.js`：点图放大（`.sa-ppt img`、`.slide-fig img` 都支持）
   - `ppt-gallery.js`：图注追加「pN · 查看整本」角标（`.slide-fig` 与旧式 `.sa-ppt` 都认）
   - `build.mjs`：把 `/img/…` 引用回填进产物并写 PPT 索引
-- **旧写法 `<figure class="sa-ppt" data-ppt="13"></figure>` 仍兼容**（构建期展开成同一结构），
-  但**新内容一律用 `slide-fig`**——旧写法不产生角标，且跨讲引用要写 `05:42`，容易写错
+- **旧写法 `<figure class="sa-ppt" data-ppt="13"></figure>` 仍兼容**（构建期展开成同一结构，角标也有），
+  但**新内容一律用 `slide-fig`**——旧写法没有 `alt`/`figcaption`，且跨讲引用要写 `05:42`，容易写错；
+  存量页跑 `node tools/migrate-slide-fig.mjs --pages .work/pages --write` 一次迁完
 - 缺图 → 构建失败。图片由 `node tools/ppt-shots.mjs --all --full --src <课件目录>` 生成到 `web/img/<deck>/`（gitignored）；
   **只有 `--all --full` 才是整本**（不加 `--full` 只补空页/少字页，PPT 侧栏会缺页）
 

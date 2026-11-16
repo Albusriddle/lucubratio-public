@@ -152,7 +152,9 @@ node tools/mark-ppt.mjs --file .work/pages/05_vm1.html --report .work/vm1/report
 ```
 
 - 内容侧写：`<figure class="slide-fig"><img src="/img/<deck>/p042.webp" …><figcaption>…</figcaption></figure>`
-  （旧写法 `<figure class="sa-ppt" data-ppt="42">` 仍兼容，但**没有「查看整本」角标**，新内容别用）
+  （旧写法 `<figure class="sa-ppt" data-ppt="42">` 仍兼容、也有角标，但**没有 alt/图注**，新内容别用）
+- 存量内容是旧写法时，跑一次迁移：`node tools/migrate-slide-fig.mjs --pages .work/pages --write`
+  （只做结构迁移，不动正文；干跑不加 `--write`）
 - 构建期把 `/img/…` 回填进产物并生成 `img/index.json`；点击可放大
 - **`--all` 不等于整本**：它只渲染报告里的空页/少字页。要让「PPT 侧栏」页数等于 PPT 实际页数，必须 `--all --full`
 - 课件有自定义讲次映射时，用 `--decks tools/decks.json` 指定（格式见 `tools/ppt-shots.mjs` 顶部注释）
@@ -193,7 +195,8 @@ node scripts/verify-package.mjs dist/<课程id>-1.0.0.lcr   # 包校验（12 项
 8. **课件页截图必须标位置**：正文转述了某页的图/表，就在那一**段之后**嵌
    `<figure class="slide-fig"><img src="/img/<deck>/pNNN.webp" loading="lazy" alt="课件 pN：…"><figcaption>课件 pN 原图（…）</figcaption></figure>`。
    一页只嵌一次；构建期回填图并生成 `img/index.json`（PPT 侧栏据此列出整本页序）。
-   旧写法 `<figure class="sa-ppt" data-ppt="42">` 仍兼容但没有角标。缺图会直接构建失败。
+   旧写法 `<figure class="sa-ppt" data-ppt="42">` 仍兼容（也有角标），但没有 alt/图注；
+   存量页可用 `node tools/migrate-slide-fig.mjs --pages .work/pages --write` 一次性迁移。缺图会直接构建失败。
 9. **课程包禁止上传 GitHub**：`.lcr` 及其内容（正文页、图片、学案）一律不进 git、不进 Releases、
    不贴进 issue/PR。课程内容只保留在本地工作区与用户指定位置（详见 `AGENTS.md`）
 10. **新页面必须配自评规则**：在 `scripts/build.mjs` 的 `QUESTION_RULES` 里为它的 cid 加一条

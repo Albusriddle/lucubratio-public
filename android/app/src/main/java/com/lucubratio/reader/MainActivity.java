@@ -116,13 +116,10 @@ public class MainActivity extends Activity {
         courseImporter = new CourseImporter(this, courseStore);
         // 清理上次异常退出留下的 .tmp-* / .trash-*（不阻塞 UI，几毫秒的事）
         courseStore.cleanupTemp();
-        // 外部打开 .lcr 时落到 cache 的临时包：进程被杀会残留，启动时兜底清掉
-        new Thread(() -> {
-            File dir = new File(getCacheDir(), "incoming");
-            File[] fs = dir.listFiles();
-            if (fs != null) for (File f : fs) //noinspection ResultOfMethodCallIgnored
-                f.delete();
-        }, "cleanup-incoming").start();
+        // 外部打开 .lcr 时落到 cache 的临时包：进程被杀会残留，启动时兜底清掉。
+        // 必须**同步**执行：后面 handleIncomingIntent() 会把新包写进同一个目录，
+        // 若清理在后台线程跑，可能把刚写进来的包删掉（偶发"读不了这个课程包"）。
+        cleanupIncomingDir();
         // 顺序很重要：WebViewAssetLoader 按注册顺序匹配（不是最长前缀），
         // 所以 "/courses/"（用户导入课程）必须排在 "/"（内置 assets）之前。
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
@@ -327,10 +324,20 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "只支持本地课程包", Toast.LENGTH_LONG).show();
             return;
         }
-        // 文件名必须像 .lcr：intent-filter 已按 pathPattern 过滤，这里再兜一层（防 */* 误入）
+        // 文件名必须像 .lcr：intent-filter 已按 pathPattern 过滤，这里再兜一层（防 */* 误入）。
+        // 拿不到显示名时只放行"窄 MIME"（octet-stream / zip / x-lcr），
+        // 否则任何 App 用 */* 打开未知文件都会被接住并弹「不是可用的课程包」。
         String name = displayName(uri);
-        if (name != null && !name.toLowerCase(java.util.Locale.ROOT).endsWith(".lcr")) {
-            return;   // 不是课程包，安静忽略（别用 Toast 打扰）
+        String lower = name == null ? null : name.toLowerCase(java.util.Locale.ROOT);
+        if (lower != null) {
+            if (!lower.endsWith(".lcr")) return;          // 有名字但不是 .lcr → 安静忽略
+        } else {
+            String type = intent.getType();
+            boolean narrow = type != null && (
+                    "application/octet-stream".equals(type)
+                    || "application/zip".equals(type)
+                    || "application/x-lcr".equals(type));
+            if (!narrow) return;                          // 连名字都没有 + 宽 MIME → 忽略
         }
         // 上一份还在等确认（或残留）：先清掉，避免临时文件泄漏
         discardIncoming();
@@ -435,6 +442,14 @@ public class MainActivity extends Activity {
                 .setOnCancelListener(d -> discardIncoming())
                 .setOnDismissListener(d -> importDialog = null)
                 .show();
+    }
+
+    /** 清空 cache/incoming（启动兜底；同步执行，见 onCreate 注释） */
+    private void cleanupIncomingDir() {
+        File dir = new File(getCacheDir(), "incoming");
+        File[] fs = dir.listFiles();
+        if (fs != null) for (File f : fs) //noinspection ResultOfMethodCallIgnored
+            f.delete();
     }
 
     private void discardIncoming() {

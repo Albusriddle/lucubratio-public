@@ -7,6 +7,42 @@
 
 ## [Unreleased]
 
+## [0.3.29] - 2026-11-17
+
+### 修复（第十四轮审阅 16 项）
+
+**正文截图恢复可放大**
+- `diagram-viewer.js` 选择器加 `.slide-fig img`（此前只认旧式 `.sa-ppt img`，303 张正文图全是"死图"）
+- `build.mjs` 注入 `diagram-viewer.js` 的条件加 `slide-fig`（只含截图、没有 mermaid 的页面也能放大）
+- 真机实测：某页 28 张 `slide-fig` → **28 个放大按钮**（修复前 0），点开标题正确、可关闭
+
+**外部打开 `.lcr` 的两处边界**
+- **启动清理改为同步**：`cache/incoming` 的兜底清理原先在后台线程，可能删掉刚暂存的包（冷启动导入偶发「文件不存在」）
+- **拿不到显示名时只放行窄 MIME**：`octet-stream` / `zip` / `x-lcr`，其余安静忽略（此前任何 `*/*` 文件都会弹出「不是可用的课程包」）
+
+**内容流水线写法真正统一**
+- `mark-ppt.mjs` 改为输出 `figure.slide-fig`（含 `alt` + `figcaption`，deck 名查 `tools/decks.json`，支持 16 讲）
+- `migrate-slide-fig.mjs` 也改用 `tools/decks.json`（不再硬编码 11 讲，练习页 `ex-*` 也能迁）
+- `page-template.md` 模板改 slide-fig；`SKILL.md` 修正「旧写法没有角标」的错误说法并补迁移步骤；
+  `AGENTS.md` 约定 1.5 同步更正
+
+**界面**
+- `shell.css` 新增 `figure.slide-fig` 样式（边框/圆角/背景/图注），观感与旧 `.sa-ppt` 一致
+- PPT 角标改挂在 `figure` 上（此前塞进 `figcaption`，会让放大层标题带出「p3 · 查看整本」）
+
+**文档**
+- `CONTENT-SPEC` 图片规格改为通用值（900px / webp q68 / ≤200KB），删掉私有仓统计（303 张/39 张）
+- `DEVICE-CHECKLIST §6` 补 0.3.26 / 0.3.27 / 0.3.28 三行；`ROADMAP` 补三版记录
+- `IMPORT.md` 补「文件管理器点开 `.lcr`」「分享到 Lucubratio」两条路径
+- `AGENTS-SPEC` 增加 `tools/` 工具一览（含 `ppt-shots --full`、`mark-ppt`、`migrate-slide-fig`）
+- 步数说明改为「公开 13 步 / 私有 23 步」（同步到私有后不再误导）
+- `ppt-shots --all` 缺 PDF 的跳过合并成一行汇总，不再刷 7 行
+
+### 验证
+
+- 真机（MuMu / Android 15）：正文 28 张图全部可点开放大；样式（0.7px 边框 / 10px 圆角）正常
+- `test:all` 13 步全绿；`verify` / `check-pages` 通过
+
 ## [0.3.28] - 2026-11-16
 
 ### 新增（文件管理器里点开 `.lcr` 直接导入）

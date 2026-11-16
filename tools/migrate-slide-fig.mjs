@@ -14,14 +14,25 @@ const args = process.argv.slice(2);
 const WRITE = args.includes('--write');
 const PAGES = path.join(ROOT, (args[args.indexOf('--pages') + 1] && args.includes('--pages')) ? args[args.indexOf('--pages') + 1] : '.work/pages');
 
-const DECK = {
-  '01': 'intro', '02': 'vcpu-1', '03': 'vcpu-2', '04': 'vcpu-3', '05': 'vm-1',
-  '06': 'vm-2', '07': 'vm-3', '08': 'vm-4', '09': 'conc-1', '10': 'conc-2', '11': 'conc-3',
-};
-const WORK = {
-  '01': 'intro1', '02': 'vcpu1', '03': 'vcpu2', '04': 'vcpu3', '05': 'vm1',
-  '06': 'vm2', '07': 'vm3', '08': 'vm4', '09': 'conc1', '10': 'conc2', '11': 'conc3',
-};
+// 讲次 → deck / 抽取目录：以 tools/decks.json 为唯一权威（16 讲，含 ex-* 练习）
+const DECK = {};
+const WORK = {};
+(() => {
+  const fallback = {
+    '01': ['intro', 'intro1'], '02': ['vcpu-1', 'vcpu1'], '03': ['vcpu-2', 'vcpu2'],
+    '04': ['vcpu-3', 'vcpu3'], '05': ['vm-1', 'vm1'], '06': ['vm-2', 'vm2'],
+    '07': ['vm-3', 'vm3'], '08': ['vm-4', 'vm4'], '09': ['conc-1', 'conc1'],
+    '10': ['conc-2', 'conc2'], '11': ['conc-3', 'conc3'],
+  };
+  let table = fallback;
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'decks.json'), 'utf8'));
+    const out = {};
+    for (const [no, v] of Object.entries(raw)) if (v && v.deck) out[no] = [v.deck, v.work || ''];
+    if (Object.keys(out).length) table = out;
+  } catch (e) { console.log('  · 读不到 tools/decks.json，用内置 11 讲映射'); }
+  for (const [no, [deck, work]] of Object.entries(table)) { DECK[no] = deck; WORK[no] = work; }
+})();
 
 /** 从抽取出来的逐页文本里取一句"这页在讲什么"，取不到就退回页码 */
 function hint(lec, page) {
