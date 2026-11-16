@@ -7,26 +7,6 @@
 
 ## [Unreleased]
 
-## [0.3.27] - 2026-11-15
-
-### 工具（支持新讲次与课堂练习）
-
-- **deck 命名统一为连字符**：`scripts/build.mjs` 与 `tools/mark-ppt.mjs` 的 `DECK_BY_LECTURE`
-  从 `vcpu1/vm1/conc1` 改为 `vcpu-1/vm-1/conc-1`，与 `tools/ppt-shots.mjs` 的渲染目录一致
-  （不一致时整本渲染后旧 `sa-ppt` 标记会全部"缺图"）
-- **新增讲次映射**：`10: conc-2`、`11: conc-3`；`tools/decks.json` 扩到 16 项（11 讲 + 5 份课堂练习 deck）
-- **`tools/ppt-shots.mjs`** 增加 5 个练习 deck（`ex-vcpu-2` / `ex-vcpu-3` / `ex-vm-2` / `ex-vm-3` / `ex-vm-4`）
-- **`QUESTION_RULES` 增加 `os-13`（conc-2）与 `os-14`（conc-3）**，新页才有自评条
-- **新增 `tools/migrate-slide-fig.mjs`**：旧式 `<figure class="sa-ppt" data-ppt>` → 约定 1.5 的
-  `figure.slide-fig`（显式 `img`/`alt`/`figcaption`），默认 dry-run、`--write` 落盘；
-  对 12 页 337 处标记实测零缺图
-
-### 说明
-
-- 课程内容（新讲 `conc-2`/`conc-3` 正文页、5 份课堂练习题解节、`os-course-1.7.0.lcr`）
-  依红线 1 **只在本地工作区与交付目录**，未进本仓库、未上传任何远程
-
-
 ## [0.3.28] - 2026-11-16
 
 ### 新增（文件管理器里点开 `.lcr` 直接导入）
@@ -57,6 +37,26 @@
 | 坏包 / 分享入口 | 「不是可用的课程包」/ 分享同样弹框 ✅ |
 
 `test:all` 13 步、`check-pages` 9/9 全绿。
+
+## [0.3.27] - 2026-11-15
+
+### 工具（支持新讲次与课堂练习）
+
+- **deck 命名统一为连字符**：`scripts/build.mjs` 与 `tools/mark-ppt.mjs` 的 `DECK_BY_LECTURE`
+  从 `vcpu1/vm1/conc1` 改为 `vcpu-1/vm-1/conc-1`，与 `tools/ppt-shots.mjs` 的渲染目录一致
+  （不一致时整本渲染后旧 `sa-ppt` 标记会全部"缺图"）
+- **新增讲次映射**：`10: conc-2`、`11: conc-3`；`tools/decks.json` 扩到 16 项（11 讲 + 5 份课堂练习 deck）
+- **`tools/ppt-shots.mjs`** 增加 5 个练习 deck（`ex-vcpu-2` / `ex-vcpu-3` / `ex-vm-2` / `ex-vm-3` / `ex-vm-4`）
+- **`QUESTION_RULES` 增加 `os-13`（conc-2）与 `os-14`（conc-3）**，新页才有自评条
+- **新增 `tools/migrate-slide-fig.mjs`**：旧式 `<figure class="sa-ppt" data-ppt>` → 约定 1.5 的
+  `figure.slide-fig`（显式 `img`/`alt`/`figcaption`），默认 dry-run、`--write` 落盘；
+  对 12 页 337 处标记实测零缺图
+
+### 说明
+
+- 课程内容（新讲 `conc-2`/`conc-3` 正文页、5 份课堂练习题解节、`os-course-1.7.0.lcr`）
+  依红线 1 **只在本地工作区与交付目录**，未进本仓库、未上传任何远程
+
 
 ## [0.3.26] - 2026-11-15
 
