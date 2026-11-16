@@ -284,6 +284,19 @@ window.__saOnCourseImport = function (res) {
   } catch (e) { console.error('[import] 回调出错', e); }
 };
 
+/** 批量导入完成后的回调（MainActivity.showBatchOutcome 注入） */
+window.__saOnCourseImportBatch = function (res) {
+  try {
+    var ok = res && res.imported ? res.imported : 0;
+    var pages = res && res.pages ? res.pages : 0;
+    var failed = res && res.failed ? res.failed : 0;
+    var msg = '导入完成：' + ok + ' 个（' + pages + ' 页）';
+    if (failed) msg += '，失败 ' + failed + ' 个';
+    if (window.saToast) window.saToast(msg); else console.log(msg);
+    if (ok) setTimeout(function () { window.saReload ? window.saReload() : location.reload(); }, 600);   // sa-nav-fallback
+  } catch (e) { console.error('[batch import] 回调出错', e); }
+};
+
 /** 有原生桥才显示导入按钮（浏览器调试时不显示） */
 function wireCourseImport() {
   var btn = document.getElementById('importCourse');

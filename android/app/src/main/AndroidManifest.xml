@@ -26,38 +26,60 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- 文件管理器里点开 .lcr：.lcr 没有标准 MIME，只能同时靠
-                 「常见 MIME 变体」+「pathPattern 匹配 .lcr 后缀」两条腿。
-                 不同文件管理器传的 type 不一样（octet-stream / zip / 自造 x-lcr / */*），
-                 所以每种都声明一条；四条都带 pathPattern，误伤面只有「路径以 .lcr 结尾」。 -->
+            <!-- 文件管理器里点开 .lcr（下面三组兜底规则见注释）
+                 1) .lcr 没有标准 MIME：文件管理器会传 octet-stream / zip / 自造 x-lcr / */*，
+                    所以每种都声明一条；
+                 2) pathPattern 用 `.*lcr`，**不能**用 `.*\.lcr`：实测后者在文件名带额外点号时
+                    （如 os-1.1.0.lcr、a.b.lcr）匹配不上，而真实课程包全是这种名字。
+                    放宽后由运行时按 DISPLAY_NAME 校验 .lcr 后缀（MainActivity.handleIncomingIntent）；
+                 3) 部分 provider（下载用的 DocumentsProvider）URI 里只有数字 id、没有文件名，
+                    pathPattern 无从匹配 → 单独按 host 兜一组，同样靠运行时校验后缀。 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" android:host="*" android:mimeType="application/octet-stream" android:pathPattern=".*\\.lcr" />
-                <data android:scheme="file" android:mimeType="application/octet-stream" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="content" android:host="*" android:mimeType="application/octet-stream" android:pathPattern=".*lcr" />
+                <data android:scheme="file" android:mimeType="application/octet-stream" android:pathPattern=".*lcr" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" android:host="*" android:mimeType="application/zip" android:pathPattern=".*\\.lcr" />
-                <data android:scheme="file" android:mimeType="application/zip" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="content" android:host="*" android:mimeType="application/zip" android:pathPattern=".*lcr" />
+                <data android:scheme="file" android:mimeType="application/zip" android:pathPattern=".*lcr" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" android:host="*" android:mimeType="application/x-lcr" android:pathPattern=".*\\.lcr" />
-                <data android:scheme="file" android:mimeType="application/x-lcr" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="content" android:host="*" android:mimeType="application/x-lcr" android:pathPattern=".*lcr" />
+                <data android:scheme="file" android:mimeType="application/x-lcr" android:pathPattern=".*lcr" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.lcr" />
-                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.lcr" />
+                <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*lcr" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*lcr" />
             </intent-filter>
 
-            <!-- 兜底：长按文件 → 分享 → Lucubratio（不声明 */*，避免分享菜单里到处都是本 App） -->
+            <!-- 兜底 1：Downloads provider 的数字 id URI（没有文件名，只能按 host + MIME 定向） -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:host="com.android.providers.downloads.documents" android:mimeType="application/octet-stream" />
+                <data android:scheme="content" android:host="com.android.providers.downloads.documents" android:mimeType="application/zip" />
+                <data android:scheme="content" android:host="com.android.providers.downloads.documents" android:mimeType="application/x-lcr" />
+            </intent-filter>
+
+            <!-- 兜底 2：长按文件 → 分享 → Lucubratio（单包） -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-lcr" />
+            </intent-filter>
+
+            <!-- 兜底 3：批量分享（多选多个 .lcr 一次性导入） -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/zip" />

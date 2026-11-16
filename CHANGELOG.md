@@ -7,6 +7,39 @@
 
 ## [Unreleased]
 
+## [0.3.30] - 2026-11-17
+
+### 新增（批量导入 `.lcr`）+ 修复（点开 `.lcr` 匹配不到）
+
+**修复：文件名带点号时 pathPattern 失效（点开没反应的真因）**
+- 实测：`content://…/os-1.1.0.lcr` 与 `a.b.lcr` 都**匹配不到**本 App，而 `os.lcr` 可以 ——
+  `pathPattern=".*\.lcr"` 在文件名含额外点号时失效，而真实课程包全是 `os-course-1.8.1.lcr` 这种名字
+- 修法：4 组 `VIEW` 的 pathPattern 改为 **`.*lcr`**，`.lcr` 校验交给运行时 `displayName().endsWith(".lcr")`
+- 新增 Downloads provider 定向兜底（数字 id URI 里没有文件名，只能按 host + MIME 锁）：
+  `content://com.android.providers.downloads.documents` × `octet-stream`/`zip`/`x-lcr`
+- 验证：`query-activities` 断言 `os-1.1.0.lcr` / `a.b.lcr` / Downloads 数字 id 全部命中
+
+**新增：批量导入（两个入口，一套流程）**
+- `SEND_MULTIPLE` 过滤（`octet-stream`/`zip`/`x-lcr`）：文件管理器多选 `.lcr` → 分享 → 本 App
+- App 内「＋ 导入课程包」支持多选（`EXTRA_ALLOW_MULTIPLE` + `ClipData`）
+- 共用 `stageBatch()`：逐个落盘 → `peek()` 预检 → **一个确认框列全部包**
+  （✅ 标题/页数/题数/体积、⚠️ 坏包及原因、合计体积、覆盖提示）
+- 逐个导入、单个失败不中断；完成后 `Toast` 汇总 + 网页 `__saOnCourseImportBatch` 刷新首页
+- 暂存文件纳入原有清理链（取消 / 完成 / 启动兜底 / onDestroy）
+- `collectStreamUris()` 兼容 `ParcelableArrayList` / `String[]` / `ArrayList<String>` / 单 URI
+
+### 验证（真机 MuMu / Android 15）
+
+| 场景 | 结果 |
+|---|---|
+| 点开 `os-1.1.0.lcr`（带点号） | 命中 Lucubratio ✅（修复前 0） |
+| Downloads provider 数字 id | 命中 ✅ |
+| 批量分享 2 个包 | 「导入 2 个课程包？」列出两包 + 合计 20.8 MB → 导入后首页 12→40 篇 ✅ |
+| 混入坏包 | 「导入 1 个」+ ⚠️「zip END header not found」，只导入好的 ✅ |
+| 暂存清理 | `cache/incoming` 为空 ✅ |
+
+`test:all` 13 步全绿。
+
 ## [0.3.29] - 2026-11-17
 
 ### 修复（第十四轮审阅 16 项）

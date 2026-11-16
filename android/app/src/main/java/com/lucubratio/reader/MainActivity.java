@@ -71,8 +71,10 @@ public class MainActivity extends Activity {
     private CourseImporter courseImporter;
     /** 「文件管理器点开 .lcr」时先落到 cache 的临时文件；导入完/取消后删除 */
     private File incomingCourseFile = null;
-    /** 当前确认框：再来一个 .lcr 时要先把它关掉，否则前一个临时文件会丢引用泄漏 */
+    /** 当前确认框：再来一批 .lcr 时要先把它关掉，否则前一批临时文件会丢引用泄漏 */
     private android.app.AlertDialog importDialog = null;
+    /** 批量导入时已暂存的文件（取消/完成都要删） */
+    private final java.util.List<File> pendingBatchFiles = new java.util.ArrayList<>();
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -244,6 +246,7 @@ public class MainActivity extends Activity {
         i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
                 "application/zip", "application/octet-stream", "application/x-zip-compressed"
         });
+        i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);   // 批量导入：一次选多个 .lcr
         try {
             startActivityForResult(i, REQ_IMPORT_COURSE);
         } catch (Exception e) {
@@ -308,6 +311,14 @@ public class MainActivity extends Activity {
     private void handleIncomingIntent(Intent intent) {
         if (intent == null) return;
         String action = intent.getAction();
+
+        // 批量分享：多选 .lcr → 分享 → 本 App
+        if (Intent.ACTION_SEND_MULTIPLE.equals(action)) {
+            java.util.List<Uri> uris = collectStreamUris(intent);
+            if (!uris.isEmpty()) stageBatch(uris);
+            return;
+        }
+
         Uri uri = null;
         if (Intent.ACTION_VIEW.equals(action)) {
             uri = intent.getData();
@@ -372,6 +383,210 @@ public class MainActivity extends Activity {
      * 为什么要落盘：① content URI 的读权限只在本次会话有效，且 peek 与 import 要读两次；
      * ② ZipFile 需要随机访问，流式读会慢很多。
      */
+    /** 把 content:// / file:// 的流复制到目标文件（带 200MB 上限） */
+    private void copyUriTo(Uri uri, File dst) throws IOException {
+        try (java.io.InputStream is = getContentResolver().openInputStream(uri);
+             FileOutputStream fos = new FileOutputStream(dst)) {
+            if (is == null) throw new IOException("打不开文件（可能没有读取权限）");
+            byte[] buf = new byte[65536];
+            long total = 0;
+            int n;
+            while ((n = is.read(buf)) > 0) {
+                total += n;
+                if (total > MAX_COURSE_PKG_BYTES) throw new IOException("课程包超过 200MB");
+                fos.write(buf, 0, n);
+            }
+        }
+    }
+
+    /** 从 SEND_MULTIPLE 的 Intent 里取出所有流 URI（ParcelableArrayList 优先，String[] 兜底） */
+    private java.util.List<Uri> collectStreamUris(Intent intent) {
+        java.util.List<Uri> out = new java.util.ArrayList<>();
+        try {
+            java.util.ArrayList<Uri> list = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            if (list != null) for (Uri u : list) if (u != null) out.add(u);
+        } catch (Exception ignored) { }
+        if (out.isEmpty()) {
+            // 某些分享方（以及 adb --esa 构造的 intent）传的是 String[]，兜底解析一下
+            try {
+                java.util.ArrayList<String> strs = intent.getStringArrayListExtra(Intent.EXTRA_STREAM);
+                if (strs != null) for (String str : strs) {
+                    try { out.add(Uri.parse(str)); } catch (Exception ignored) { }
+                }
+            } catch (Exception ignored) { }
+        }
+        if (out.isEmpty()) {
+            // 还有的调用方传 String[]（adb --esa 就是这样）或 ArrayList<String>
+            try {
+                java.io.Serializable ser = intent.getSerializableExtra(Intent.EXTRA_STREAM);
+                if (ser instanceof String[]) {
+                    for (String str : (String[]) ser) {
+                        try { out.add(Uri.parse(str)); } catch (Exception ignored) { }
+                    }
+                } else if (ser instanceof java.util.ArrayList) {
+                    for (Object o : (java.util.ArrayList<?>) ser) {
+                        if (o == null) continue;
+                        try { out.add(Uri.parse(String.valueOf(o))); } catch (Exception ignored) { }
+                    }
+                } else if (ser instanceof String) {
+                    out.add(Uri.parse((String) ser));
+                }
+            } catch (Exception ignored) { }
+        }
+        if (out.isEmpty()) {
+            Uri single = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (single != null) out.add(single);
+        }
+        return out;
+    }
+
+    /* ================= 批量导入 ================= */
+
+    /** 逐个落盘 + 预检，然后弹一个"批量确认"框 */
+    private void stageBatch(java.util.List<Uri> uris) {
+        if (uris == null || uris.isEmpty()) return;
+        discardIncoming();
+        new Thread(() -> {
+            File dir = new File(getCacheDir(), "incoming");
+            if (!dir.isDirectory() && !dir.mkdirs()) {
+                runOnUiThread(() -> Toast.makeText(this, "无法创建缓存目录", Toast.LENGTH_LONG).show());
+                return;
+            }
+            java.util.List<File> okFiles = new java.util.ArrayList<>();
+            java.util.List<CourseImporter.Peek> okPeeks = new java.util.ArrayList<>();
+            java.util.List<String> skipped = new java.util.ArrayList<>();
+
+            int idx = 0;
+            for (Uri uri : uris) {
+                String name = displayName(uri);
+                if (name != null && !name.toLowerCase(java.util.Locale.ROOT).endsWith(".lcr")) {
+                    skipped.add(name + " —— 不是 .lcr 文件");
+                    continue;
+                }
+                File dst = new File(dir, "batch-" + System.currentTimeMillis() + "-" + (idx++) + ".lcr");
+                try {
+                    copyUriTo(uri, dst);
+                    CourseImporter.Peek pk = CourseImporter.peek(dst, BuildConfig.VERSION_NAME);
+                    if (!pk.ok) {
+                        //noinspection ResultOfMethodCallIgnored
+                        dst.delete();
+                        skipped.add((name == null ? "未知文件" : name) + " —— " + pk.message);
+                        continue;
+                    }
+                    okFiles.add(dst);
+                    okPeeks.add(pk);
+                } catch (Exception e) {
+                    //noinspection ResultOfMethodCallIgnored
+                    dst.delete();
+                    skipped.add((name == null ? "未知文件" : name) + " —— " + e.getMessage());
+                }
+            }
+            final java.util.List<File> fOk = okFiles;
+            final java.util.List<CourseImporter.Peek> pOk = okPeeks;
+            final java.util.List<String> fSkip = skipped;
+            runOnUiThread(() -> showBatchConfirm(fOk, pOk, fSkip));
+        }, "course-batch-stage").start();
+    }
+
+    private void showBatchConfirm(java.util.List<File> okFiles, java.util.List<CourseImporter.Peek> peeks,
+                                  java.util.List<String> skipped) {
+        if (isFinishing()) {
+            for (File f : okFiles) //noinspection ResultOfMethodCallIgnored
+                f.delete();
+            return;
+        }
+        if (okFiles.isEmpty()) {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("没有可导入的课程包")
+                    .setMessage(joinLines(skipped))
+                    .setPositiveButton("知道了", null)
+                    .show();
+            return;
+        }
+        pendingBatchFiles.clear();
+        pendingBatchFiles.addAll(okFiles);
+
+        long totalBytes = 0;
+        StringBuilder sb = new StringBuilder();
+        int dup = 0;
+        for (int i = 0; i < peeks.size(); i++) {
+            CourseImporter.Peek pk = peeks.get(i);
+            totalBytes += pk.bytes;
+            sb.append("✅ 《").append(pk.title).append("》")
+              .append(pk.pages).append(" 页");
+            if (pk.questions > 0) sb.append(" · ").append(pk.questions).append(" 题");
+            sb.append(" · ").append(String.format(java.util.Locale.ROOT, "%.1f MB", pk.bytes / 1048576.0));
+            if (courseExists(pk.id)) { sb.append("（覆盖同 id）"); dup++; }
+            sb.append("\n");
+        }
+        for (String sk : skipped) sb.append("⚠️ ").append(sk).append("\n");
+        sb.append("\n共 ").append(String.format(java.util.Locale.ROOT, "%.1f MB", totalBytes / 1048576.0));
+        if (dup > 0) sb.append("，其中 ").append(dup).append(" 个会覆盖已有课程");
+
+        final String msg = sb.toString();
+        final int n = okFiles.size();
+        importDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("导入 " + n + " 个课程包？")
+                .setMessage(msg)
+                .setNegativeButton("取消", (d, w) -> discardIncoming())
+                .setPositiveButton("导入 " + n + " 个", (d, w) -> {
+                    java.util.List<File> files = new java.util.ArrayList<>(pendingBatchFiles);
+                    pendingBatchFiles.clear();
+                    importBatch(files);
+                })
+                .setOnCancelListener(d -> discardIncoming())
+                .setOnDismissListener(d -> importDialog = null)
+                .show();
+    }
+
+    /** 顺序导入一批已暂存文件；单个失败不影响其它 */
+    private void importBatch(java.util.List<File> files) {
+        if (files == null || files.isEmpty()) return;
+        new Thread(() -> {
+            int okCount = 0, pages = 0;
+            java.util.List<String> fails = new java.util.ArrayList<>();
+            for (File f : files) {
+                try (FileInputStream is = new FileInputStream(f)) {
+                    if (f.length() > MAX_COURSE_PKG_BYTES) throw new IOException("单个课程包超过 200MB");
+                    CourseImporter.Result r = courseImporter.importZip(is, BuildConfig.VERSION_NAME);
+                    if (r.ok) { okCount++; pages += r.pages; }
+                    else fails.add("《" + r.id + "》" + r.message);
+                } catch (Exception e) {
+                    fails.add(f.getName() + "：" + e.getMessage());
+                } finally {
+                    //noinspection ResultOfMethodCallIgnored
+                    f.delete();
+                }
+            }
+            final int fOk = okCount, fPages = pages;
+            final java.util.List<String> fFails = fails;
+            runOnUiThread(() -> showBatchOutcome(fOk, fPages, fFails));
+        }, "course-batch-import").start();
+    }
+
+    private void showBatchOutcome(int okCount, int pages, java.util.List<String> fails) {
+        String detail = fails.isEmpty() ? "" : ("；失败 " + fails.size() + " 个：" + joinLines(fails));
+        String msg = "导入完成：" + okCount + " 个（" + pages + " 页）" + detail;
+        try {
+            org.json.JSONArray arr = new org.json.JSONArray();
+            for (String f : fails) arr.put(f);
+            String payload = "{\"ok\":" + (fails.isEmpty()) + ",\"imported\":" + okCount
+                    + ",\"pages\":" + pages + ",\"failed\":" + fails.size()
+                    + ",\"messages\":" + arr.toString() + "}";
+            if (webView != null) {
+                webView.evaluateJavascript(
+                        "window.__saOnCourseImportBatch && window.__saOnCourseImportBatch(" + payload + ");", null);
+            }
+        } catch (Exception ignored) { }
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    }
+
+    private static String joinLines(java.util.List<String> list) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : list) sb.append(s).append("\n");
+        return sb.toString().trim();
+    }
+
     private void stageAndConfirm(Uri uri) {
         new Thread(() -> {
             File dst = null;
@@ -379,18 +594,7 @@ public class MainActivity extends Activity {
                 File dir = new File(getCacheDir(), "incoming");
                 if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("无法创建缓存目录");
                 dst = new File(dir, "pkg-" + System.currentTimeMillis() + ".lcr");
-                try (java.io.InputStream is = getContentResolver().openInputStream(uri);
-                     FileOutputStream fos = new FileOutputStream(dst)) {
-                    if (is == null) throw new IOException("打不开文件（可能没有读取权限）");
-                    byte[] buf = new byte[65536];
-                    long total = 0;
-                    int n;
-                    while ((n = is.read(buf)) > 0) {
-                        total += n;
-                        if (total > MAX_COURSE_PKG_BYTES) throw new IOException("课程包超过 200MB");
-                        fos.write(buf, 0, n);
-                    }
-                }
+                copyUriTo(uri, dst);
                 CourseImporter.Peek pk = CourseImporter.peek(dst, BuildConfig.VERSION_NAME);
                 final File staged = dst;
                 runOnUiThread(() -> showImportConfirm(staged, pk));
@@ -463,6 +667,9 @@ public class MainActivity extends Activity {
             incomingCourseFile.delete();
             incomingCourseFile = null;
         }
+        for (File f : pendingBatchFiles) //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        pendingBatchFiles.clear();
     }
 
     /** 从「外部打开的临时文件」导入 */
@@ -499,11 +706,25 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+        boolean multiCourse = requestCode == REQ_IMPORT_COURSE && data != null
+                && data.getClipData() != null && data.getClipData().getItemCount() > 1;
+        if (resultCode != RESULT_OK || data == null || (!multiCourse && data.getData() == null)) {
             pendingExportJson = null;
             if (requestCode == REQ_EXPORT || requestCode == REQ_IMPORT || requestCode == REQ_IMPORT_COURSE) {
                 Toast.makeText(this, "已取消", Toast.LENGTH_SHORT).show();
             }
+            return;
+        }
+
+        if (multiCourse) {
+            // 文件选择器里多选：走批量流程（ClipData 提供全部 URI）
+            java.util.List<Uri> uris = new java.util.ArrayList<>();
+            android.content.ClipData cd = data.getClipData();
+            for (int i = 0; i < cd.getItemCount(); i++) {
+                Uri u = cd.getItemAt(i).getUri();
+                if (u != null) uris.add(u);
+            }
+            stageBatch(uris);
             return;
         }
 
