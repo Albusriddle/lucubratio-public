@@ -47,7 +47,8 @@ npm run test:all         # 全量 13 步（= 上面这些 + 构建/校验/片段
 # 4) 真机检查（需设备；两者不同，按需跑）
 npm run smoke           # 数据层冒烟：进度/复习/备份/检索索引是否正常
 npm run verify:device   # 页面体检：内置课程能开、不存在的路径返 404 而不回落网络
-npm run check:pages     # 逐页体检：把 9 个壳页各开一遍，抓 JS 异常与控制台错误
+npm run check:pages     # 逐页体检：壳页各开一遍抓 JS 异常 + 两条行为断言
+                        #   （抽屉章标题吸顶 gap≤1px；同会话回首页不再显示开屏）
 
 # 5)（可选）出一个"没有内置内容"的包：课程全靠导入
 npm run build:empty

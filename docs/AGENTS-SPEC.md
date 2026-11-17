@@ -202,4 +202,5 @@ node scripts/check-gates.mjs <该课程的 reviews 目录> --require <必需门�
 | `self-check-quizzes.mjs` | 题目的答案/选项/解析/页码自检 | 每页交付前（硬门禁） |
 | `lint-fragment.mjs` | 片段结构预检 | 写稿时随手跑 |
 | `pdf-extract.mjs` | 抽取课件逐页文本 | 新讲次开工 |
+| `check-pages.mjs` | 真机逐页体检：壳页 JS 异常 + **抽屉吸顶 gap≤1px** + **开屏只在冷启动** | 发版前真机验收（`npm run check:pages`） |
 | `ppt-shots.mjs --width/--quality` | 渲染尺寸与压缩质量 | 需要改清晰度时 |

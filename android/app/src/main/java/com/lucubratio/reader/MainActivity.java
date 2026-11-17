@@ -359,9 +359,9 @@ public class MainActivity extends Activity {
             if (!narrow) return;                          // 连名字都没有 + 宽 MIME → 忽略
         }
         // 上一份还在等确认（或残留）：先清掉，避免临时文件泄漏。
-        // 但如果是用户主动又点了新文件把上一批顶掉，得给一句提示（否则像"点没反应"）
+        // 但如果是用户主动又点了新文件把上一次顶掉，得给一句提示（否则像"点没反应"）
         if (hasPendingImport()) {
-            Toast.makeText(this, "已取消上一批导入", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "已取消上一次导入", Toast.LENGTH_SHORT).show();
         }
         discardIncoming();
         stageAndConfirm(uri);
@@ -459,7 +459,7 @@ public class MainActivity extends Activity {
     private void stageBatch(java.util.List<Uri> uris) {
         if (uris == null || uris.isEmpty()) return;
         if (hasPendingImport()) {
-            Toast.makeText(this, "已取消上一批导入", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "已取消上一次导入", Toast.LENGTH_SHORT).show();
         }
         discardIncoming();
         new Thread(() -> {
@@ -476,7 +476,7 @@ public class MainActivity extends Activity {
             long batchBytes = 0;
             for (Uri uri : uris) {
                 // 合计上限：超了就停，剩下的记为跳过（已落盘的在下面统一清理或保留给确认框）
-                if (batchBytes > MAX_BATCH_BYTES) {
+                if (batchBytes >= MAX_BATCH_BYTES) {
                     skipped.add("其余文件 —— 本批合计超过 " + (MAX_BATCH_BYTES / 1048576) + "MB，未继续复制");
                     break;
                 }
@@ -567,6 +567,16 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    /** 删除 files[from..] 里还没处理的暂存包（已处理过的在 finally 里删过，重复删无害） */
+    private void deleteRemaining(java.util.List<File> files, int from) {
+        if (files == null) return;
+        for (int k = Math.max(0, from); k < files.size(); k++) {
+            File f = files.get(k);
+            if (f != null) //noinspection ResultOfMethodCallIgnored
+                f.delete();
+        }
+    }
+
     /** 顺序导入一批已暂存文件；单个失败不影响其它；带进度与取消 */
     private void importBatch(java.util.List<File> files, java.util.List<String> titles) {
         if (files == null || files.isEmpty()) return;
@@ -584,6 +594,9 @@ public class MainActivity extends Activity {
             java.util.List<String> fails = new java.util.ArrayList<>();
             for (int i = 0; i < total; i++) {
                 if (batchCancelled) {
+                    // 取消：把 i 及之后的暂存包全部删掉，否则它们会在 cache 里躺到下次冷启动
+                    // （pendingBatchFiles 在进入本方法前已清空，discardIncoming 清不到这些）
+                    deleteRemaining(files, i);
                     fails.add("已取消：剩余 " + (total - i) + " 个未导入");
                     break;
                 }
@@ -605,6 +618,7 @@ public class MainActivity extends Activity {
                     f.delete();
                 }
             }
+            deleteRemaining(files, files.size());   // 兜底：正常结束后不应有残留
             final int fOk = okCount, fPages = pages;
             final java.util.List<String> fFails = fails;
             runOnUiThread(() -> {
