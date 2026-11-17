@@ -1045,3 +1045,52 @@ figure.slide-fig figcaption {
   color: var(--sa-dim, #8b96a5);
 }
 
+/* ===== PPT 入口悬浮球（ppt-gallery.js） =====
+   层级 840：在正文之上，但低于抽屉遮罩(880)/顶栏(950)/图片放大(1200)/侧栏(1570)/幕布(1900)，
+   所以"该被盖住"的场景天然被盖住，不需要额外监听。 */
+.sa-pptball {
+  position: fixed;
+  z-index: 840;
+  width: 48px; height: 48px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border: 1px solid rgba(120, 140, 170, .38);
+  border-radius: 50%;
+  background: rgba(24, 30, 40, .86);
+  color: #e6edf6;
+  font-size: 16px; line-height: 1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .34);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  touch-action: none;            /* 拖动时不触发页面滚动 */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  opacity: .94;
+  transition: opacity .18s, transform .12s;
+}
+html:not(.sa-dark) .sa-pptball {
+  background: rgba(255, 255, 255, .94);
+  color: #22303f;
+  border-color: rgba(80, 100, 130, .28);
+  box-shadow: 0 6px 18px rgba(20, 30, 50, .18);
+}
+.sa-pptball-g { font-size: 15px; line-height: 1; }
+.sa-pptball-t { font-size: 9px; letter-spacing: .04em; opacity: .82; }
+.sa-pptball.is-drag { cursor: grabbing; transform: scale(1.06); opacity: 1; }
+.sa-pptball:active { transform: scale(.96); }
+
+/* 首次出现轻呼吸两下（让用户发现这里能点） */
+@keyframes sa-pptball-hint {
+  0%, 100% { box-shadow: 0 6px 18px rgba(0, 0, 0, .34); }
+  50% { box-shadow: 0 6px 18px rgba(0, 0, 0, .34), 0 0 0 6px rgba(91, 157, 217, .22); }
+}
+.sa-pptball.sa-pptball-hint { animation: sa-pptball-hint 1.4s ease-in-out 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-pptball, .sa-pptball.is-drag { transition: none; transform: none; }
+  .sa-pptball.sa-pptball-hint { animation: none; }
+}
+

@@ -118,6 +118,7 @@ console.log(`${GRAY('包名：')}${PKG}${SERIAL ? GRAY('  设备：') + SERIAL :
 console.log(`${GRAY('待检页面：')}${pages.length}\n`);
 
 let bad = 0;
+let galleryPages = 0;
 for (const url of pages) {
   errors = [];
   await send('Page.navigate', { url: 'https://appassets.androidplatform.net' + url });
@@ -136,26 +137,33 @@ for (const url of pages) {
     console.log(`${GREEN('✓')} ${label}`);
   }
 
-  // 有课件截图的内容页会带 PPT 侧栏：打开 → 断言缩略图>0 → 关闭。
-  // 公开仓库的 demo 页没有图片，自动跳过（不该因此报失败）。
-  const hasGalleryBtn = await ev('!!document.querySelector(".sa-pptbtn")');
-  if (hasGalleryBtn) {
-    const g = await ev(`(async function () {
-      document.querySelector('.sa-pptbtn').click();
-      await new Promise(r => setTimeout(r, 1200));
-      const pnl = document.querySelector('.sa-pttg');
-      const n = document.querySelectorAll('.sa-pttg-item').length;
-      const open = !!(pnl && !pnl.hidden);      // 先判定，再关闭
-      const closeBtn = document.querySelector('.sa-pttg-x');
-      if (closeBtn) closeBtn.click();
-      await new Promise(r => setTimeout(r, 300));
-      return { open, n };
-    })()`);
-    if (!g || !g.open || !(g.n > 0)) {
-      bad++;
-      console.log(`  ${RED('✗')} PPT 侧栏：未打开或没有缩略图（n=${g && g.n}）`);
-    } else {
-      console.log(`  ${GREEN('✓')} PPT 侧栏：${g.n} 页缩略图，关闭正常`);
+  // PPT 入口已改为「可拖动悬浮球」：有索引的页面都必须有球（含纯文字期中页）。
+  // 公开仓库的 demo 页没有 img/index.json → 不该有球，也不算失败。
+  const g = await ev(`(async function () {
+    const ready = window.__saPptReady || {};
+    const ball = document.querySelector('.sa-pptball');
+    if (!ready.index) return { skip: true };
+    if (!ball) return { noBall: true };
+    const r = ball.getBoundingClientRect();
+    ball.click();
+    await new Promise(r => setTimeout(r, 1200));
+    const pnl = document.querySelector('.sa-pttg');
+    const n = document.querySelectorAll('.sa-pttg-item').length;
+    const open = !!(pnl && !pnl.hidden);      // 先判定，再关闭
+    const closeBtn = document.querySelector('.sa-pttg-x');
+    if (closeBtn) closeBtn.click();
+    await new Promise(r => setTimeout(r, 300));
+    return { open, n, left: Math.round(r.left), top: Math.round(r.top), w: Math.round(r.width) };
+  })()`);
+
+  if (!g) { bad++; console.log(`${RED('✗')} PPT 悬浮球：求值失败`); }
+  else if (g.skip) { /* 没有索引（公开 demo）→ 跳过 */ }
+  else if (g.noBall) { bad++; console.log(`${RED('✗')} PPT 悬浮球：本页有索引但没有球`); }
+  else if (!g.open || !(g.n > 0)) { bad++; console.log(`${RED('✗')} PPT 侧栏：未打开或没有缩略图（n=${g.n}）`); }
+  else {
+    galleryPages++;
+    if (galleryPages === 1) {
+      console.log(`${GREEN('✓')} PPT 悬浮球：${g.w}px，点开 ${g.n} 页缩略图，关闭正常`);
     }
   }
 }
@@ -234,4 +242,5 @@ if (bad) {
   console.log(RED(`运行时检查失败：${bad}/${pages.length} 页有异常`));
   process.exit(1);
 }
+if (galleryPages) console.log(GRAY(`  PPT 悬浮球：${galleryPages}/${pages.length} 页有索引并已挂载`));
 console.log(GREEN(`运行时检查通过：${pages.length} 页均无异常`));

@@ -20,12 +20,17 @@
 
   /* ---------------- 基址与索引 ---------------- */
   function imgBase() {
+    // 1) 页面里有截图 → 从它的 src 反推（assets: /img/…；课程包: /courses/<id>/img/…）
     var im = document.querySelector('img[src*="/img/"]');
     if (im) {
       var m = im.getAttribute('src').match(/^(.*?)\/img\//);
       if (m) return m[1];
     }
-    return '';
+    // 2) 没有图的页面（如期中串讲）→ 从 body[data-file] 推：
+    //    内置页 /content/os/x.html → ''；课程包 /courses/<id>/content/os/x.html → '/courses/<id>'
+    var file = body.getAttribute('data-file') || '';
+    var mm = file.match(/^(.*?)\/content\//);
+    return mm ? mm[1] : '';
   }
   var BASE = imgBase();
   var indexPromise = null;
@@ -128,6 +133,7 @@
       renderGrid(deck);
       panel.hidden = false;
       panel._scrim.hidden = false;
+      setBallHidden(true);
       body.classList.add('sa-pttg-open');
       if (!unregPanel && window.saOnBack) unregPanel = window.saOnBack(function () { closePanel(); });
       if (startPage) openPager(startPage - 1);
@@ -163,6 +169,7 @@
     if (!panel || panel.hidden) return;
     panel.hidden = true;
     if (panel._scrim) panel._scrim.hidden = true;
+    setBallHidden(false);
     body.classList.remove('sa-pttg-open');
     if (unregPanel) { unregPanel(); unregPanel = null; }
     closePager();
@@ -249,6 +256,7 @@
     showPage(i);
     viewer.hidden = false;
     body.classList.add('sa-pttg-view');
+    setBallHidden(true);
     if (!unregViewer && window.saOnBack) unregViewer = window.saOnBack(function () { closePager(); });
     // 把当前页对应的缩略图滚进视野，关掉全屏后能接着翻
     var el = grid && grid.children[i];
@@ -259,22 +267,174 @@
     if (!viewer || viewer.hidden) return;
     viewer.hidden = true;
     body.classList.remove('sa-pttg-view');
+    setBallHidden(false);
     if (unregViewer) { unregViewer(); unregViewer = null; }
   }
 
-  /* ---------------- 顶栏按钮 + 正文图注角标 ---------------- */
-  function addButton() {
-    var bar = document.querySelector('.sa-topbar');
-    if (!bar) return;
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'sa-icon sa-pptbtn';
-    btn.setAttribute('aria-label', 'PPT 原版截图');
-    btn.title = 'PPT 原版截图';
-    btn.textContent = '▤';
-    btn.addEventListener('click', function () { openPanel(0); });
-    var top = bar.querySelector('.sa-bar-progress');
-    bar.insertBefore(btn, top || null);
+  /* ---------------- 悬浮球入口（可拖动，位置记忆） + 正文图注角标 ---------------- */
+
+  /**
+   * 为什么是悬浮球而不是顶栏按钮：
+   *   1) 期中串讲/速记卡/模拟卷这些"纯文字页"以前根本不加载本脚本 → 没有入口；
+   *      现在所有内容页都加载，但顶栏在窄屏上已经很挤（☰ / 标题 / ↑），再加一个图标会挤掉标题；
+   *   2) 悬浮球可以在任意页出现、用户自己拖到顺手的位置，不占顶栏。
+   * 层级：z-index 840 —— 抽屉(880/900)、顶栏(950)、图片放大(1200)、侧栏(1570)、幕布(1900)
+   *       都比它高，所以"该被盖住"的场景不需要额外监听。
+   */
+  var ballEl = null;
+  var POS_KEY = 'sa:pptball';
+
+  function readPos() {
+    try {
+      var raw = localStorage.getItem(POS_KEY);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (typeof o.xPct === 'number' && typeof o.yPct === 'number') return o;
+    } catch (e) { /* 忽略 */ }
+    return null;
+  }
+
+  function savePos(xPct, yPct) {
+    try { localStorage.setItem(POS_KEY, JSON.stringify({ xPct: xPct, yPct: yPct })); } catch (e) { /* 忽略 */ }
+  }
+
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  /** 把球放到 (left, top) —— 像素坐标，内部会 clamp 到安全区 */
+  function placeBall(left, top) {
+    if (!ballEl) return;
+    var size = ballEl.offsetWidth || 48;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var topLimit = 52 + 8;                                    // 顶栏高度 + 间距
+    var botLimit = vh - size - 8;
+    var l = clamp(left, 8, vw - size - 8);
+    var t = clamp(top, topLimit, Math.max(topLimit, botLimit));
+    ballEl.style.left = Math.round(l) + 'px';
+    ballEl.style.top = Math.round(t) + 'px';
+    ballEl.style.right = 'auto';
+    ballEl.style.bottom = 'auto';
+  }
+
+  function snapToEdge() {
+    if (!ballEl) return;
+    var size = ballEl.offsetWidth || 48;
+    var vw = window.innerWidth;
+    var rect = ballEl.getBoundingClientRect();
+    var left = rect.left, top = rect.top;
+    var centerX = left + size / 2;
+    var goLeft = centerX < vw / 2;
+    var targetLeft = goLeft ? 8 : vw - size - 8;
+    ballEl.style.transition = 'left .12s ease, top .12s ease';
+    placeBall(targetLeft, top);
+    setTimeout(function () { if (ballEl) ballEl.style.transition = ''; }, 160);
+    savePos((targetLeft + size / 2) / vw, (top + size / 2) / window.innerHeight);
+  }
+
+  function mountBall() {
+    if (ballEl) return;
+    ballEl = document.createElement('button');
+    ballEl.type = 'button';
+    ballEl.className = 'sa-pptball';
+    ballEl.setAttribute('aria-label', 'PPT 原版截图：点开看整本，拖动可移动');
+    ballEl.setAttribute('data-sa-pptball', '1');
+
+    var glyph = document.createElement('span');
+    glyph.className = 'sa-pptball-g';
+    glyph.textContent = '▤';
+    var label = document.createElement('span');
+    label.className = 'sa-pptball-t';
+    label.textContent = 'PPT';
+    ballEl.appendChild(glyph);
+    ballEl.appendChild(label);
+
+    body.appendChild(ballEl);
+
+    // 初始位置：记忆值优先；否则右侧 62% 高度
+    var size = 48;
+    var pos = readPos();
+    if (pos) {
+      placeBall(pos.xPct * window.innerWidth - size / 2, pos.yPct * window.innerHeight - size / 2);
+    } else {
+      placeBall(window.innerWidth - size - 8, window.innerHeight * 0.62);
+    }
+
+    /* ---- 拖动 / 点击 ---- */
+    var dragging = false, moved = false;
+    var startX = 0, startY = 0, startLeft = 0, startTop = 0, startAt = 0;
+
+    ballEl.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      dragging = true; moved = false;
+      startX = e.clientX; startY = e.clientY; startAt = Date.now();
+      var r = ballEl.getBoundingClientRect();
+      startLeft = r.left; startTop = r.top;
+      ballEl.classList.add('is-drag');
+      try { ballEl.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+    });
+
+    ballEl.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if (!moved && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) moved = true;   // 8px 阈值：区分点击与拖动
+      if (!moved) return;
+      placeBall(startLeft + dx, startTop + dy);
+    });
+
+    var handledAt = 0;   // 指针路径已处理点击的时间戳（避免与 click 事件重复打开）
+
+    function endDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      ballEl.classList.remove('is-drag');
+      try { ballEl.releasePointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+      if (!moved && Date.now() - startAt < 300) {
+        handledAt = Date.now();
+        openPanel(0);            // 视为点击
+      } else if (moved) {
+        snapToEdge();            // 松手吸附到最近的左/右边缘
+      }
+    }
+    ballEl.addEventListener('pointerup', endDrag);
+
+    // 键盘 Enter/空格，以及脚本触发的 .click()（check-pages 就靠它）：
+    // 不走指针路径，直接开面板；若刚被指针路径处理过则跳过，避免重复打开。
+    ballEl.addEventListener('click', function () {
+      if (Date.now() - handledAt < 600) return;
+      openPanel(0);
+    });
+    ballEl.addEventListener('pointercancel', function (e) {
+      if (!dragging) return;
+      dragging = false;
+      ballEl.classList.remove('is-drag');
+      snapToEdge();
+    });
+
+    // 旋屏 / 窗口变化：按记忆位置重新 clamp，别让球跑到屏幕外
+    window.addEventListener('resize', function () {
+      if (!ballEl) return;
+      var p = readPos();
+      var r = ballEl.getBoundingClientRect();
+      if (p) placeBall(p.xPct * window.innerWidth - 24, p.yPct * window.innerHeight - 24);
+      else placeBall(r.left, r.top);
+    });
+
+    // 首次出现时轻呼吸两下（记住"已经提示过"）
+    try {
+      if (!localStorage.getItem('sa:pptball:hinted')) {
+        ballEl.classList.add('sa-pptball-hint');
+        localStorage.setItem('sa:pptball:hinted', '1');
+        setTimeout(function () { if (ballEl) ballEl.classList.remove('sa-pptball-hint'); }, 3200);
+      }
+    } catch (e) { /* 忽略 */ }
+
+    // 供 check-pages 断言
+    window.__saPptReady = window.__saPptReady || {};
+    window.__saPptReady.ball = true;
+  }
+
+  /** 面板/全屏打开时把球藏起来（它们层级更高，这里只是防误触） */
+  function setBallHidden(hide) {
+    if (ballEl) ballEl.hidden = !!hide;
   }
 
   function addChips() {
@@ -306,8 +466,9 @@
 
   function boot() {
     loadIndex().then(function (idx) {
-      if (!idx || !idx.decks || !idx.decks.length) return;   // 没索引（公开 demo）→ 不加载 UI
-      addButton();
+      window.__saPptReady = { index: !!(idx && idx.decks && idx.decks.length), ball: false };
+      if (!idx || !idx.decks || !idx.decks.length) return;   // 没索引（公开 demo / 无图课程）→ 不加载 UI
+      mountBall();
       addChips();
     });
   }

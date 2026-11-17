@@ -560,7 +560,9 @@ function inject(html, { cid, file, cver, appver }) {
   // slide-fig 也要加载 viewer：正文截图要点得开放大（否则图是"死图"）
   const needsExtras = /class="(mermaid|table-wrap|sa-check|slide-fig)/.test(s);
   // 页面里有课件截图才加载「PPT 侧栏」（公开仓库的 demo 页没有 /img/ → 不注入）
-  const needsPptGallery = /\/img\//.test(s);
+  // 所有内容页都注入：期中串讲/速记卡/模拟卷等纯文字页也要有 PPT 悬浮球入口
+  // （脚本内部会先 fetch img/index.json，拿不到索引就什么都不做）
+  const needsPptGallery = /data-cid="/.test(s);
   const extras = needsExtras
     ? '<script src="/shell/ui-extras.js' + q + '"></script>\n' +
       '<script src="/shell/diagram-viewer.js' + q + '"></script>\n'
