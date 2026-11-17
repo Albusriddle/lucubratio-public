@@ -61,6 +61,10 @@ public class MainActivity extends Activity {
     private static final int REQ_IMPORT = 1002;
     private static final int REQ_IMPORT_COURSE = 1003;
     private static final long MAX_COURSE_PKG_BYTES = 200L * 1024 * 1024;
+    /** 批量导入合计上限（避免一次多选 N 个 200MB 包把 cache 写满） */
+    private static final long MAX_BATCH_BYTES = 600L * 1024 * 1024;
+    /** 批量导入时给系统留的余量：可用空间低于「已累计 + 这个值」就中止 */
+    private static final long BATCH_FREE_MARGIN = 300L * 1024 * 1024;
     private static final int MAX_BACKUP_BYTES = 16 * 1024 * 1024;
 
     private WebView webView;
@@ -75,6 +79,10 @@ public class MainActivity extends Activity {
     private android.app.AlertDialog importDialog = null;
     /** 批量导入时已暂存的文件（取消/完成都要删） */
     private final java.util.List<File> pendingBatchFiles = new java.util.ArrayList<>();
+    /** 批量导入进度框（null = 没有正在进行的导入） */
+    private android.app.AlertDialog progressDialog = null;
+    /** 用户在进度框点了「取消」 */
+    private volatile boolean batchCancelled = false;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -350,7 +358,11 @@ public class MainActivity extends Activity {
                     || "application/x-lcr".equals(type));
             if (!narrow) return;                          // 连名字都没有 + 宽 MIME → 忽略
         }
-        // 上一份还在等确认（或残留）：先清掉，避免临时文件泄漏
+        // 上一份还在等确认（或残留）：先清掉，避免临时文件泄漏。
+        // 但如果是用户主动又点了新文件把上一批顶掉，得给一句提示（否则像"点没反应"）
+        if (hasPendingImport()) {
+            Toast.makeText(this, "已取消上一批导入", Toast.LENGTH_SHORT).show();
+        }
         discardIncoming();
         stageAndConfirm(uri);
     }
@@ -383,8 +395,8 @@ public class MainActivity extends Activity {
      * 为什么要落盘：① content URI 的读权限只在本次会话有效，且 peek 与 import 要读两次；
      * ② ZipFile 需要随机访问，流式读会慢很多。
      */
-    /** 把 content:// / file:// 的流复制到目标文件（带 200MB 上限） */
-    private void copyUriTo(Uri uri, File dst) throws IOException {
+    /** 把 content:// / file:// 的流复制到目标文件（带 200MB 上限）；返回复制的字节数 */
+    private long copyUriTo(Uri uri, File dst) throws IOException {
         try (java.io.InputStream is = getContentResolver().openInputStream(uri);
              FileOutputStream fos = new FileOutputStream(dst)) {
             if (is == null) throw new IOException("打不开文件（可能没有读取权限）");
@@ -396,6 +408,7 @@ public class MainActivity extends Activity {
                 if (total > MAX_COURSE_PKG_BYTES) throw new IOException("课程包超过 200MB");
                 fos.write(buf, 0, n);
             }
+            return total;
         }
     }
 
@@ -445,6 +458,9 @@ public class MainActivity extends Activity {
     /** 逐个落盘 + 预检，然后弹一个"批量确认"框 */
     private void stageBatch(java.util.List<Uri> uris) {
         if (uris == null || uris.isEmpty()) return;
+        if (hasPendingImport()) {
+            Toast.makeText(this, "已取消上一批导入", Toast.LENGTH_SHORT).show();
+        }
         discardIncoming();
         new Thread(() -> {
             File dir = new File(getCacheDir(), "incoming");
@@ -457,7 +473,17 @@ public class MainActivity extends Activity {
             java.util.List<String> skipped = new java.util.ArrayList<>();
 
             int idx = 0;
+            long batchBytes = 0;
             for (Uri uri : uris) {
+                // 合计上限：超了就停，剩下的记为跳过（已落盘的在下面统一清理或保留给确认框）
+                if (batchBytes > MAX_BATCH_BYTES) {
+                    skipped.add("其余文件 —— 本批合计超过 " + (MAX_BATCH_BYTES / 1048576) + "MB，未继续复制");
+                    break;
+                }
+                if (dir.getUsableSpace() < batchBytes + BATCH_FREE_MARGIN) {
+                    skipped.add("其余文件 —— 存储空间不足（剩余 " + (dir.getUsableSpace() / 1048576) + "MB）");
+                    break;
+                }
                 String name = displayName(uri);
                 if (name != null && !name.toLowerCase(java.util.Locale.ROOT).endsWith(".lcr")) {
                     skipped.add(name + " —— 不是 .lcr 文件");
@@ -465,7 +491,7 @@ public class MainActivity extends Activity {
                 }
                 File dst = new File(dir, "batch-" + System.currentTimeMillis() + "-" + (idx++) + ".lcr");
                 try {
-                    copyUriTo(uri, dst);
+                    batchBytes += copyUriTo(uri, dst);
                     CourseImporter.Peek pk = CourseImporter.peek(dst, BuildConfig.VERSION_NAME);
                     if (!pk.ok) {
                         //noinspection ResultOfMethodCallIgnored
@@ -531,21 +557,42 @@ public class MainActivity extends Activity {
                 .setNegativeButton("取消", (d, w) -> discardIncoming())
                 .setPositiveButton("导入 " + n + " 个", (d, w) -> {
                     java.util.List<File> files = new java.util.ArrayList<>(pendingBatchFiles);
+                    java.util.List<String> titles = new java.util.ArrayList<>();
+                    for (CourseImporter.Peek pk : peeks) titles.add(pk.title);
                     pendingBatchFiles.clear();
-                    importBatch(files);
+                    importBatch(files, titles);
                 })
                 .setOnCancelListener(d -> discardIncoming())
                 .setOnDismissListener(d -> importDialog = null)
                 .show();
     }
 
-    /** 顺序导入一批已暂存文件；单个失败不影响其它 */
-    private void importBatch(java.util.List<File> files) {
+    /** 顺序导入一批已暂存文件；单个失败不影响其它；带进度与取消 */
+    private void importBatch(java.util.List<File> files, java.util.List<String> titles) {
         if (files == null || files.isEmpty()) return;
+        final int total = files.size();
+        batchCancelled = false;
+        progressDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("正在导入")
+                .setMessage("0 / " + total)
+                .setNegativeButton("取消", (d, w) -> batchCancelled = true)
+                .setCancelable(false)
+                .show();
+
         new Thread(() -> {
             int okCount = 0, pages = 0;
             java.util.List<String> fails = new java.util.ArrayList<>();
-            for (File f : files) {
+            for (int i = 0; i < total; i++) {
+                if (batchCancelled) {
+                    fails.add("已取消：剩余 " + (total - i) + " 个未导入");
+                    break;
+                }
+                File f = files.get(i);
+                final String label = (titles != null && i < titles.size()) ? titles.get(i) : f.getName();
+                final int cur = i + 1;
+                runOnUiThread(() -> {
+                    if (progressDialog != null) progressDialog.setMessage(cur + " / " + total + "：" + label);
+                });
                 try (FileInputStream is = new FileInputStream(f)) {
                     if (f.length() > MAX_COURSE_PKG_BYTES) throw new IOException("单个课程包超过 200MB");
                     CourseImporter.Result r = courseImporter.importZip(is, BuildConfig.VERSION_NAME);
@@ -560,7 +607,14 @@ public class MainActivity extends Activity {
             }
             final int fOk = okCount, fPages = pages;
             final java.util.List<String> fFails = fails;
-            runOnUiThread(() -> showBatchOutcome(fOk, fPages, fFails));
+            runOnUiThread(() -> {
+                if (progressDialog != null) {
+                    android.app.AlertDialog d = progressDialog;
+                    progressDialog = null;
+                    try { d.dismiss(); } catch (Exception ignored) { }
+                }
+                showBatchOutcome(fOk, fPages, fFails);
+            });
         }, "course-batch-import").start();
     }
 
@@ -648,6 +702,12 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    /** 是否有"等确认"或"正在导入"的批次 */
+    private boolean hasPendingImport() {
+        return importDialog != null || progressDialog != null
+                || incomingCourseFile != null || !pendingBatchFiles.isEmpty();
+    }
+
     /** 清空 cache/incoming（启动兜底；同步执行，见 onCreate 注释） */
     private void cleanupIncomingDir() {
         File dir = new File(getCacheDir(), "incoming");
@@ -657,6 +717,12 @@ public class MainActivity extends Activity {
     }
 
     private void discardIncoming() {
+        if (progressDialog != null) {
+            batchCancelled = true;
+            android.app.AlertDialog d = progressDialog;
+            progressDialog = null;
+            try { d.dismiss(); } catch (Exception ignored) { }
+        }
         if (importDialog != null) {
             android.app.AlertDialog d = importDialog;
             importDialog = null;

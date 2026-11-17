@@ -161,6 +161,9 @@ git -c http.proxy=http://127.0.0.1:7892 push <url> v<版本>   # 单个推，别
 | 2026-11-13 | 0.3.12（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 12 步、`check-pages` 9/9） | 修复 VT 设备三入口未定义（桩注入验证）、reduce 实时读取、幕布 z-index 让位 splash；新增 `check-nav` 守则 |
 | 2026-11-13 | 0.3.13（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 12 步） | 技能/文档对齐（§5 五步校验、新页配 `QUESTION_RULES`、pitfalls3 类错误、prompts 首句要求）；`check-nav` 跳过 vendor |
 | 2026-11-14 | 0.3.14（release） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 13 步；真机：Mermaid 节点恢复自然尺寸；搜索页不再出现 `fork/MLFQ/僵尸`） | 修 Mermaid 窄图尺寸、搜索示例词改按索引生成 |
+| 2026-11-17 | 0.3.31（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（抽屉 `gap 10px→0`；冷启动 `sa-booted=1` 播开屏；同会话回首页 `sa-no-splash` 生效、`#sa-splash` 不存在） | 抽屉吸顶 + 开屏只在冷启动；`check-pages` 新增两条断言后 19 页全通过 |
+| 2026-11-17 | 0.3.30（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（批量分享 2 包「导入 2 个课程包」→ 首页 12→40 篇；混坏包只导好的；`query-activities` 三组断言全命中） | 批量导入 + 点开 `.lcr` 修复 |
+| 2026-11-17 | 0.3.29（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（正文 28 张 `slide-fig` 全部可点开放大；样式 0.7px 边框 / 10px 圆角） | 第十四轮审阅 16 项 |
 | 2026-11-16 | 0.3.28（debug） | MuMu · Android 15 · WebView 110 | ✅ 通过（候选解析含 Lucubratio；冷启动点开 `.lcr` 弹确认框《操作系统（个人课程）》14 页·166 题·20.7 MB；导入后 2→16 篇；取消不残留；连点 2→2→1；坏包/分享均正常） | 新增「文件管理器点开 .lcr 直接导入」；`test:all` 13 步、`check-pages` 9/9 |
 | 2026-11-15 | 0.3.27（release） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 13 步；工具链：conc-2/conc-3 讲次、5 份练习 deck、`migrate-slide-fig` 迁移） | 工具与讲次扩展（无 App 行为变更） |
 | 2026-11-15 | 0.3.26（release） | MuMu · Android 15 · WebView 110 | ✅ 通过（`test:all` 13 步；侧栏检查「52 页缩略图，关闭正常」） | 第十二轮审阅 12 项：写法统一、`--full` 说明、滚动锁、`check-pages` 侧栏检查 |

@@ -160,6 +160,72 @@ for (const url of pages) {
   }
 }
 
+/* ---------- 附加行为检查 1：抽屉章标题吸顶不能有缝 ---------- */
+{
+  const target = pages.find((u) => u.includes('/content/')) || pages[0];
+  await send('Page.navigate', { url: 'https://appassets.androidplatform.net' + target });
+  await sleep(WAIT);
+  const d = await ev(`(async function () {
+    const btn = document.querySelector('.sa-icon');
+    if (!btn) return { skip: '没有抽屉按钮' };
+    btn.click();
+    await new Promise(r => setTimeout(r, 450));
+    const sb = document.getElementById('sidebar');
+    if (!sb) return { skip: '没有 #sidebar' };
+    sb.scrollTop = Math.min(600, sb.scrollHeight);
+    await new Promise(r => setTimeout(r, 400));
+    const row = sb.querySelector('.sa-toc-row');
+    if (!row) return { skip: '没有可吸顶的章标题' };
+    const gap = Math.round(row.getBoundingClientRect().top - sb.getBoundingClientRect().top);
+    const padTop = getComputedStyle(sb).paddingTop;
+    btn.click();                       // 收起抽屉
+    return { gap, padTop };
+  })()`);
+  if (!d || d.skip) {
+    console.log(`${GRAY('·')} 抽屉吸顶：${d && d.skip ? d.skip : '未取到'}`);
+  } else if (d.gap > 1) {
+    bad++;
+    console.log(`${RED('✗')} 抽屉吸顶：章标题与抽屉顶边有 ${d.gap}px 缝（padding-top=${d.padTop}）`);
+  } else {
+    console.log(`${GREEN('✓')} 抽屉吸顶：gap=${d.gap}px`);
+  }
+}
+
+/* ---------- 附加行为检查 2：开屏只在冷启动 ---------- */
+{
+  // 1) 先加载一次首页（冷启动语义：若本会话还没加载过 /，这里会播开屏并写入 sa-booted）
+  await send('Page.navigate', { url: 'https://appassets.androidplatform.net/' });
+  let flag = null;
+  for (let i = 0; i < 12; i++) {
+    await sleep(350);
+    const v = await ev(`(function () {
+      try { return sessionStorage.getItem('sa-booted'); } catch (e) { return null; }
+    })()`);
+    if (typeof v === 'string') { flag = v; break; }
+  }
+  // 2) 再回首页：这次应该首帧就带 sa-no-splash，且 #sa-splash 已不存在
+  await send('Page.navigate', { url: 'https://appassets.androidplatform.net/' });
+  let cls = null, splash = null;
+  for (let i = 0; i < 12; i++) {
+    await sleep(350);
+    const v = await ev(`(function () {
+      try {
+        return { cls: document.documentElement.className,
+                 splash: !!document.getElementById('sa-splash'),
+                 ready: document.readyState };
+      } catch (e) { return null; }
+    })()`);
+    if (v && v.ready === 'complete') { cls = v.cls; splash = v.splash; break; }
+  }
+  const okSplash = flag === '1' && typeof cls === 'string' && /sa-no-splash/.test(cls) && splash === false;
+  if (!okSplash) {
+    bad++;
+    console.log(`${RED('✗')} 开屏冷启动判定：flag=${flag} cls=${JSON.stringify(cls)} splash=${splash}`);
+  } else {
+    console.log(`${GREEN('✓')} 开屏冷启动判定：同会话回首页不再显示开屏（flag=1, sa-no-splash）`);
+  }
+}
+
 ws.close();
 adb(['forward', '--remove', `tcp:${PORT}`]);
 

@@ -102,10 +102,13 @@
 | 0.3.18–0.3.22 | Mermaid 超长图三轮修正（等比缩小 → 视口自适应 → 改回 CSS 等比缩放），真机收进一屏 |
 | 0.3.23 | 第七轮审阅：教材口径统一、工具索引、门禁入口、Mermaid 规则清理 |
 | 0.3.24 | 返回键修复：原生返回先问 JS（`__saOnBack`），放大层/抽屉优先消费；改用 `history.back()`（WebView 的 `goBack()` 对应用内跳转是空操作） |
+| 0.3.25 | 阅读页「PPT 原版截图侧栏」：整本按页序缩略图 + 全屏翻页 + 跳页，返回键逐层关闭；build 生成 `img/index.json`，pack/verify 同步校验 |
 | 0.3.26 | 第十二轮审阅 12 项：插图写法统一 slide-fig、`--full` 说明、侧栏滚动锁与 reduced-motion、`pack` 日志、`check-pages` 侧栏检查 |
 | 0.3.27 | 工具：conc-2/conc-3 讲次、5 份课堂练习 deck、`migrate-slide-fig` 迁移脚本 |
 | 0.3.28 | 文件管理器点开 `.lcr` 直接导入（4 组 VIEW + SEND 过滤、`CourseImporter.peek` 预检、确认框、四处临时包清理） |
-| 0.3.25 | 阅读页「PPT 原版截图侧栏」：整本按页序缩略图 + 全屏翻页 + 跳页，返回键逐层关闭；build 生成 `img/index.json`，pack/verify 同步校验 |
+| 0.3.29 | 第十四轮审阅 16 项：正文截图可放大（`.slide-fig` 接入 viewer）、`.lcr` 导入边界、写法统一、`figure.slide-fig` 样式、文档补齐 |
+| 0.3.30 | 批量导入 `.lcr`（`SEND_MULTIPLE` + App 内多选，一个确认框 + 顺序导入）；修复带点号文件名点不开（`pathPattern` 改 `.*lcr`、加 Downloads 兜底） |
+| 0.3.31 | 抽屉章标题吸顶贴顶（`padding-top` 归零）；开屏只在冷启动（`sessionStorage` 判定 + 首帧隐藏） |
 
 > 真机验收：**2026-11-13 已在 MuMu（Android 15，1080×2340@440dpi）复跑**（0.3.9 debug 包 + 注入课程）。
 > 通过：底栏不遮挡（间距 39–658px）、无横向滚动、章行 75/25（实测 0.749）、长标题换行不截断、
