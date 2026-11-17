@@ -99,6 +99,16 @@
     cache();
     if (!els.splash) return;               // 只在首页有开屏层
 
+    // 非冷启动：boot.js 已把开屏藏起来，这里连计时器都不启动
+    if (document.documentElement.classList.contains('sa-no-splash')) {
+      splashHidden = true;
+      var el = els.splash;
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+      return;
+    }
+    // 冷启动：记一笔，本次运行内后续回首页不再播
+    try { sessionStorage.setItem('sa-booted', '1'); } catch (e) { /* 忽略 */ }
+
     if (els.quote) els.quote.textContent = quoteOfToday();
 
     var skip = document.getElementById('sa-splash-skip');

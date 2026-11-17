@@ -102,7 +102,7 @@ body.sa-nav-open .sa-scrim { opacity: 1; pointer-events: auto; }
 
 /* 抽屉内容（运行时生成的标题目录） */
 .sa-drawer-head {
-    margin-top: 8px;
+    margin-top: 10px;   /* 抽屉容器顶部 padding 已归零，呼吸感放在这里 */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -291,7 +291,10 @@ html.sa-dark #sidebar .sa-toc-row { background: var(--sidebar, #141a22); }
     margin: 0;
     border-right: 1px solid var(--line);
     border-bottom: 0;
-    padding: 10px 8px calc(28px + env(safe-area-inset-bottom));
+    /* 顶部不留内边距：sticky 的 top:0 是相对内容盒吸附的，留 10px 会让吸顶的
+       章标题永远停在"抽屉顶边 +10px"，露出一条缝看到上一节（真机实测 gap=10px）。
+       这份呼吸感挪给 .sa-drawer-head 的 margin-top。 */
+    padding: 0 8px calc(28px + env(safe-area-inset-bottom));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     transform: translateX(-103%);

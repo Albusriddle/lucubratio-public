@@ -7,6 +7,35 @@
 
 ## [Unreleased]
 
+## [0.3.31] - 2026-11-17
+
+### 修复（真机使用反馈两项）
+
+**1. 目录抽屉：章标题吸顶后与顶栏之间有一条缝**
+- 真机实测：`sidebarTop=52, stickyRowTop=62 → gap=10px`；`#sidebar` 的 `padding-top=10px`
+- 根因：sticky 的 `top:0` 相对**内容盒**吸附，而手机端媒体查询给滚动容器加了 `padding: 10px 8px …`
+  （基础规则本来是 `0`，被覆盖）
+- 修法：滚动容器顶部内边距归零，呼吸感挪到 `.sa-drawer-head { margin-top: 10px }`
+- 验证：复测 `gap = 0`；截图确认章标题紧贴顶栏
+
+**2. 每次回主页都重播开屏（应只在冷启动）**
+- 根因：开屏 `#sa-splash` 是 index.html 内联标记，`splash.js` 没有任何"本次启动是否已播"的判断
+- 修法：`boot.js` 最顶部（`<head>` 内、先于开屏标记）读 `sessionStorage['sa-booted']`，
+  有标记就给 `<html>` 加 `sa-no-splash`；`home.css` 用 `display:none` 首帧隐藏；
+  `splash.js` 冷启动展示时写入标记、已隐藏则直接返回（不起计时器）
+- `sessionStorage` 生命周期 = 渲染进程：冷启动为空→播；进程内回主页→跳过；进程被杀后再开→又是冷启动
+- 回主页的转场沿用现有幕布（淡出到黑→淡入），与切页面完全一致（无需新增动效）
+
+### 验证（真机 MuMu / Android 15）
+
+| 场景 | 结果 |
+|---|---|
+| 抽屉吸顶 | `gap 10px → 0px`，章标题紧贴顶栏 ✅ |
+| 冷启动 | `<html>` 无 `sa-no-splash`、`sa-booted=1` → 播过开屏 ✅ |
+| 回主页（同进程） | `<html class="sa-no-splash sa-dark">`、`#sa-splash` 已不存在 → 首帧即隐藏 ✅ |
+
+`test:all` 13 步全绿。
+
 ## [0.3.30] - 2026-11-17
 
 ### 新增（批量导入 `.lcr`）+ 修复（点开 `.lcr` 匹配不到）

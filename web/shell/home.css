@@ -201,3 +201,7 @@ dialog.is-closing { opacity: 0; transform: scale(.96); transition: opacity .12s 
   dialog[open], dialog[open]::backdrop { animation: none; }
   dialog.is-closing { transition: none; }
 }
+
+/* 非冷启动（同一次运行里回到首页）：首帧就把开屏隐藏，避免闪一下再消失 */
+html.sa-no-splash #sa-splash { display: none !important; }
+

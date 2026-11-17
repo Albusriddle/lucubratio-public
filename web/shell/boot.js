@@ -2,6 +2,17 @@
    必须以普通 script（非 module、非 defer）放在 <head>，在首次绘制前执行。 */
 (function () {
   'use strict';
+
+  /* 开屏只在「本次 WebView 进程的第一次加载」显示：
+     sessionStorage 的生命周期 = 渲染进程 —— 冷启动为空（播），
+     进程内再回主页时有标记（不播，走幕布转场）。会话被系统杀掉后再启就又是冷启动。
+     必须在 #sa-splash 解析之前执行（本文件在 <head> 里），否则会先闪一下再隐藏。 */
+  try {
+    if (window.sessionStorage && sessionStorage.getItem('sa-booted') === '1') {
+      document.documentElement.classList.add('sa-no-splash');
+    }
+  } catch (e) { /* 隐私模式等：退化为每次显示开屏，与旧行为一致 */ }
+
   try {
     var root = document.documentElement;
 
