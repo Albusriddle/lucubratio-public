@@ -42,9 +42,9 @@ const OUT = path.join(ROOT, 'android', 'app', 'src', 'main', 'assets', 'web');
 const GROUPS = [
   { id: 'os', title: '操作系统 · 期中复习', dir: 'os' },
   // 题库分页：把 quiz-html 的 1472 道题按讲次分 44 页（tools/quiz2lcr.mjs 生成）
-  { id: 'osq', title: '操作系统 · 期中刷题', dir: 'osq' },
+  { id: 'osq', title: '操作系统 · 期中刷题', dir: 'osq', optional: true },
   // 计网题库分页：817 道题分 20 页（tools/quiz2lcr.mjs --course cn 生成）
-  { id: 'cnq', title: '计算机网络 · 期中刷题', dir: 'cnq' },
+  { id: 'cnq', title: '计算机网络 · 期中刷题', dir: 'cnq', optional: true },
 ];
 // --group <id>：只发布指定分组（打包独立课程包时用，默认发布全部）
 const GROUP_ONLY = (() => { const i = process.argv.indexOf('--group'); return i > 0 ? process.argv[i + 1] : null; })();
@@ -615,7 +615,12 @@ for (const g of ACTIVE_GROUPS) {
   if (EMPTY) break;                       // 空构建：不收集任何内容页
   const srcDir = path.join(CONTENT, g.dir);
   if (!fs.existsSync(srcDir)) {
-    if (!EMPTY) errors.push(`缺少内容目录: content/${g.dir}`);
+    // optional 组（如 osq/cnq 刷题内容）是本地 gitignore 的素材，CI 里本来就没有 → 跳过不算错；
+    // 必需组缺目录仍然报错（防目录名写错）
+    if (!EMPTY) {
+      if (g.optional) log(`${KJ.dim}  跳过 ${g.dir}（本地无 content/${g.dir}）${KJ.reset}`);
+      else errors.push(`缺少内容目录: content/${g.dir}`);
+    }
     continue;
   }
   const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.html'));
