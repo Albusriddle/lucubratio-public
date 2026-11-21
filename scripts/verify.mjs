@@ -7,9 +7,13 @@ import path from 'node:path';
 import { readFileSync as _rf } from 'node:fs';
 let _pkg = {};
 try { _pkg = JSON.parse(_rf(new URL('../package.json', import.meta.url), 'utf8')); } catch {}
+const _envBaseline = (() => {
+  try { return JSON.parse(process.env.VERIFY_BASELINES || '{}'); } catch { return {}; }
+})();
 const BASELINE = Object.assign(
   { mermaid: 250, math: 100, sections: 50, totalMB: 24 },
-  (_pkg && _pkg.verifyBaselines) || {}
+  (_pkg && _pkg.verifyBaselines) || {},
+  _envBaseline
 );
 
 const ROOT = path.resolve(import.meta.dirname, '..');

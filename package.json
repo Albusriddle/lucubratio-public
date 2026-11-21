@@ -1,6 +1,6 @@
 {
   "name": "lucubratio-pipeline",
-  "version": "0.3.34",
+  "version": "0.3.35",
   "private": true,
   "description": "Lucubratio 流水线 + 查看器：把任意课程内容编译成可离线学习的内容包（不含任何课程素材）",
   "scripts": {
@@ -32,7 +32,7 @@
     "mermaid": 1,
     "math": 0,
     "sections": 5,
-    "totalMB": 30
+    "totalMB": 56
   },
   "verifyPolicy": {
     "trackedContent": "public"

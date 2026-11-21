@@ -42,5 +42,8 @@ out-*.png
 # 只允许自写的示例页；课程页由本地流水线生成，放在 .work/pages/
 content/os/*
 !content/os/*_demo_*.html
+# 题库分页（quiz2lcr 生成）：课程内容衍生物，禁止入库（红线 1）
+content/osq/*
+content/cnq/*
 # 课件截图（课程内容衍生，本地渲染）
 web/img/

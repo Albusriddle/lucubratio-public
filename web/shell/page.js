@@ -23,6 +23,19 @@ import { fmtDue } from './time.js';
   var cver = body.dataset.cver || '';
   var appver = body.dataset.appver || '';
 
+  /* PPT 悬浮球的**运行期兜底**：
+     悬浮球是构建期把 <script src="/shell/ppt-gallery.js"> 写进页面 HTML 的，
+     而存量课程包（.lcr）是旧构建产物，页面里没有这一行 —— 于是无论 App 多新都没有入口。
+     这里在内容页发现缺脚本时补一个；ppt-gallery.js 自己会先 fetch img/index.json，
+     拿不到索引（公开 demo / 无图课程）就什么都不做，不会报错。 */
+  if (cid && !document.querySelector('script[src*="ppt-gallery"]')) {
+    var gs = document.createElement('script');
+    gs.setAttribute('data-sa-pptgal', '1');
+    gs.src = '/shell/ppt-gallery.js' + (appver ? '?v=' + encodeURIComponent(appver) : '');
+    gs.defer = true;
+    document.body.appendChild(gs);
+  }
+
   // 页面级共享的数据层初始化：boot 与自评条共用同一个 Promise，避免重复 init / 重复写 meta
   var storeReady = initStore({ appVersion: appver, contentVersion: cver });
 

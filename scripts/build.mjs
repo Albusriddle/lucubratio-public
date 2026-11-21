@@ -41,7 +41,14 @@ const OUT = path.join(ROOT, 'android', 'app', 'src', 'main', 'assets', 'web');
 // 只发布这些分组；新增科目时在这里加一行
 const GROUPS = [
   { id: 'os', title: '操作系统 · 期中复习', dir: 'os' },
+  // 题库分页：把 quiz-html 的 1472 道题按讲次分 44 页（tools/quiz2lcr.mjs 生成）
+  { id: 'osq', title: '操作系统 · 期中刷题', dir: 'osq' },
+  // 计网题库分页：817 道题分 20 页（tools/quiz2lcr.mjs --course cn 生成）
+  { id: 'cnq', title: '计算机网络 · 期中刷题', dir: 'cnq' },
 ];
+// --group <id>：只发布指定分组（打包独立课程包时用，默认发布全部）
+const GROUP_ONLY = (() => { const i = process.argv.indexOf('--group'); return i > 0 ? process.argv[i + 1] : null; })();
+const ACTIVE_GROUPS = GROUP_ONLY ? GROUPS.filter((g) => g.id === GROUP_ONLY) : GROUPS;
 
 // 构建时跳过的开发用目录（不随包发布）
 const DEV_DIRS = new Set(['_dev']);
@@ -81,6 +88,10 @@ const QUESTION_RULES = {
   'os-01': { level: 3, test: /^检测\s*\d+/ },
   'os-02': { level: 3, test: /^检测\s*\d+/ },
 };
+// 题库分页（os-quiz）：44 页，每页的「检测 N」都是自评单元
+for (let _i = 1; _i <= 44; _i++) QUESTION_RULES[`osq-${String(_i).padStart(2, '0')}`] = { level: 3, test: /^检测\s*\d+/ };
+// 计网题库分页（cn-quiz）：20 页
+for (let _i = 1; _i <= 20; _i++) QUESTION_RULES[`cnq-${String(_i).padStart(2, '0')}`] = { level: 3, test: /^检测\s*\d+/ };
 
 const KJ = { reset: '\x1b[0m', dim: '\x1b[2m', green: '\x1b[32m', cyan: '\x1b[36m', red: '\x1b[31m', yellow: '\x1b[33m' };
 const log = (...a) => console.log(...a);
@@ -573,11 +584,17 @@ function inject(html, { cid, file, cver, appver }) {
   // 库路径改由 data-lib 属性传给 mermaid-init.js（它用 document.currentScript 读取）。
   const tail = (needsMermaid
     ? '<script src="/shell/mermaid-init.js' + q + '" data-lib="/vendor/mermaid.min.js' + q + '"></script>\n'
-    : '') + '<script src="/shell/nav.js' + q + '"></script>\n' + extras + '<script type="module" src="/shell/page.js' + q + '"></script>';
+    : '') + '<script src="/shell/nav.js' + q + '"></script>\n' + extras + galleryScript
+    + '<script type="module" src="/shell/page.js' + q + '"></script>';
   s = s.replace(/<\/body>/i, `${tail}\n</body>`);
 
   const ok = s.includes('/shell/shell.css') && s.includes('/shell/page.js') &&
     s.includes('/shell/boot.js') && s.includes('/shell/theme.css') && s.includes('data-cid=');
+  // 断言：内容页必须带 PPT 悬浮球脚本（曾经的 bug：galleryScript 定义却漏拼进 tail，
+  // 结果公开仓构建的所有页面都没有悬浮球入口，且没人发现）
+  if (ok && !s.includes('/shell/ppt-gallery.js')) {
+    errors.push(`内容页缺少 ppt-gallery.js 注入（PPT 悬浮球会消失）: ${file}`);
+  }
   return ok ? s : null;
 }
 
@@ -594,7 +611,7 @@ const EMPTY = process.argv.includes('--empty');
 
 // ===== 第一遍：收集 + 去重 + 内容指纹 =====
 const collected = [];
-for (const g of GROUPS) {
+for (const g of ACTIVE_GROUPS) {
   if (EMPTY) break;                       // 空构建：不收集任何内容页
   const srcDir = path.join(CONTENT, g.dir);
   if (!fs.existsSync(srcDir)) {
@@ -708,7 +725,7 @@ let totalTableMathSkipped = 0;
 const searchSections = [];
 const searchPages = {};
 
-for (const g of GROUPS) {
+for (const g of ACTIVE_GROUPS) {
   if (EMPTY) break;            // 空构建：不产出任何分组
   const items = [];
   for (const c of collected.filter((x) => x.group.id === g.id)) {
