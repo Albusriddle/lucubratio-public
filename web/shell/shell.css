@@ -937,6 +937,11 @@ figure.sa-ppt figcaption {
 }
 
 /* ================= PPT 侧栏（ppt-gallery.js） ================= */
+
+/* hidden 必须真的隐藏：下面 .sa-pttg / .sa-pttg-viewer 都声明了 display:flex，
+   类选择器优先级高于 UA 的 [hidden]{display:none}，否则"点 ✕ 关不掉"（面板还在屏上）。 */
+.sa-pttg[hidden],
+.sa-pttg-viewer[hidden] { display: none !important; }
 .sa-pptbtn { font-size: 15px; letter-spacing: -1px; }
 
 body.sa-pttg-open { overflow: hidden; }
@@ -981,10 +986,14 @@ body.sa-pttg-open { overflow: hidden; }
 }
 .sa-pttg-item {
   position: relative; padding: 0; overflow: hidden;
+  /* 4:3 固定比例：课件页 900×675 ≈ 4:3。
+     不这样写的话，格子高度依赖 <img> 解码时机 —— WebView 110 上按钮布局会先把高度
+     定成"只剩边框"（实测 1.45px），图片解码出来后也不回填，结果缩略图被裁成一条条细线。 */
+  aspect-ratio: 4 / 3;
   background: var(--sa-card, #1a1d24);
   border: 1px solid var(--sa-line, #262a33); border-radius: 10px;
 }
-.sa-pttg-item img { display: block; width: 100%; height: auto; }
+.sa-pttg-item img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .sa-pttg-n {
   position: absolute; right: 6px; bottom: 6px;
   padding: 1px 6px; font-size: 11px; border-radius: 6px;

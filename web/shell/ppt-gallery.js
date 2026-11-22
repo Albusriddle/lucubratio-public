@@ -50,13 +50,75 @@
     return m ? m[1] : '';
   }
 
+  /** 本页所属课程组（由 data-cid 前缀得出：osq-01 → osq、cnq-01 → cnq、os-13 → os） */
+  function groupOf() {
+    var cid = body.getAttribute('data-cid') || '';
+    var m = cid.match(/^([a-z]+)-\d+$/);
+    return m ? m[1] : '';
+  }
+
+  /** 本页自己引用了哪些 deck（刷题页会引用本课程的课件图，这是最可靠的线索） */
+  function decksOnPage() {
+    var set = {};
+    var imgs = document.querySelectorAll('img[src*="/img/"]');
+    for (var i = 0; i < imgs.length; i++) {
+      var m = (imgs[i].getAttribute('src') || '').match(/\/img\/([^/]+)\//);
+      if (m) set[m[1]] = 1;
+    }
+    return Object.keys(set);
+  }
+
+  /**
+   * 选"本讲"：
+   *   不同课程会有相同的讲次编号（计网 cn1 与 os 的 intro 都是 lecture=01），
+   *   只按 lecture 匹配会挑错（在 osq 刷题页上打开的是计网的 89 页）。
+   *   优先级：① 本页实际引用的 deck ② group + lecture 双匹配 ③ 仅 lecture ④ 兜底第一讲
+   */
   function currentDeck(idx) {
     if (!idx || !idx.decks || !idx.decks.length) return null;
+    var decks = idx.decks;
     var lec = lectureOf();
-    for (var i = 0; i < idx.decks.length; i++) {
-      if (String(idx.decks[i].lecture) === lec) return idx.decks[i];
+    var grp = groupOf();
+    var onPage = decksOnPage();
+    var i;
+
+    // ① 本页引用的 deck 里，优先取讲次也匹配的
+    var byName = {};
+    for (i = 0; i < decks.length; i++) byName[decks[i].deck] = decks[i];
+    var hits = onPage.filter(function (d) { return !!byName[d]; });
+    if (hits.length) {
+      for (i = 0; i < hits.length; i++) {
+        if (String(byName[hits[i]].lecture) === lec) return byName[hits[i]];
+      }
+      return byName[hits[0]];
     }
-    return idx.decks[0];
+
+    // ② 页面所属课程组 + lecture
+    // 同一门课的"正课页"和"刷题页"组名不同（os vs osq、cn vs cnq），
+    // 但用的是同一批课件 —— 比较时忽略结尾的 q，让 os 也能匹配到 osq 引用的 deck。
+    function baseGroup(g) { return String(g || '').replace(/q$/, ''); }
+    function inGroup(d) {
+      if (!grp || !d.groups) return false;
+      for (var k = 0; k < d.groups.length; k++) {
+        if (baseGroup(d.groups[k]) === baseGroup(grp)) return true;
+      }
+      return false;
+    }
+    if (grp) {
+      for (i = 0; i < decks.length; i++) {
+        if (inGroup(decks[i]) && String(decks[i].lecture) === lec) return decks[i];
+      }
+      // 只有组能对上（如期中页 lecture=20 没有对应讲次）→ 取该组第一讲
+      for (i = 0; i < decks.length; i++) {
+        if (inGroup(decks[i])) return decks[i];
+      }
+    }
+
+    // ③ 仅 lecture
+    for (i = 0; i < decks.length; i++) {
+      if (String(decks[i].lecture) === lec) return decks[i];
+    }
+    return decks[0];
   }
 
   function pageUrl(deck, page) { return BASE + '/img/' + deck.deck + '/' + page.f; }

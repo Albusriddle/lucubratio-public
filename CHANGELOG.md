@@ -7,6 +7,40 @@
 
 ## [Unreleased]
 
+## [0.3.37] - 2026-11-22
+
+### 修复（PPT 侧栏三个真机问题）
+
+**1. 缩略图变成"一条条细线"**
+- 现象：面板打开后 89 个格子全是细条，看不到图
+- 实测：格子高 **1.45px**（只剩上下边框），图片其实已加载（naturalWidth 1200×675、渲染高 114px），被 `overflow:hidden` 裁掉
+- 根因：格子是 `<button>`，高度依赖 `<img>`；WebView 110 上按钮内部布局在图片解码前把高度定成边框高度，之后不回填
+- 修：`.sa-pttg-item { aspect-ratio: 4 / 3 }` + `img { height:100%; object-fit: cover }` —— 格子高度与图片加载解耦
+- 验证：格子 **204×153（4:3）**，缩略图正常
+
+**2. 点 ✕ 关不掉侧栏（全屏翻页同理）**
+- 实测：点关闭后 `panel.hidden = true`，但 `getComputedStyle(panel).display` 仍是 `flex`
+- 根因：`.sa-pttg { display: flex }` 的类选择器优先级高于浏览器默认 `[hidden] { display:none }`
+  （`.sa-viewer[hidden]` 当初写了保护，这两个漏了）
+- 修：`.sa-pttg[hidden], .sa-pttg-viewer[hidden] { display: none !important; }`
+- 验证：关闭后 `display: none`；全屏翻页 ✕ 同样生效（`1 / 83` 计数正常）
+
+**3. 打开的是"别的课"的 PPT（显示 89 页 = 计算机网络 cn1）**
+- 根因：不同课程讲次编号撞车（`cn1` 与 `intro` 的 lecture 都是 `01`），`currentDeck()` 只按 lecture 匹配 → 取到第一个
+- 修：
+  - `img/index.json` 每个 deck 增加 **`groups`**（所有引用过它的课程组：`os`/`osq`/`cnq`…）
+  - `currentDeck()` 优先级改为：**① 本页实际引用的 deck** → **② 课程组 + lecture**（比较时忽略结尾 `q`，让 `os` 命中 `osq` 引用的课件）→ ③ 仅 lecture → ④ 兜底
+- 验证：osq 刷题页 → **intro 83 页**（修复前 cn1 89 页）；cnq 刷题页 → cn1 89 页
+
+### 兼容性
+
+旧课程包的 `img/index.json` 没有 `groups` 字段，但优先级 ①（本页引用的 deck）不依赖索引，
+所以**旧包照样能选对讲次**，无需重打包。
+
+### 验证
+
+真机（MuMu / Android 15）：上述三项逐条复验通过；`test:all` 77 步全绿。
+
 ## [0.3.36] - 2026-11-22
 
 ### 修复（CI 构建失败：本地刷题内容被当成必需目录）

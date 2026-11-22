@@ -854,7 +854,12 @@ let pptIndexRels = new Set();
         const tM = html.match(/<title>([^<]+)<\/title>/i);
         const title = tM ? tM[1].trim() : '';
         for (const mm of html.matchAll(/\/img\/([^\/"?#]+)\//g)) {
-          if (!meta.has(mm[1])) meta.set(mm[1], { lecture, title });
+          // group = 引用该 deck 的页面所属课程组（cid 前缀：os / osq / cnq …），
+          // 用于"两个课程的讲次编号撞车"时选对讲次（cn1 与 intro 的 lecture 都是 01）
+          const gm = html.match(/data-cid="([a-z]+)-\d+"/);
+          const group = gm ? gm[1] : '';
+          if (!meta.has(mm[1])) meta.set(mm[1], { lecture, title, groups: new Set() });
+          if (group) meta.get(mm[1]).groups.add(group);
         }
       }
     })(OUT);
@@ -878,7 +883,10 @@ let pptIndexRels = new Set();
       if (!pages.length) continue;
       pages.sort((a, b) => a.n - b.n);
       const mt = meta.get(name) || {};
-      decks.push({ deck: name, lecture: mt.lecture || '', title: mt.title || name, pages });
+      // groups：所有引用过该 deck 的课程组（同一个课件可能既被正课页、也被刷题页引用）
+      decks.push({ deck: name, lecture: mt.lecture || '',
+                   groups: mt.groups ? Array.from(mt.groups) : [],
+                   title: mt.title || name, pages });
       for (const r of rels) pptIndexRels.add(r);
     }
     decks.sort((a, b) => String(a.lecture || 'zz').localeCompare(String(b.lecture || 'zz')));
