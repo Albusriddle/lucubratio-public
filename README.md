@@ -42,13 +42,20 @@ npm run test:library     # 课程库合并逻辑（内置 + 已导入）
 npm run check:changelog  # CHANGELOG 结构守则
 npm run check:gates      # 复核门禁（红线 3）：检查 reviews 目录里的门禁记录是否全部通过
 npm run check:nav        # 导航守则：除 shell/boot.js 外禁止裸 location 跳转（CI 与 test:all 都跑）
-npm run test:all         # 全量 13 步（= 上面这些 + 构建/校验/片段预检/题目自检/空构建冒烟/多段合并/导航守则）
+npm run test:all         # 全量：固定 11 步 + 每页 1 步题目自检（demo 2 页 = 13 步；本地 66 页 = 77 步）
 
 # 4) 真机检查（需设备；两者不同，按需跑）
 npm run smoke           # 数据层冒烟：进度/复习/备份/检索索引是否正常
 npm run verify:device   # 页面体检：内置课程能开、不存在的路径返 404 而不回落网络
-npm run check:pages     # 逐页体检：壳页各开一遍抓 JS 异常 + 两条行为断言
-                        #   （抽屉章标题吸顶 gap≤1px；同会话回首页不再显示开屏）
+npm run check:pages     # 逐页体检：壳页各开一遍抓 JS 异常 + 三条行为断言
+                        #   （抽屉吸顶 gap≤1px；同会话回首页不显示开屏；PPT 侧栏格子尺寸/比例/关闭）
+
+> **基线口径**：`verifyBaselines`（mermaid / 公式 / 小节 / 体积）是按**公开仓 CI 的 2 页 demo** 定的，
+> 在本机含大量课程内容时只作"防倒退"用；体积上限已按需要调到 300MB。
+>
+> **两种构建的内容不同**：CI / Release 的 APK 只含 2 个 demo 页（课程靠导入 `.lcr`）；
+> 本机 `node scripts/build.mjs` 会把 `content/` 下所有本地内容（如 `osq`/`cnq` 刷题页）一起打进去。
+> 两者行为一致，只是内容量不同。
 
 # 5)（可选）出一个"没有内置内容"的包：课程全靠导入
 npm run build:empty

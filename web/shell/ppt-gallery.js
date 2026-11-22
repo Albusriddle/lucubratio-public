@@ -205,11 +205,21 @@
 
   function renderGrid(deck) {
     grid.innerHTML = '';
+    // 每讲比例不同：os 的课件是 4:3（900×675），计算机网络是 16:9（1200×675）。
+    // 格子高度用 padding-bottom 按该讲首页的 w/h 算，避免把 16:9 的图裁掉两侧。
+    var ar = 4 / 3;
+    if (deck.pages.length && deck.pages[0].w && deck.pages[0].h) {
+      ar = deck.pages[0].w / deck.pages[0].h;
+    }
+    var padPct = (100 / ar).toFixed(3) + '%';
+    grid.dataset.ar = String(Math.round(ar * 1000) / 1000);
+
     var frag = document.createDocumentFragment();
     deck.pages.forEach(function (p, i) {
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'sa-pttg-item';
+      b.style.paddingBottom = padPct;      // 覆盖 CSS 里的 75% 兜底
       b.setAttribute('aria-label', '第 ' + p.n + ' 页');
       var im = document.createElement('img');
       im.loading = 'lazy';

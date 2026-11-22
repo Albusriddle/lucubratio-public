@@ -148,22 +148,44 @@ for (const url of pages) {
     ball.click();
     await new Promise(r => setTimeout(r, 1200));
     const pnl = document.querySelector('.sa-pttg');
-    const n = document.querySelectorAll('.sa-pttg-item').length;
+    const grid = document.querySelector('.sa-pttg-grid');
+    const items = document.querySelectorAll('.sa-pttg-item');
+    const n = items.length;
     const open = !!(pnl && !pnl.hidden);      // 先判定，再关闭
+
+    // 格子必须是"能看图"的方块，而不是塌成一条线（0.3.34/0.3.37 两次踩过）
+    let cellW = 0, cellH = 0, cellRatio = 0;
+    if (items[0]) {
+      const cr = items[0].getBoundingClientRect();
+      cellW = Math.round(cr.width); cellH = Math.round(cr.height);
+      cellRatio = cellH ? +(cellW / cellH).toFixed(3) : 0;
+    }
+    const expectAr = grid && grid.dataset.ar ? Number(grid.dataset.ar) : 0;
+
     const closeBtn = document.querySelector('.sa-pttg-x');
     if (closeBtn) closeBtn.click();
-    await new Promise(r => setTimeout(r, 300));
-    return { open, n, left: Math.round(r.left), top: Math.round(r.top), w: Math.round(r.width) };
+    await new Promise(r => setTimeout(r, 350));
+    // 关闭后必须真的不显示（.sa-pttg 有 display:flex，会压过 [hidden]，0.3.37 踩过）
+    const closedDisplay = pnl ? getComputedStyle(pnl).display : 'none';
+
+    return { open, n, left: Math.round(r.left), top: Math.round(r.top), w: Math.round(r.width),
+             cellW, cellH, cellRatio, expectAr, closedDisplay };
   })()`);
 
   if (!g) { bad++; console.log(`${RED('✗')} PPT 悬浮球：求值失败`); }
   else if (g.skip) { /* 没有索引（公开 demo）→ 跳过 */ }
   else if (g.noBall) { bad++; console.log(`${RED('✗')} PPT 悬浮球：本页有索引但没有球`); }
   else if (!g.open || !(g.n > 0)) { bad++; console.log(`${RED('✗')} PPT 侧栏：未打开或没有缩略图（n=${g.n}）`); }
+  else if (g.cellH < 60) { bad++; console.log(`${RED('✗')} PPT 缩略图塌陷：格子 ${g.cellW}×${g.cellH}（应 ≥60 高）`); }
+  else if (g.expectAr > 0 && Math.abs(g.cellRatio - g.expectAr) > 0.08) {
+    bad++;
+    console.log(`${RED('✗')} PPT 缩略图比例不符：格子 ${g.cellRatio} vs 该讲 ${g.expectAr}`);
+  }
+  else if (g.closedDisplay !== 'none') { bad++; console.log(`${RED('✗')} PPT 侧栏点 ✕ 后仍显示（display=${g.closedDisplay}）`); }
   else {
     galleryPages++;
     if (galleryPages === 1) {
-      console.log(`${GREEN('✓')} PPT 悬浮球：${g.w}px，点开 ${g.n} 页缩略图，关闭正常`);
+      console.log(`${GREEN('✓')} PPT 悬浮球：${g.w}px，${g.n} 页缩略图 ${g.cellW}×${g.cellH}（比例 ${g.cellRatio}），关闭正常`);
     }
   }
 }
@@ -186,7 +208,11 @@ for (const url of pages) {
     if (!row) return { skip: '没有可吸顶的章标题' };
     const gap = Math.round(row.getBoundingClientRect().top - sb.getBoundingClientRect().top);
     const padTop = getComputedStyle(sb).paddingTop;
+    const scrollable = sb.scrollHeight > sb.clientHeight + 8;
+    const scrolled = Math.round(sb.scrollTop);
     btn.click();                       // 收起抽屉
+    // 目录很短（两三个小节的刷题页）时根本滚不动，章标题自然停在抽屉头下面 —— 不算缺陷
+    if (!scrollable || scrolled === 0) return { skip: '目录不可滚动（内容不足一屏）' };
     return { gap, padTop };
   })()`);
   if (!d || d.skip) {

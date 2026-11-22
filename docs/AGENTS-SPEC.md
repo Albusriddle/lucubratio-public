@@ -169,7 +169,7 @@ F:/Android/dl/course/
 ## 7. 验收（Lead 每次合稿必跑）
 
 ```bash
-npm run test:all           # 全量（公开 13 步 / 私有 23 步）：构建/校验/单测/课程库/包自测/片段预检/题目自检/空构建/多段合并/导航守则/复核门禁…
+npm run test:all           # 全量（固定 11 步 + 每页 1 步：公开 CI 13 / 本地 77 / 私有 23）：构建/校验/单测/课程库/包自测/片段预检/题目自检/空构建/多段合并/导航守则/复核门禁…
 npm run verify:package     # 打好包后再校验包结构与安全规则
 node scripts/check-gates.mjs <该课程的 reviews 目录> --require <必需门禁…>   # 红线 3 的机械门禁
 ```
@@ -202,5 +202,10 @@ node scripts/check-gates.mjs <该课程的 reviews 目录> --require <必需门�
 | `self-check-quizzes.mjs` | 题目的答案/选项/解析/页码自检 | 每页交付前（硬门禁） |
 | `lint-fragment.mjs` | 片段结构预检 | 写稿时随手跑 |
 | `pdf-extract.mjs` | 抽取课件逐页文本 | 新讲次开工 |
-| `check-pages.mjs` | 真机逐页体检：壳页 JS 异常 + **抽屉吸顶 gap≤1px** + **开屏只在冷启动** | 发版前真机验收（`npm run check:pages`） |
+| `check-pages.mjs` | 真机逐页体检：壳页 JS 异常 + 抽屉吸顶 gap≤1px + 开屏只在冷启动 + **PPT 侧栏（格子尺寸/比例/关闭）** | 发版前真机验收（`npm run check:pages`） |
+| `assemble.mjs` | 把整页片段装配成完整 HTML（含壳层占位） | 新页首次装配 |
+| `compose-quizzes.mjs` | 把题库源按讲次切分/组合成刷题页片段 | 题库内容生成 |
+| `course-new.mjs` | 新建课程骨架（目录、manifest、包配置） | 开新课程时 |
+| `quiz2lcr.mjs` | 题库 HTML → 按讲次分页的内容页（osq/cnq 就是这样生成的） | 题库内容生成 |
+| `quiz2lcr-images.mjs` | 为题库页补齐课件截图引用 | 题库页配图 |
 | `ppt-shots.mjs --width/--quality` | 渲染尺寸与压缩质量 | 需要改清晰度时 |
